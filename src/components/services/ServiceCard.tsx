@@ -38,58 +38,13 @@ const ServiceCard = ({
   onClick 
 }: ServiceCardProps) => {
   const { addToCart } = useCart();
-  const [people, setPeople] = useState(1);
   const [boosters, setBoosters] = useState(1);
   const [extraHours, setExtraHours] = useState(0);
 
   const calculatePrice = () => {
     if (isInquiry) return 0;
     
-    let basePrice = 0;
-    
-    if (!groupPricing) {
-      basePrice = price * boosters;
-    } else {
-      // New logic: Optimal distribution of people across boosters
-      if (people === boosters) {
-        // Each person gets their own booster - individual pricing
-        basePrice = price * people;
-      } else if (boosters === 1) {
-        // All people share one booster - group pricing
-        const groupPrice = groupPricing[Math.min(people, 4) as keyof typeof groupPricing] || 
-                          (price + (people - 1) * Math.floor(price * 0.6));
-        basePrice = groupPrice;
-      } else {
-        // Multiple boosters, fewer than people - optimal distribution
-        let totalCost = 0;
-        let remainingPeople = people;
-        
-        for (let i = 0; i < boosters; i++) {
-          if (remainingPeople <= 0) break;
-          
-          // Try to fit as many people as possible on this booster optimally
-          let optimalPeopleForThisBooster = 1;
-          let bestPrice = price; // price for 1 person
-          
-          for (let testPeople = 1; testPeople <= Math.min(remainingPeople, 4); testPeople++) {
-            const testPrice = groupPricing[testPeople as keyof typeof groupPricing] || 
-                             (price + (testPeople - 1) * Math.floor(price * 0.6));
-            const pricePerPerson = testPrice / testPeople;
-            const currentBestPricePerPerson = bestPrice / optimalPeopleForThisBooster;
-            
-            if (pricePerPerson <= currentBestPricePerPerson) {
-              optimalPeopleForThisBooster = testPeople;
-              bestPrice = testPrice;
-            }
-          }
-          
-          totalCost += bestPrice;
-          remainingPeople -= optimalPeopleForThisBooster;
-        }
-        
-        basePrice = totalCost;
-      }
-    }
+    let basePrice = price * boosters;
     
     // Add extra hours cost
     if (hasExtraHours && extraHours > 0 && extraHourPrice) {
@@ -100,7 +55,7 @@ const ServiceCard = ({
   };
 
   const calculateDuration = () => {
-    return (duration + extraHours) * Math.max(people, boosters);
+    return (duration + extraHours) * boosters;
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -112,7 +67,7 @@ const ServiceCard = ({
       basePrice: price,
       duration,
       category,
-      people,
+      people: 1,
       boosters,
       finalPrice: calculatePrice(),
       totalDuration: calculateDuration(),
@@ -125,26 +80,9 @@ const ServiceCard = ({
     onClick();
   };
 
-  const incrementPeople = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPeople(prev => prev + 1);
-  };
-
-  const decrementPeople = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (people > 1) {
-      setPeople(prev => prev - 1);
-      if (boosters > people - 1) {
-        setBoosters(people - 1);
-      }
-    }
-  };
-
   const incrementBoosters = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (boosters < people) {
-      setBoosters(prev => prev + 1);
-    }
+    setBoosters(prev => prev + 1);
   };
 
   const decrementBoosters = (e: React.MouseEvent) => {
@@ -166,60 +104,32 @@ const ServiceCard = ({
       <CardContent>
         <p className="text-muted-foreground mb-4 line-clamp-2">{description}</p>
         
-        {/* People selector */}
-        {groupPricing && (
+        {/* Boosters and Extra Hours selectors */}
+        {!isInquiry && (
           <div className="space-y-4 mb-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Antal personer:</span>
+              <span className="text-sm font-medium">Antal boosters:</span>
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={decrementPeople}
-                  disabled={people <= 1}
+                  onClick={decrementBoosters}
+                  disabled={boosters <= 1}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
-                <span className="w-8 text-center font-medium">{people}</span>
+                <span className="w-8 text-center font-medium">{boosters}</span>
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={incrementPeople}
+                  onClick={incrementBoosters}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-
-            {/* Boosters selector - only show if more than 1 person */}
-            {people > 1 && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Antal boosters:</span>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={decrementBoosters}
-                    disabled={boosters <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center font-medium">{boosters}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={incrementBoosters}
-                    disabled={boosters >= people}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Extra hours selector - only show for services with extra hours */}
             {hasExtraHours && (
