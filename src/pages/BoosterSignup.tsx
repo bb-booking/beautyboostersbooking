@@ -22,6 +22,7 @@ interface FormData {
   phone: string;
   address: string;
   workRadius: number;
+  primaryTransport: string;
   contractAccepted: boolean;
 }
 
@@ -31,11 +32,15 @@ const skillOptions = [
   "Events", "Makeup Kursus", "Spraytan"
 ];
 
+const transportOptions = [
+  "Cykel", "Offentlig transport", "Bil", "Flere forskellige"
+];
+
 const BoosterSignup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
+  const totalSteps = 6;
   
   const [formData, setFormData] = useState<FormData>({
     skills: [],
@@ -47,6 +52,7 @@ const BoosterSignup = () => {
     phone: '',
     address: '',
     workRadius: 50,
+    primaryTransport: '',
     contractAccepted: false
   });
 
@@ -99,7 +105,8 @@ const BoosterSignup = () => {
       );
       case 3: return formData.name && formData.email && formData.phone;
       case 4: return formData.address && formData.workRadius > 0;
-      case 5: return formData.contractAccepted;
+      case 5: return formData.primaryTransport;
+      case 6: return formData.contractAccepted;
       default: return false;
     }
   };
@@ -276,6 +283,35 @@ const BoosterSignup = () => {
         return (
           <div className="space-y-6">
             <div>
+              <h2 className="text-2xl font-bold mb-2">Transport</h2>
+              <p className="text-muted-foreground">Hvad er dit primære transportmiddel?</p>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Vi bruger denne information til at beregne rejsetid mellem kunder og optimere din kalender.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {transportOptions.map((transport) => (
+                  <Badge
+                    key={transport}
+                    variant={formData.primaryTransport === transport ? "default" : "outline"}
+                    className="cursor-pointer p-3 text-center justify-center hover:bg-primary/20"
+                    onClick={() => setFormData(prev => ({ ...prev, primaryTransport: transport }))}
+                  >
+                    {transport}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="space-y-6">
+            <div>
               <h2 className="text-2xl font-bold mb-2">Kontrakt</h2>
               <p className="text-muted-foreground">Læs og accepter vores kontrakt</p>
             </div>
@@ -294,6 +330,7 @@ const BoosterSignup = () => {
                 <p>Telefon: {formData.phone}</p>
                 <p>Adresse: {formData.address}</p>
                 <p>{formData.businessType === 'cvr' ? `CVR-nummer: ${formData.cvrNumber}` : `CPR-nummer: ${formData.cprNumber}`}</p>
+                <p>Primært transportmiddel: {formData.primaryTransport}</p>
                 <br />
                 <p><strong>Aftale indgået:</strong> {new Date().toLocaleDateString('da-DK')}</p>
               </div>
@@ -304,27 +341,29 @@ const BoosterSignup = () => {
                   
                   <p><strong>1. Services og transport:</strong> Du udfører beauty services på kunders adresser. Du vælger selv transportmiddel (cykel, offentlig transport, bil) og betaler alle omkostninger forbundet hermed. Du er ansvarlig for at møde rettidigt og skal tage højde for parkering, billet eller pendlerkort.</p>
                   
-                  <p><strong>2. Bøder og afgifter:</strong> Hvis du får parkerings- eller transportbøder under udførelse af opgaver, er det BeautyBoosters økonomisk uvedkommende. Du bærer selv alle risici forbundet med dit valgte transportmiddel.</p>
+                  <p><strong>2. Kørselsgebyr og radius:</strong> Kunder udenfor din valgte køreradius kan ikke lave øjeblikkelige bookinger, men skal sende forespørgsler. Der kan blive pålagt kørselsgebyr for kunder udenfor din radius efter aftale.</p>
                   
-                  <p><strong>3. Betaling:</strong> Du får 60% af totalbeløbet uden moms. Udbetaling sker månedligt som {formData.businessType === 'cvr' ? 'faktura (send senest d. 28.)' : 'B-indkomst via lønseddel'}. Ved utilfredshed hvor kunden ikke betaler grundet bevist forsømmelighed, modtager du ikke løn.</p>
+                  <p><strong>3. Bøder og afgifter:</strong> Hvis du får parkerings- eller transportbøder under udførelse af opgaver, er det BeautyBoosters økonomisk uvedkommende. Du bærer selv alle risici forbundet med dit valgte transportmiddel.</p>
                   
-                  <p><strong>4. Forsikring og ansvar:</strong> Du skal have gyldig ansvars-, ulykke- og arbejdsskadeforsikring. Ved tab eller tyveri af udstyr udleveret af BeautyBoosters skal dette dækkes af din forsikring. Du hæfter personligt hvis du ikke er forsikret.</p>
+                  <p><strong>4. Betaling:</strong> Du får 60% af totalbeløbet uden moms. Udbetaling sker månedligt som {formData.businessType === 'cvr' ? 'faktura (send senest d. 28.)' : 'B-indkomst via lønseddel'}. Ved utilfredshed hvor kunden ikke betaler grundet bevist forsømmelighed, modtager du ikke løn.</p>
                   
-                  <p><strong>5. Professionalisme:</strong> Lever høj kvalitet og engagement. Ved utilfredshed kan behandling kræves genudført gratis. Ved utilfredsstillende udførelse forbeholder BeautyBoosters sig ret til at opsige samarbejdet øjeblikkeligt.</p>
+                  <p><strong>5. Forsikring og ansvar:</strong> Du skal have gyldig ansvars-, ulykke- og arbejdsskadeforsikring. Ved tab eller tyveri af udstyr udleveret af BeautyBoosters skal dette dækkes af din forsikring. Du hæfter personligt hvis du ikke er forsikret.</p>
                   
-                  <p><strong>6. Konkurrenceklausul:</strong> Du må ikke kontakte BeautyBoosters' kunder direkte, dele kontaktoplysninger eller opfordre til direkte booking. Dette gælder alle kunder du har arbejdet for gennem BeautyBoosters. Overtrædelse fører til øjeblikkelig opsigelse og bod på kr. 10.000 pr. kunde.</p>
+                  <p><strong>6. Professionalisme:</strong> Lever høj kvalitet og engagement. Ved utilfredshed kan behandling kræves genudført gratis. Ved utilfredsstillende udførelse forbeholder BeautyBoosters sig ret til at opsige samarbejdet øjeblikkeligt.</p>
                   
-                  <p><strong>7. Sociale medier:</strong> Tag @beautyboostersdk når du poster om opgaver fra BeautyBoosters. Kunder må gerne skrive "Lavet af [dit navn] fra @beautyboostersdk" når de tagger dig. Du må ikke opfordre kunder til at tagge dig direkte.</p>
+                  <p><strong>7. Konkurrenceklausul:</strong> Du må ikke kontakte BeautyBoosters' kunder direkte, dele kontaktoplysninger eller opfordre til direkte booking. Dette gælder alle kunder du har arbejdet for gennem BeautyBoosters. Overtrædelse fører til øjeblikkelig opsigelse og bod på kr. 10.000 pr. kunde.</p>
                   
-                  <p><strong>8. Sygdom og afbud:</strong> Meld afbud senest kl. 08.00 eller 2 timer før første kunde på tlf. 71786575. Ved gentagne forsinkelser forbeholder BeautyBoosters sig ret til at ophøre samarbejdet. Du har ikke ret til løn under sygdom.</p>
+                  <p><strong>8. Sociale medier:</strong> Tag @beautyboostersdk når du poster om opgaver fra BeautyBoosters. Kunder må gerne skrive "Lavet af [dit navn] fra @beautyboostersdk" når de tagger dig. Du må ikke opfordre kunder til at tagge dig direkte.</p>
                   
-                  <p><strong>9. Misligholdelse:</strong> Ved væsentlig eller gentagen misligholdelse kan aftalen ophæves efter skriftligt påkrav med 10 dages afhjælpningsfrist. Hver part kan kræve erstatning for direkte dokumenterbare tab.</p>
+                  <p><strong>9. Sygdom og afbud:</strong> Meld afbud senest kl. 08.00 eller 2 timer før første kunde på tlf. 71786575. Ved gentagne forsinkelser forbeholder BeautyBoosters sig ret til at ophøre samarbejdet. Du har ikke ret til løn under sygdom.</p>
                   
-                  <p><strong>10. Opsigelse:</strong> Begge parter kan opsige med løbende måned plus en måned. Opsigelse sker skriftligt via e-mail.</p>
+                  <p><strong>10. Misligholdelse:</strong> Ved væsentlig eller gentagen misligholdelse kan aftalen ophæves efter skriftligt påkrav med 10 dages afhjælpningsfrist. Hver part kan kræve erstatning for direkte dokumenterbare tab.</p>
                   
-                  <p><strong>11. Databeskyttelse:</strong> Du samtykker til at BeautyBoosters håndterer dine persondata i henhold til databeskyttelsesloven. Dette inkluderer navn, adresse, e-mail, telefon, bank- og CPR/CVR-information.</p>
+                  <p><strong>11. Opsigelse:</strong> Begge parter kan opsige med løbende måned plus en måned. Opsigelse sker skriftligt via e-mail.</p>
                   
-                  <p><strong>12. Tvister:</strong> Afgøres ved danske domstole efter dansk ret.</p>
+                  <p><strong>12. Databeskyttelse:</strong> Du samtykker til at BeautyBoosters håndterer dine persondata i henhold til databeskyttelsesloven. Dette inkluderer navn, adresse, e-mail, telefon, bank- og CPR/CVR-information.</p>
+                  
+                  <p><strong>13. Tvister:</strong> Afgøres ved danske domstole efter dansk ret.</p>
                 </div>
               </div>
             </div>
