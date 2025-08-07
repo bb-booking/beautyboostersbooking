@@ -280,23 +280,47 @@ const BoosterSignup = () => {
               <p className="text-muted-foreground">Læs og accepter vores kontrakt</p>
             </div>
             
-            <div className="border rounded-lg p-4 h-64 overflow-y-auto bg-muted/50">
+            <div className="border rounded-lg p-4 h-80 overflow-y-auto bg-muted/50">
               <h3 className="font-semibold mb-2">BeautyBoosters Samarbejdsaftale</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Ved at tilmelde dig som Booster accepterer du følgende betingelser:
-              </p>
+              <div className="text-xs text-muted-foreground mb-4">
+                <p><strong>PARTER:</strong></p>
+                <p>BeautyBoosters ApS, CVR-nr. 40884505</p>
+                <p>Studiestræde 31C, 1455 København</p>
+                <p>Kontakt: Louise Bencard, +4571786575, louise@beautyboosters.dk</p>
+                <br />
+                <p><strong>LEVERANDØR:</strong></p>
+                <p>Navn: {formData.name}</p>
+                <p>Email: {formData.email}</p>
+                <p>Telefon: {formData.phone}</p>
+                <p>Adresse: {formData.address}</p>
+                <p>{formData.businessType === 'cvr' ? `CVR-nummer: ${formData.cvrNumber}` : `CPR-nummer: ${formData.cprNumber}`}</p>
+                <br />
+                <p><strong>Aftale indgået:</strong> {new Date().toLocaleDateString('da-DK')}</p>
+              </div>
               
-              <div className="space-y-3 text-sm">
-                <p>1. Du forpligter dig til at levere professionelle services af høj kvalitet.</p>
-                <p>2. Du skal overholde aftalt mødetid og informere i god tid ved afbud.</p>
-                <p>3. Du er ansvarlig for dit eget udstyr og materialer.</p>
-                <p>4. BeautyBoosters tager en provision på 15% af hver booking.</p>
-                <p>5. Udbetaling sker månedligt via bankoverførsel.</p>
-                <p>6. Du skal have gyldig ansvarsforsikring.</p>
-                <p>7. Kundedata må ikke anvendes til andre formål end den bookede service.</p>
-                <p>8. Samarbejdet kan opsiges af begge parter med 30 dages varsel.</p>
-                <p>9. Du accepterer at modtage notifikationer om relevante jobs.</p>
-                <p>10. Alle tvister afgøres efter dansk ret ved danske domstole.</p>
+              <div className="space-y-3 text-xs">
+                <div>
+                  <h4 className="font-semibold">Hovepunkter:</h4>
+                  <p><strong>1. Services:</strong> Du udfører beauty services på kunders adresser. Du er ansvarlig for transport og at møde rettidigt.</p>
+                  
+                  <p><strong>2. Betaling:</strong> Du får 60% af totalbeløbet uden moms. Udbetaling sker månedligt som {formData.businessType === 'cvr' ? 'faktura (send senest d. 28.)' : 'B-indkomst via lønseddel'}.</p>
+                  
+                  <p><strong>3. Forsikring:</strong> Du skal have gyldig ansvars- og arbejdsskadeforsikring.</p>
+                  
+                  <p><strong>4. Professionalisme:</strong> Lever høj kvalitet. Ved utilfredshed kan behandling kræves genudført gratis.</p>
+                  
+                  <p><strong>5. Konkurrence:</strong> Du må ikke kontakte BeautyBoosters' kunder direkte eller opfordre til direkte booking. Overtrædelse fører til øjeblikkelig opsigelse og bod på kr. 10.000 pr. kunde.</p>
+                  
+                  <p><strong>6. Sociale medier:</strong> Tag @beautyboostersdk når du poster om opgaver fra BeautyBoosters.</p>
+                  
+                  <p><strong>7. Sygdom:</strong> Meld afbud senest kl. 08.00 eller 2 timer før første kunde på tlf. 71786575.</p>
+                  
+                  <p><strong>8. Opsigelse:</strong> Begge parter kan opsige med løbende måned plus en måned.</p>
+                  
+                  <p><strong>9. Databeskyttelse:</strong> Du samtykker til at BeautyBoosters håndterer dine persondata i henhold til databeskyttelsesloven.</p>
+                  
+                  <p><strong>10. Tvister:</strong> Afgøres ved danske domstole efter dansk ret.</p>
+                </div>
               </div>
             </div>
             
