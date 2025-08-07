@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ServiceCard from "@/components/services/ServiceCard";
 import CartFooter from "@/components/cart/CartFooter";
@@ -30,6 +30,7 @@ interface Service {
 
 const Services = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,7 +40,27 @@ const Services = () => {
 
   useEffect(() => {
     fetchServices();
-  }, []);
+    
+    // Check for URL parameters or sessionStorage
+    const urlClient = searchParams.get('client');
+    const urlCategory = searchParams.get('category');
+    const storedClient = sessionStorage.getItem('selectedClientType');
+    const storedCategory = sessionStorage.getItem('selectedCategory');
+    
+    if (urlClient) {
+      setClientType(urlClient as 'privat' | 'virksomhed');
+    } else if (storedClient) {
+      setClientType(storedClient as 'privat' | 'virksomhed');
+      sessionStorage.removeItem('selectedClientType');
+    }
+    
+    if (urlCategory) {
+      setCategoryFilter(urlCategory);
+    } else if (storedCategory) {
+      setCategoryFilter(storedCategory);
+      sessionStorage.removeItem('selectedCategory');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     filterServices();
