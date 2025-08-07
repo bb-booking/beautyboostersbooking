@@ -51,11 +51,11 @@ const ServiceCard = ({
     if (category === "Virksomhed") {
       basePrice = price * boosters;
     } else {
-      // For private services: use group pricing or base price * people
+      // For private services: use group pricing or base price * people, then multiply by boosters
       if (groupPricing && people <= 4) {
-        basePrice = groupPricing[people as keyof typeof groupPricing];
+        basePrice = groupPricing[people as keyof typeof groupPricing] * boosters;
       } else {
-        basePrice = price * people;
+        basePrice = price * people * boosters;
       }
     }
     
@@ -64,7 +64,7 @@ const ServiceCard = ({
       if (category === "Virksomhed") {
         basePrice += extraHours * extraHourPrice * boosters;
       } else {
-        basePrice += extraHours * extraHourPrice * people;
+        basePrice += extraHours * extraHourPrice * people * boosters;
       }
     }
     
@@ -163,32 +163,30 @@ const ServiceCard = ({
               </div>
             )}
 
-            {/* Boosters selector - only for business services */}
-            {category === "Virksomhed" && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Antal boosters:</span>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={decrementBoosters}
-                    disabled={boosters <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center font-medium">{boosters}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={incrementBoosters}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+            {/* Boosters selector - for both private and business services */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Antal boosters:</span>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={decrementBoosters}
+                  disabled={boosters <= 1}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-8 text-center font-medium">{boosters}</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={incrementBoosters}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-            )}
+            </div>
 
             {/* Extra hours selector - only show for services with extra hours */}
             {hasExtraHours && (
