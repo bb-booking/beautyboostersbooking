@@ -6,9 +6,12 @@ const Header = () => {
   return (
     <header className="border-b bg-primary backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-3">
-          <span className="text-3xl font-bold text-primary-foreground tracking-wider">BEAUTY</span>
-          <span className="text-3xl font-bold text-background tracking-wider">BOOSTERS</span>
+        <Link to="/" className="flex items-center">
+          <img 
+            src="/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png" 
+            alt="BeautyBoosters Logo" 
+            className="h-12 w-auto"
+          />
         </Link>
         
         <nav className="hidden md:flex items-center space-x-6">
@@ -16,7 +19,7 @@ const Header = () => {
             Services
           </Link>
           <Link to="/stylists" className="text-primary-foreground hover:text-background transition-colors">
-            Stylister
+            Boosters
           </Link>
           <Link to="/bookings" className="text-primary-foreground hover:text-background transition-colors">
             Mine Bookinger
