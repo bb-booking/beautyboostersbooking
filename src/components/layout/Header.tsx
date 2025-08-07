@@ -8,9 +8,9 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <img 
-            src="/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png" 
+            src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
             alt="BeautyBoosters Logo" 
-            className="h-12 w-auto"
+            className="h-12 w-auto mix-blend-multiply"
           />
         </Link>
         
