@@ -33,25 +33,115 @@ const Services = () => {
 
   const fetchServices = async () => {
     try {
-      // Mock data until database is set up
+      // Services based on BeautyBoosters website
       const mockServices = [
         {
           id: '1',
-          name: 'Bryllup Makeup',
-          description: 'Professionel bryllup makeup med langvarig finish',
-          price: 1500,
-          duration: 2,
+          name: 'Makeup Styling (1 person)',
+          description: 'Professionel makeup styling til enhver lejlighed',
+          price: 1999,
+          duration: 1,
           category: 'Makeup',
+          difficulty: 'Begynder'
+        },
+        {
+          id: '2',
+          name: 'Hårstyling / håropsætning (1 person)',
+          description: 'Professionel hårstyling eller opsætning',
+          price: 1999,
+          duration: 1,
+          category: 'Hår',
+          difficulty: 'Begynder'
+        },
+        {
+          id: '3',
+          name: 'Makeup & Hårstyling (1 person)',
+          description: 'Makeup & Hårstyling - hvilket look drømmer du om til dit næste event?',
+          price: 2999,
+          duration: 1.5,
+          category: 'Kombineret',
+          difficulty: 'Mellem'
+        },
+        {
+          id: '4',
+          name: 'Spraytan (1 person)',
+          description: 'Skræddersyet spraytan med high-end væske som er lugtfri og giver naturlige nuancer',
+          price: 499,
+          duration: 0.5,
+          category: 'Solning',
+          difficulty: 'Begynder'
+        },
+        {
+          id: '5',
+          name: 'Konfirmationsstyling - Makeup OG Hårstyling',
+          description: 'Lad os stå for stylingen på din store dag. Professionel makeup artist direkte til døren',
+          price: 2999,
+          duration: 1.5,
+          category: 'Konfirmation',
+          difficulty: 'Mellem'
+        },
+        {
+          id: '6',
+          name: 'Brudestyling - Hår & Makeup (uden prøvestyling)',
+          description: 'Lad os style dig til dit bryllup og give dig det bedste udgangspunkt for den perfekte dag',
+          price: 4999,
+          duration: 3,
+          category: 'Bryllup',
           difficulty: 'Ekspert'
         },
         {
-          id: '2', 
-          name: 'Fest Hår',
-          description: 'Elegant opsætning til fest og galla',
-          price: 800,
+          id: '7',
+          name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)',
+          description: 'Professionel brudestyling med prøvestyling. Bliv den smukkeste udgave af dig selv',
+          price: 6499,
+          duration: 4.5,
+          category: 'Bryllup',
+          difficulty: 'Ekspert'
+        },
+        {
+          id: '8',
+          name: '1:1 Makeup Session',
+          description: 'Lær at lægge den perfekte makeup af en professionel makeupartist',
+          price: 2499,
           duration: 1.5,
-          category: 'Hår',
+          category: 'Undervisning',
+          difficulty: 'Begynder'
+        },
+        {
+          id: '9',
+          name: 'The Beauty Bar (makeup kursus)',
+          description: 'Makeup kursus på 3 timer for op til 10 personer. Lær både hverdags- og gå-i-byen look',
+          price: 4499,
+          duration: 3,
+          category: 'Undervisning',
           difficulty: 'Mellem'
+        },
+        {
+          id: '10',
+          name: 'Makeup Artist til Touch Up (3 timer)',
+          description: 'Makeup artist til rådighed i 3 timer - du bestemmer hvordan tiden fordeles',
+          price: 4499,
+          duration: 3,
+          category: 'Event',
+          difficulty: 'Mellem'
+        },
+        {
+          id: '11',
+          name: 'Ansigtsmaling til børn',
+          description: 'Sjov ansigtsmaling til børn til events og fester',
+          price: 4499,
+          duration: 3,
+          category: 'Børn',
+          difficulty: 'Begynder'
+        },
+        {
+          id: '12',
+          name: 'Makeup Artist til Shoot/Event/Film/TV',
+          description: 'Professionel makeup artist til dit næste projekt - op til tre timer',
+          price: 4499,
+          duration: 3,
+          category: 'Professionelt',
+          difficulty: 'Ekspert'
         }
       ];
       setServices(mockServices);
@@ -127,8 +217,14 @@ const Services = () => {
               <SelectItem value="all">Alle Kategorier</SelectItem>
               <SelectItem value="Makeup">Makeup</SelectItem>
               <SelectItem value="Hår">Hår</SelectItem>
-              <SelectItem value="Negle">Negle</SelectItem>
-              <SelectItem value="Bryn & Vipper">Bryn & Vipper</SelectItem>
+              <SelectItem value="Kombineret">Kombineret</SelectItem>
+              <SelectItem value="Solning">Solning</SelectItem>
+              <SelectItem value="Konfirmation">Konfirmation</SelectItem>
+              <SelectItem value="Bryllup">Bryllup</SelectItem>
+              <SelectItem value="Undervisning">Undervisning</SelectItem>
+              <SelectItem value="Event">Event</SelectItem>
+              <SelectItem value="Børn">Børn</SelectItem>
+              <SelectItem value="Professionelt">Professionelt</SelectItem>
             </SelectContent>
           </Select>
 
