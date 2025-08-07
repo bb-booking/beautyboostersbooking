@@ -63,12 +63,12 @@ const Booking = () => {
   const [loadingBoosters, setLoadingBoosters] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
 
-  // Generate time slots in 30-minute intervals
+  // Generate time slots in 30-minute intervals from 06:00-23:00
   const generateTimeSlots = () => {
     const slots = [];
-    for (let hour = 8; hour <= 20; hour++) {
+    for (let hour = 6; hour <= 23; hour++) {
       slots.push(`${hour.toString().padStart(2, '0')}:00`);
-      if (hour < 20) {
+      if (hour < 23) {
         slots.push(`${hour.toString().padStart(2, '0')}:30`);
       }
     }
