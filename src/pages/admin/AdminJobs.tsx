@@ -24,6 +24,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import JobChat from "@/components/job/JobChat";
+import InvoiceCreator from "@/components/invoice/InvoiceCreator";
 
 interface Job {
   id: string;
@@ -802,6 +803,12 @@ Eksempel på notifikation som booster vil modtage.`;
                     <MessageSquare className="h-4 w-4 mr-1" />
                     Chat
                   </Button>
+                  {job.client_type === 'virksomhed' && (
+                    <InvoiceCreator 
+                      job={job} 
+                      onInvoiceSent={() => fetchJobs()} 
+                    />
+                  )}
                   <Button variant="outline" size="sm">
                     <Eye className="h-4 w-4 mr-1" />
                     Se ansøgninger

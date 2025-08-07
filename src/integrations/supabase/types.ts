@@ -197,6 +197,68 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          customer_email: string | null
+          customer_name: string
+          due_date: string | null
+          economic_invoice_id: number | null
+          id: string
+          invoice_number: string | null
+          job_id: string | null
+          sent_at: string | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+          vat_amount: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          customer_name: string
+          due_date?: string | null
+          economic_invoice_id?: number | null
+          id?: string
+          invoice_number?: string | null
+          job_id?: string | null
+          sent_at?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+          vat_amount?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          due_date?: string | null
+          economic_invoice_id?: number | null
+          id?: string
+          invoice_number?: string | null
+          job_id?: string | null
+          sent_at?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           applied_at: string
@@ -366,6 +428,8 @@ export type Database = {
           duration_hours: number | null
           hourly_rate: number
           id: string
+          invoice_id: string | null
+          invoice_sent: boolean | null
           location: string
           required_skills: string[] | null
           service_type: string
@@ -388,6 +452,8 @@ export type Database = {
           duration_hours?: number | null
           hourly_rate: number
           id?: string
+          invoice_id?: string | null
+          invoice_sent?: boolean | null
           location: string
           required_skills?: string[] | null
           service_type: string
@@ -410,6 +476,8 @@ export type Database = {
           duration_hours?: number | null
           hourly_rate?: number
           id?: string
+          invoice_id?: string | null
+          invoice_sent?: boolean | null
           location?: string
           required_skills?: string[] | null
           service_type?: string
@@ -418,7 +486,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jobs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
