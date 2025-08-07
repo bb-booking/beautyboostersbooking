@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Clock, MapPin, User, Star, Send } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, User, Star, Send, CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -246,87 +247,118 @@ const Booking = () => {
           </p>
         </div>
 
-        {/* Date & Time Selection */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Vælg dato og tidspunkt
-              </CardTitle>
-              <CardDescription>
-                Tidspunkter er i 30-minutters intervaller
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <Label className="text-base font-medium mb-3 block">Dato</Label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                  className={cn("rounded-md border pointer-events-auto")}
-                  locale={da}
-                />
+        {/* Date & Time Selection - Compact Layout */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Vælg dato og tidspunkt
+            </CardTitle>
+            <CardDescription>
+              Vælg dit foretrukne tidspunkt for behandlingen
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              {/* Date Picker - Compact */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Dato</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP", { locale: da }) : "Vælg dato"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                      className={cn("rounded-md border pointer-events-auto")}
+                      locale={da}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {selectedDate && (
-                <div>
-                  <Label className="text-base font-medium mb-3 block">Tidspunkt</Label>
-                  <Select value={selectedTime} onValueChange={setSelectedTime}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Vælg et tidspunkt" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              {/* Time Picker */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Tidspunkt</Label>
+                <Select value={selectedTime} onValueChange={setSelectedTime} disabled={!selectedDate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vælg tidspunkt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeSlots.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Service Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Booking oversigt</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              {/* Next Available Time Button */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium opacity-0">Næste</Label>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    // Set to tomorrow at 09:00 as next available
+                    const tomorrow = addDays(new Date(), 1);
+                    setSelectedDate(tomorrow);
+                    setSelectedTime("09:00");
+                    toast.success("Næste ledige tid valgt");
+                  }}
+                >
+                  Næste ledige tid
+                </Button>
+              </div>
+            </div>
+
+            {/* Selected Summary */}
+            {selectedDate && selectedTime && (
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span>
+                    <strong>{format(selectedDate, 'EEEE d. MMMM yyyy', { locale: da })}</strong> kl. {selectedTime}
+                  </span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Service Summary - More Compact */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold">{service.name}</h3>
-                <Badge variant="outline" className="mt-1">{service.category}</Badge>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Varighed:</span>
-                  <span>{service.duration} time{service.duration > 1 ? 'r' : ''}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className="text-xs">{service.category}</Badge>
+                  <span className="text-sm text-muted-foreground">{service.duration} time{service.duration > 1 ? 'r' : ''}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Startpris:</span>
-                  <span className="font-medium">{service.price} kr</span>
-                </div>
-                {selectedDate && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Dato:</span>
-                    <span>{format(selectedDate, 'PPP', { locale: da })}</span>
-                  </div>
-                )}
-                {selectedTime && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tidspunkt:</span>
-                    <span>{selectedTime}</span>
-                  </div>
-                )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="text-right">
+                <div className="font-semibold">Fra {service.price} kr</div>
+                <div className="text-sm text-muted-foreground">
+                  {bookingDetails.location.city}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Available Boosters */}
         {selectedDate && selectedTime && (
