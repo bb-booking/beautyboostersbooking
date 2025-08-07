@@ -71,12 +71,12 @@ const StylistDetail = () => {
       <div className="container mx-auto px-4 py-8">
         <Link to="/stylists" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" />
-          Tilbage til stylister
+          Tilbage til Boosters
         </Link>
         <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold mb-2">Stylist ikke fundet</h2>
+          <h2 className="text-2xl font-semibold mb-2">Booster ikke fundet</h2>
           <p className="text-muted-foreground">
-            Den stylist du leder efter eksisterer ikke.
+            Den Booster du leder efter eksisterer ikke.
           </p>
         </div>
       </div>
@@ -87,7 +87,7 @@ const StylistDetail = () => {
     <div className="container mx-auto px-4 py-8">
       <Link to="/stylists" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-4 w-4" />
-        Tilbage til stylister
+        Tilbage til Boosters
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

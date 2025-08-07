@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      booster_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          hourly_rate: number
+          id: string
+          is_available: boolean | null
+          location: string
+          name: string
+          portfolio_image_url: string | null
+          rating: number | null
+          review_count: number | null
+          specialties: string[]
+          updated_at: string
+          years_experience: number | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          hourly_rate: number
+          id?: string
+          is_available?: boolean | null
+          location: string
+          name: string
+          portfolio_image_url?: string | null
+          rating?: number | null
+          review_count?: number | null
+          specialties?: string[]
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          hourly_rate?: number
+          id?: string
+          is_available?: boolean | null
+          location?: string
+          name?: string
+          portfolio_image_url?: string | null
+          rating?: number | null
+          review_count?: number | null
+          specialties?: string[]
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

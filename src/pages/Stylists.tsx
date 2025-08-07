@@ -117,7 +117,7 @@ const Stylists = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-center mb-4">Vores Talentfulde Stylister</h1>
+        <h1 className="text-4xl font-bold text-center mb-4">Vores Talentfulde Boosters</h1>
         <p className="text-muted-foreground text-center max-w-2xl mx-auto">
           Book din næste skønhedsbehandling med en af vores professionelle makeup artists og hårstylister
         </p>
@@ -126,7 +126,7 @@ const Stylists = () => {
       <div className="mb-8 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <Input
-            placeholder="Søg efter stylist eller specialitet..."
+            placeholder="Søg efter Booster eller specialitet..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="md:max-w-sm"
@@ -228,7 +228,7 @@ const Stylists = () => {
 
       {filteredBoosters.length === 0 && !loading && (
         <div className="text-center py-12">
-          <h3 className="text-xl font-semibold mb-2">Ingen stylister fundet</h3>
+          <h3 className="text-xl font-semibold mb-2">Ingen Boosters fundet</h3>
           <p className="text-muted-foreground">
             Prøv at justere dine søgekriterier
           </p>
