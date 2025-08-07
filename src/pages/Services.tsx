@@ -172,8 +172,8 @@ const Services = () => {
   };
 
   const handleServiceClick = (serviceId: string) => {
-    // Navigate to booking page or open booking modal
-    console.log('Book service:', serviceId);
+    // Navigate to address page with selected service
+    window.location.href = `/address?service=${serviceId}`;
   };
 
   if (loading) {

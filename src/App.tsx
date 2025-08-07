@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import Header from "@/components/layout/Header";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
+import Address from "./pages/Address";
 import Stylists from "./pages/Stylists";
 import StylistDetail from "./pages/StylistDetail";
 import Booking from "./pages/Booking";
@@ -29,9 +30,11 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/services" element={<Services />} />
+                <Route path="/address" element={<Address />} />
                 <Route path="/stylists" element={<Stylists />} />
                 <Route path="/stylist/:id" element={<StylistDetail />} />
                 <Route path="/book/:id" element={<Booking />} />
+                <Route path="/booking" element={<Booking />} />
                 <Route path="/booking-confirmation" element={<BookingConfirmation />} />
                 <Route path="/bookings" element={<Bookings />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
