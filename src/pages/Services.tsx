@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ServiceCard from "@/components/services/ServiceCard";
 import CartFooter from "@/components/cart/CartFooter";
@@ -28,6 +29,7 @@ interface Service {
 }
 
 const Services = () => {
+  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -291,10 +293,10 @@ const Services = () => {
     const service = services.find(s => s.id === serviceId);
     if (service?.isInquiry) {
       // Navigate to inquiry form for inquiry-based services
-      window.location.href = `/inquiry?service=${serviceId}`;
+      navigate(`/inquiry?service=${serviceId}`);
     } else {
       // Navigate to address page with selected service
-      window.location.href = `/address?service=${serviceId}`;
+      navigate(`/address?service=${serviceId}`);
     }
   };
 
