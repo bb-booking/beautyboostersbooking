@@ -122,14 +122,29 @@ const Booking = () => {
       // Mock service data - replace with actual API call
       const mockServices = {
         '1': { id: '1', name: 'Makeup Styling', price: 1999, duration: 1, category: 'Makeup & Hår' },
-        '2': { id: '2', name: 'Bryllups Makeup', price: 2999, duration: 2, category: 'Makeup & Hår' },
-        '3': { id: '3', name: 'Event Makeup', price: 1499, duration: 1, category: 'Makeup & Hår' },
+        '2': { id: '2', name: 'Bryllups Makeup', price: 2999, duration: 2, category: 'Bryllup' },
+        '3': { id: '3', name: 'Event Makeup', price: 1499, duration: 1, category: 'Events' },
+        '4': { id: '4', name: 'Shoot/Reklame Makeup', price: 2499, duration: 2, category: 'Shoot/Reklame' },
+        '5': { id: '5', name: 'SFX Makeup', price: 3499, duration: 3, category: 'SFX' },
+        '6': { id: '6', name: 'Hårstyling', price: 1799, duration: 1, category: 'Makeup & Hår' },
+        '7': { id: '7', name: 'Komplet Makeover', price: 2799, duration: 2, category: 'Makeup & Hår' },
+        '8': { id: '8', name: 'Bryllups Hår', price: 2199, duration: 2, category: 'Bryllup' },
       };
       
-      const serviceData = mockServices[serviceId as keyof typeof mockServices];
-      if (serviceData) {
-        setService(serviceData);
+      let serviceData = mockServices[serviceId as keyof typeof mockServices];
+      
+      // If specific service ID not found, use a default service
+      if (!serviceData) {
+        serviceData = { 
+          id: serviceId, 
+          name: 'Beauty Service', 
+          price: 1999, 
+          duration: 1, 
+          category: 'Makeup & Hår' 
+        };
       }
+      
+      setService(serviceData);
     } catch (error) {
       console.error('Error fetching service:', error);
       toast.error("Kunne ikke hente service information");
