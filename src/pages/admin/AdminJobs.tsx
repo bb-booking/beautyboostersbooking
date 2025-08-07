@@ -52,6 +52,19 @@ interface Service {
   category: string;
 }
 
+interface JobService {
+  service_id: string;
+  service_name: string;
+  service_price: number;
+  people_count: number;
+}
+
+interface CompetenceTag {
+  id: string;
+  name: string;
+  category: string;
+}
+
 interface BoosterProfile {
   id: string;
   name: string;
@@ -64,6 +77,7 @@ const AdminJobs = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [boosters, setBoosters] = useState<BoosterProfile[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [competenceTags, setCompetenceTags] = useState<CompetenceTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -72,19 +86,23 @@ const AdminJobs = () => {
   const [newJob, setNewJob] = useState({
     title: "",
     description: "",
-    service_type: "",
     location: "",
-    required_skills: [] as string[],
-    hourly_rate: 0,
     date_needed: "",
     time_needed: "",
     duration_hours: 0,
     client_name: "",
-    client_email: "",
-    client_phone: "",
     client_type: "privat" as 'privat' | 'virksomhed',
-    boosters_needed: 1
+    boosters_needed: 1,
+    selectedServices: [] as JobService[],
+    selectedCompetenceTags: [] as string[]
   });
+
+  // Calculate total price from all selected services
+  const calculateTotalPrice = () => {
+    return newJob.selectedServices.reduce((total, service) => {
+      return total + (service.service_price * service.people_count);
+    }, 0);
+  };
 
   // Calculate BeautyBoosters cut and booster earnings
   const calculateEarnings = (price: number, clientType: 'privat' | 'virksomhed') => {
@@ -124,6 +142,7 @@ const AdminJobs = () => {
     fetchJobs();
     fetchBoosters();
     fetchServices();
+    fetchCompetenceTags();
   }, []);
 
   const fetchServices = async () => {
@@ -153,6 +172,20 @@ const AdminJobs = () => {
     ];
     
     setServices(allServices);
+  };
+
+  const fetchCompetenceTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('competence_tags')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (error) throw error;
+      setCompetenceTags(data || []);
+    } catch (error) {
+      console.error('Error fetching competence tags:', error);
+    }
   };
 
   const fetchJobs = async () => {
@@ -187,34 +220,76 @@ const AdminJobs = () => {
 
   const createJob = async () => {
     try {
-      const { data, error } = await supabase
+      const totalPrice = calculateTotalPrice();
+      const serviceTypes = newJob.selectedServices.map(s => s.service_name).join(', ');
+      
+      const { data: jobData, error: jobError } = await supabase
         .from('jobs')
         .insert([{
-          ...newJob,
+          title: newJob.title,
+          description: newJob.description,
+          service_type: serviceTypes,
+          location: newJob.location,
+          required_skills: newJob.selectedCompetenceTags,
+          hourly_rate: totalPrice,
+          date_needed: newJob.date_needed,
+          time_needed: newJob.time_needed,
+          duration_hours: newJob.duration_hours,
+          client_name: newJob.client_name,
+          client_type: newJob.client_type,
+          boosters_needed: newJob.boosters_needed,
           created_by: 'admin'
         }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (jobError) throw jobError;
+
+      // Insert job services
+      if (newJob.selectedServices.length > 0) {
+        const { error: servicesError } = await supabase
+          .from('job_services')
+          .insert(
+            newJob.selectedServices.map(service => ({
+              job_id: jobData.id,
+              service_id: service.service_id,
+              service_name: service.service_name,
+              service_price: service.service_price,
+              people_count: service.people_count
+            }))
+          );
+
+        if (servicesError) throw servicesError;
+      }
+
+      // Insert competence tags
+      if (newJob.selectedCompetenceTags.length > 0) {
+        const { error: tagsError } = await supabase
+          .from('job_competence_tags')
+          .insert(
+            newJob.selectedCompetenceTags.map(tagId => ({
+              job_id: jobData.id,
+              competence_tag_id: tagId
+            }))
+          );
+
+        if (tagsError) throw tagsError;
+      }
 
       toast.success('Job oprettet og sendt til relevante boosters!');
       setShowCreateDialog(false);
       setNewJob({
         title: "",
         description: "",
-        service_type: "",
         location: "",
-        required_skills: [],
-        hourly_rate: 0,
         date_needed: "",
         time_needed: "",
         duration_hours: 0,
         client_name: "",
-        client_email: "",
-        client_phone: "",
         client_type: "privat",
-        boosters_needed: 1
+        boosters_needed: 1,
+        selectedServices: [],
+        selectedCompetenceTags: []
       });
       fetchJobs();
     } catch (error) {
@@ -223,16 +298,51 @@ const AdminJobs = () => {
     }
   };
 
-  const handleServiceChange = (serviceId: string) => {
+  const addService = (serviceId: string) => {
     const service = services.find(s => s.id === serviceId);
-    if (service) {
+    if (service && !newJob.selectedServices.find(s => s.service_id === serviceId)) {
       setNewJob(prev => ({
         ...prev,
-        service_type: service.name,
-        hourly_rate: service.price,
-        client_type: service.clientType
+        selectedServices: [...prev.selectedServices, {
+          service_id: service.id,
+          service_name: service.name,
+          service_price: service.price,
+          people_count: 1
+        }]
       }));
     }
+  };
+
+  const removeService = (serviceId: string) => {
+    setNewJob(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.filter(s => s.service_id !== serviceId)
+    }));
+  };
+
+  const updateServicePeopleCount = (serviceId: string, count: number) => {
+    setNewJob(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.map(s => 
+        s.service_id === serviceId ? { ...s, people_count: Math.max(1, count) } : s
+      )
+    }));
+  };
+
+  const addCompetenceTag = (tagId: string) => {
+    if (!newJob.selectedCompetenceTags.includes(tagId)) {
+      setNewJob(prev => ({
+        ...prev,
+        selectedCompetenceTags: [...prev.selectedCompetenceTags, tagId]
+      }));
+    }
+  };
+
+  const removeCompetenceTag = (tagId: string) => {
+    setNewJob(prev => ({
+      ...prev,
+      selectedCompetenceTags: prev.selectedCompetenceTags.filter(id => id !== tagId)
+    }));
   };
 
   const getStatusColor = (status: string) => {
@@ -267,22 +377,6 @@ const AdminJobs = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const addSkill = (skill: string) => {
-    if (!newJob.required_skills.includes(skill)) {
-      setNewJob(prev => ({
-        ...prev,
-        required_skills: [...prev.required_skills, skill]
-      }));
-    }
-  };
-
-  const removeSkill = (skill: string) => {
-    setNewJob(prev => ({
-      ...prev,
-      required_skills: prev.required_skills.filter(s => s !== skill)
-    }));
-  };
-
   const getEligibleBoosters = (job: Job) => {
     return boosters.filter(booster => 
       booster.location === job.location &&
@@ -291,7 +385,6 @@ const AdminJobs = () => {
        job.required_skills.some(skill => booster.specialties.includes(skill)))
     ).length;
   };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -308,6 +401,13 @@ const AdminJobs = () => {
       </div>
     );
   }
+
+  // Example notification message
+  const exampleNotification = `Nyt job tilgængeligt: Bryllupsstyling for Anna
+
+Service: Makeup & Hårstyling, Spraytan | Lokation: København | Dato: 2024-06-15 kl. 14:00 | Pris: 3498 DKK (inkl. moms) | 2 boosters søges
+
+Eksempel på notifikation som booster vil modtage.`;
 
   return (
     <div className="space-y-6">
@@ -328,15 +428,6 @@ const AdminJobs = () => {
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Job titel *</Label>
-                  <Input
-                    id="title"
-                    value={newJob.title}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="F.eks. Bryllupsmakeup i Aarhus"
-                  />
-                </div>
-                <div>
                   <Label htmlFor="client_type">Klient type *</Label>
                   <Select value={newJob.client_type} onValueChange={(value: 'privat' | 'virksomhed') => setNewJob(prev => ({ ...prev, client_type: value }))}>
                     <SelectTrigger>
@@ -345,29 +436,6 @@ const AdminJobs = () => {
                     <SelectContent>
                       <SelectItem value="privat">Privat</SelectItem>
                       <SelectItem value="virksomhed">Virksomhed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="service_type">Service *</Label>
-                  <Select 
-                    value={services.find(s => s.name === newJob.service_type)?.id || ""} 
-                    onValueChange={handleServiceChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Vælg service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {services
-                        .filter(service => service.clientType === newJob.client_type)
-                        .map(service => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name} - {service.price > 0 ? `${service.price} DKK` : 'Tilbud'}
-                          </SelectItem>
-                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -382,6 +450,67 @@ const AdminJobs = () => {
                     placeholder="1"
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label>Tilføj services *</Label>
+                <div className="space-y-3">
+                  {newJob.selectedServices.map((service, index) => (
+                    <div key={service.service_id} className="flex items-center gap-3 p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <span className="font-medium">{service.service_name}</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {service.service_price} DKK
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">Antal personer:</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={service.people_count}
+                          onChange={(e) => updateServicePeopleCount(service.service_id, parseInt(e.target.value) || 1)}
+                          className="w-20"
+                        />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => removeService(service.service_id)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  <Select onValueChange={addService}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tilføj service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services
+                        .filter(service => 
+                          service.clientType === newJob.client_type && 
+                          !newJob.selectedServices.find(s => s.service_id === service.id)
+                        )
+                        .map(service => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} - {service.price > 0 ? `${service.price} DKK` : 'Tilbud'}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="title">Job titel *</Label>
+                <Input
+                  id="title"
+                  value={newJob.title}
+                  onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="F.eks. Bryllupsmakeup i Aarhus"
+                />
               </div>
 
               <div>
@@ -410,32 +539,46 @@ const AdminJobs = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="hourly_rate">Pris (DKK) *</Label>
+                  <Label htmlFor="client_name">Klient navn</Label>
                   <Input
-                    id="hourly_rate"
-                    type="number"
-                    value={newJob.hourly_rate}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, hourly_rate: parseInt(e.target.value) || 0 }))}
-                    placeholder="1999"
+                    id="client_name"
+                    value={newJob.client_name}
+                    onChange={(e) => setNewJob(prev => ({ ...prev, client_name: e.target.value }))}
+                    placeholder="Anna Hansen"
                   />
-                  {newJob.hourly_rate > 0 && (
-                    <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                      {(() => {
-                        const earnings = calculateEarnings(newJob.hourly_rate, newJob.client_type);
-                        return (
-                          <>
-                            <div>BeautyBoosters: {Math.round(earnings.beautyBoostersCut)} DKK (40%)</div>
-                            <div>Booster: {Math.round(earnings.boosterEarnings)} DKK</div>
-                            {newJob.client_type === 'privat' && (
-                              <div className="text-orange-600">Inkl. 20% moms</div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
                 </div>
               </div>
+
+              {newJob.selectedServices.length > 0 && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <Label className="text-sm font-medium">Prisberegning</Label>
+                  <div className="mt-2 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Total pris:</span>
+                      <span className="font-medium">{calculateTotalPrice()} DKK</span>
+                    </div>
+                    {(() => {
+                      const totalPrice = calculateTotalPrice();
+                      const earnings = calculateEarnings(totalPrice, newJob.client_type);
+                      return (
+                        <>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>BeautyBoosters (40%):</span>
+                            <span>{Math.round(earnings.beautyBoostersCut)} DKK</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Booster indtjening:</span>
+                            <span>{Math.round(earnings.boosterEarnings)} DKK</span>
+                          </div>
+                          {newJob.client_type === 'privat' && (
+                            <div className="text-xs text-orange-600">*Inkl. 20% moms</div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
@@ -469,54 +612,38 @@ const AdminJobs = () => {
               </div>
 
               <div>
-                <Label>Krævede færdigheder</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {newJob.required_skills.map(skill => (
-                    <Badge key={skill} variant="outline" className="cursor-pointer" onClick={() => removeSkill(skill)}>
-                      {skill} ✕
-                    </Badge>
-                  ))}
+                <Label>Kompetence tags</Label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {newJob.selectedCompetenceTags.map(tagId => {
+                    const tag = competenceTags.find(t => t.id === tagId);
+                    return tag ? (
+                      <Badge key={tagId} variant="outline" className="cursor-pointer" onClick={() => removeCompetenceTag(tagId)}>
+                        {tag.name} ✕
+                      </Badge>
+                    ) : null;
+                  })}
                 </div>
-                <Select onValueChange={addSkill}>
+                <Select onValueChange={addCompetenceTag}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Tilføj færdighed" />
+                    <SelectValue placeholder="Tilføj kompetence tag" />
                   </SelectTrigger>
                   <SelectContent>
-                    {skillOptions.filter(skill => !newJob.required_skills.includes(skill)).map(skill => (
-                      <SelectItem key={skill} value={skill}>{skill}</SelectItem>
-                    ))}
+                    {competenceTags
+                      .filter(tag => !newJob.selectedCompetenceTags.includes(tag.id))
+                      .map(tag => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <span className="text-xs text-muted-foreground mr-2">{tag.category}:</span>
+                          {tag.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="client_name">Klient navn</Label>
-                  <Input
-                    id="client_name"
-                    value={newJob.client_name}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, client_name: e.target.value }))}
-                    placeholder="Anna Hansen"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="client_email">Klient email</Label>
-                  <Input
-                    id="client_email"
-                    type="email"
-                    value={newJob.client_email}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, client_email: e.target.value }))}
-                    placeholder="anna@email.dk"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="client_phone">Klient telefon</Label>
-                  <Input
-                    id="client_phone"
-                    value={newJob.client_phone}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, client_phone: e.target.value }))}
-                    placeholder="+45 12 34 56 78"
-                  />
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <Label className="text-sm font-medium text-blue-900">Eksempel på booster notifikation:</Label>
+                <div className="mt-2 text-sm text-blue-800 font-mono whitespace-pre-line">
+                  {exampleNotification}
                 </div>
               </div>
 
@@ -524,7 +651,10 @@ const AdminJobs = () => {
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                   Annuller
                 </Button>
-                <Button onClick={createJob} disabled={!newJob.title || !newJob.service_type || !newJob.location || !newJob.date_needed || !newJob.hourly_rate}>
+                <Button 
+                  onClick={createJob} 
+                  disabled={!newJob.title || !newJob.location || !newJob.date_needed || newJob.selectedServices.length === 0}
+                >
                   Opret & Send til Boosters
                 </Button>
               </div>

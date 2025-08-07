@@ -62,6 +62,27 @@ export type Database = {
         }
         Relationships: []
       }
+      competence_tags: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           antal_personer: number | null
@@ -157,6 +178,118 @@ export type Database = {
           },
           {
             foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_communications: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string | null
+          job_id: string | null
+          message_text: string | null
+          read_at: string | null
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          job_id?: string | null
+          message_text?: string | null
+          read_at?: string | null
+          sender_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          job_id?: string | null
+          message_text?: string | null
+          read_at?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_communications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_competence_tags: {
+        Row: {
+          competence_tag_id: string | null
+          created_at: string | null
+          id: string
+          job_id: string | null
+        }
+        Insert: {
+          competence_tag_id?: string | null
+          created_at?: string | null
+          id?: string
+          job_id?: string | null
+        }
+        Update: {
+          competence_tag_id?: string | null
+          created_at?: string | null
+          id?: string
+          job_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_competence_tags_competence_tag_id_fkey"
+            columns: ["competence_tag_id"]
+            isOneToOne: false
+            referencedRelation: "competence_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_competence_tags_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_services: {
+        Row: {
+          created_at: string | null
+          id: string
+          job_id: string | null
+          people_count: number | null
+          service_id: string
+          service_name: string
+          service_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          job_id?: string | null
+          people_count?: number | null
+          service_id: string
+          service_name: string
+          service_price: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          job_id?: string | null
+          people_count?: number | null
+          service_id?: string
+          service_name?: string
+          service_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_services_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
