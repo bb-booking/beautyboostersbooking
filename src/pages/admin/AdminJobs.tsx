@@ -37,9 +37,19 @@ interface Job {
   client_name?: string;
   client_email?: string;
   client_phone?: string;
+  client_type: 'privat' | 'virksomhed';
+  boosters_needed: number;
   status: 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
   assigned_booster_id?: string;
   created_at: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  price: number;
+  clientType: 'privat' | 'virksomhed';
+  category: string;
 }
 
 interface BoosterProfile {
@@ -53,6 +63,7 @@ interface BoosterProfile {
 const AdminJobs = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [boosters, setBoosters] = useState<BoosterProfile[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -70,18 +81,23 @@ const AdminJobs = () => {
     duration_hours: 0,
     client_name: "",
     client_email: "",
-    client_phone: ""
+    client_phone: "",
+    client_type: "privat" as 'privat' | 'virksomhed',
+    boosters_needed: 1
   });
 
-  const serviceTypes = [
-    "Bryllupsmakeup",
-    "Fotoshoot makeup",
-    "Event makeup",
-    "Film/TV makeup",
-    "SFX makeup",
-    "Hår styling",
-    "Ansigtsbehandling"
-  ];
+  // Calculate BeautyBoosters cut and booster earnings
+  const calculateEarnings = (price: number, clientType: 'privat' | 'virksomhed') => {
+    const priceAfterTax = clientType === 'privat' ? price * 0.8 : price; // 20% VAT only for private
+    const beautyBoostersCut = priceAfterTax * 0.4; // 40% to BeautyBoosters
+    const boosterEarnings = priceAfterTax - beautyBoostersCut;
+    
+    return {
+      priceAfterTax,
+      beautyBoostersCut,
+      boosterEarnings
+    };
+  };
 
   const skillOptions = [
     "Bryllupsmakeup",
@@ -107,7 +123,37 @@ const AdminJobs = () => {
   useEffect(() => {
     fetchJobs();
     fetchBoosters();
+    fetchServices();
   }, []);
+
+  const fetchServices = async () => {
+    // Hardcoded services matching the ones from Services.tsx
+    const allServices: Service[] = [
+      // Private services
+      { id: '1', name: 'Makeup Styling', price: 1999, clientType: 'privat', category: 'Makeup & Hår' },
+      { id: '2', name: 'Hårstyling / håropsætning', price: 1999, clientType: 'privat', category: 'Makeup & Hår' },
+      { id: '3', name: 'Makeup & Hårstyling', price: 2999, clientType: 'privat', category: 'Makeup & Hår' },
+      { id: '4', name: 'Spraytan', price: 499, clientType: 'privat', category: 'Spraytan' },
+      { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, clientType: 'privat', category: 'Konfirmation' },
+      { id: '6', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, clientType: 'privat', category: 'Bryllup - Brudestyling' },
+      { id: '7', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, clientType: 'privat', category: 'Bryllup - Brudestyling' },
+      { id: '8', name: '1:1 Makeup Session', price: 2499, clientType: 'privat', category: 'Makeup Kurser' },
+      { id: '9', name: 'The Beauty Bar (makeup kursus)', price: 4499, clientType: 'privat', category: 'Makeup Kurser' },
+      { id: '10', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, clientType: 'privat', category: 'Event' },
+      { id: '11', name: 'Ansigtsmaling til børn', price: 4499, clientType: 'privat', category: 'Børn' },
+      
+      // Business services
+      { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, clientType: 'virksomhed', category: 'Shoot/reklame' },
+      { id: '21', name: 'Key Makeup Artist til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
+      { id: '22', name: 'Makeup Assistent til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
+      { id: '23', name: 'SFX Expert', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
+      { id: '24', name: 'Parykdesign', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
+      { id: '25', name: 'MUA til Film/TV', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
+      { id: '26', name: 'Event Makeup Services', price: 0, clientType: 'virksomhed', category: 'Makeup / styling til Event' }
+    ];
+    
+    setServices(allServices);
+  };
 
   const fetchJobs = async () => {
     try {
@@ -166,12 +212,26 @@ const AdminJobs = () => {
         duration_hours: 0,
         client_name: "",
         client_email: "",
-        client_phone: ""
+        client_phone: "",
+        client_type: "privat",
+        boosters_needed: 1
       });
       fetchJobs();
     } catch (error) {
       console.error('Error creating job:', error);
       toast.error('Fejl ved oprettelse af job');
+    }
+  };
+
+  const handleServiceChange = (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    if (service) {
+      setNewJob(prev => ({
+        ...prev,
+        service_type: service.name,
+        hourly_rate: service.price,
+        client_type: service.clientType
+      }));
     }
   };
 
@@ -277,17 +337,50 @@ const AdminJobs = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="service_type">Service type *</Label>
-                  <Select value={newJob.service_type} onValueChange={(value) => setNewJob(prev => ({ ...prev, service_type: value }))}>
+                  <Label htmlFor="client_type">Klient type *</Label>
+                  <Select value={newJob.client_type} onValueChange={(value: 'privat' | 'virksomhed') => setNewJob(prev => ({ ...prev, client_type: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vælg klient type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="privat">Privat</SelectItem>
+                      <SelectItem value="virksomhed">Virksomhed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="service_type">Service *</Label>
+                  <Select 
+                    value={services.find(s => s.name === newJob.service_type)?.id || ""} 
+                    onValueChange={handleServiceChange}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Vælg service" />
                     </SelectTrigger>
                     <SelectContent>
-                      {serviceTypes.map(service => (
-                        <SelectItem key={service} value={service}>{service}</SelectItem>
-                      ))}
+                      {services
+                        .filter(service => service.clientType === newJob.client_type)
+                        .map(service => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} - {service.price > 0 ? `${service.price} DKK` : 'Tilbud'}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label htmlFor="boosters_needed">Antal boosters *</Label>
+                  <Input
+                    id="boosters_needed"
+                    type="number"
+                    min="1"
+                    value={newJob.boosters_needed}
+                    onChange={(e) => setNewJob(prev => ({ ...prev, boosters_needed: parseInt(e.target.value) || 1 }))}
+                    placeholder="1"
+                  />
                 </div>
               </div>
 
@@ -317,14 +410,30 @@ const AdminJobs = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="hourly_rate">Timepris (DKK) *</Label>
+                  <Label htmlFor="hourly_rate">Pris (DKK) *</Label>
                   <Input
                     id="hourly_rate"
                     type="number"
                     value={newJob.hourly_rate}
                     onChange={(e) => setNewJob(prev => ({ ...prev, hourly_rate: parseInt(e.target.value) || 0 }))}
-                    placeholder="500"
+                    placeholder="1999"
                   />
+                  {newJob.hourly_rate > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                      {(() => {
+                        const earnings = calculateEarnings(newJob.hourly_rate, newJob.client_type);
+                        return (
+                          <>
+                            <div>BeautyBoosters: {Math.round(earnings.beautyBoostersCut)} DKK (40%)</div>
+                            <div>Booster: {Math.round(earnings.boosterEarnings)} DKK</div>
+                            {newJob.client_type === 'privat' && (
+                              <div className="text-orange-600">Inkl. 20% moms</div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -415,7 +524,7 @@ const AdminJobs = () => {
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                   Annuller
                 </Button>
-                <Button onClick={createJob} disabled={!newJob.title || !newJob.service_type || !newJob.location || !newJob.date_needed}>
+                <Button onClick={createJob} disabled={!newJob.title || !newJob.service_type || !newJob.location || !newJob.date_needed || !newJob.hourly_rate}>
                   Opret & Send til Boosters
                 </Button>
               </div>
@@ -486,8 +595,17 @@ const AdminJobs = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{job.hourly_rate} DKK/time</span>
+                      <span className="font-medium">{job.hourly_rate} DKK</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({job.client_type === 'privat' ? 'inkl. moms' : 'ex. moms'})
+                      </span>
                     </div>
+                    {job.boosters_needed && job.boosters_needed > 1 && (
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>{job.boosters_needed} boosters søges</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
