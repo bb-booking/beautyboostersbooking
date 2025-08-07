@@ -21,6 +21,7 @@ import AdminInquiries from "./pages/admin/AdminInquiries";
 import AdminBookers from "./pages/admin/AdminBookers";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminJobs from "./pages/admin/AdminJobs";
+import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminSettings from "./pages/admin/AdminSettings";
 
@@ -52,7 +53,7 @@ const App = () => (
                   <Route index element={<AdminDashboard />} />
                   <Route path="inquiries" element={<AdminInquiries />} />
                   <Route path="jobs" element={<AdminJobs />} />
-                  <Route path="boosters" element={<AdminBookers />} />
+                  <Route path="boosters" element={<AdminBoosters />} />
                   <Route path="bookings" element={<AdminBookings />} />
                   <Route path="finance" element={<AdminFinance />} />
                   <Route path="settings" element={<AdminSettings />} />

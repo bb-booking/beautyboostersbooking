@@ -20,8 +20,10 @@ import {
   Search,
   Eye,
   Edit,
-  CheckCircle
+  CheckCircle,
+  MessageSquare
 } from "lucide-react";
+import JobChat from "@/components/job/JobChat";
 
 interface Job {
   id: string;
@@ -82,6 +84,7 @@ const AdminJobs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedJobForChat, setSelectedJobForChat] = useState<string | null>(null);
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -795,6 +798,10 @@ Eksempel på notifikation som booster vil modtage.`;
                   Oprettet: {new Date(job.created_at).toLocaleDateString('da-DK')}
                 </p>
                 <div className="space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedJobForChat(job.id)}>
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Chat
+                  </Button>
                   <Button variant="outline" size="sm">
                     <Eye className="h-4 w-4 mr-1" />
                     Se ansøgninger
@@ -832,6 +839,22 @@ Eksempel på notifikation som booster vil modtage.`;
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Chat Dialog */}
+      {selectedJobForChat && (
+        <Dialog open={!!selectedJobForChat} onOpenChange={() => setSelectedJobForChat(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Job Chat - {jobs.find(j => j.id === selectedJobForChat)?.title}</DialogTitle>
+            </DialogHeader>
+            <JobChat 
+              jobId={selectedJobForChat} 
+              userType="admin" 
+              userName="Admin"
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

@@ -5,7 +5,9 @@ import {
   Users, 
   Calendar,
   LogOut,
-  Settings
+  Settings,
+  UserCheck,
+  DollarSign
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,9 +27,9 @@ const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Forespørgsler", url: "/admin/inquiries", icon: MessageSquare },
   { title: "Jobs", url: "/admin/jobs", icon: Calendar },
-  { title: "Boosters", url: "/admin/boosters", icon: Users },
+  { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
-  { title: "Økonomi", url: "/admin/finance", icon: LayoutDashboard },
+  { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
 ];
 
 export function AdminSidebar() {
