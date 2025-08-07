@@ -211,7 +211,7 @@ const ServiceCard = ({
           </div>
         </div>
         
-        <div className="text-lg font-semibold text-primary">
+        <div className="text-lg font-semibold text-foreground">
           {calculatePrice()} DKK
         </div>
       </CardContent>

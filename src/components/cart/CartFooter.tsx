@@ -1,10 +1,10 @@
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Clock, ShoppingCart } from 'lucide-react';
+import { Clock, ShoppingCart, X } from 'lucide-react';
 
 const CartFooter = () => {
-  const { items, getTotalPrice, getTotalDuration, getItemCount } = useCart();
+  const { items, removeFromCart, getTotalPrice, getTotalDuration, getItemCount } = useCart();
 
   if (getItemCount() === 0) {
     return null;
@@ -43,10 +43,20 @@ const CartFooter = () => {
         {items.length > 0 && (
           <div className="mt-3 pt-3 border-t">
             <div className="text-sm text-primary-foreground space-y-1">
-              {items.map((item, index) => (
-                <div key={index} className="flex justify-between">
+              {items.map((item) => (
+                <div key={item.id} className="flex justify-between items-center">
                   <span>{item.name} ({item.people} person{item.people > 1 ? 'er' : ''}, {item.boosters} booster{item.boosters > 1 ? 's' : ''})</span>
-                  <span>{item.finalPrice} DKK</span>
+                  <div className="flex items-center space-x-2">
+                    <span>{item.finalPrice} DKK</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFromCart(item.id)}
+                      className="h-6 w-6 p-0 text-primary-foreground hover:text-destructive hover:bg-primary-foreground/10"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
