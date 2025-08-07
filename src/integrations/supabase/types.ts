@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      booster_availability: {
+        Row: {
+          booster_id: string | null
+          created_at: string | null
+          date: string
+          end_time: string
+          id: string
+          job_id: string | null
+          notes: string | null
+          start_time: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          booster_id?: string | null
+          created_at?: string | null
+          date: string
+          end_time: string
+          id?: string
+          job_id?: string | null
+          notes?: string | null
+          start_time: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          booster_id?: string | null
+          created_at?: string | null
+          date?: string
+          end_time?: string
+          id?: string
+          job_id?: string | null
+          notes?: string | null
+          start_time?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booster_availability_booster_id_fkey"
+            columns: ["booster_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booster_availability_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booster_profiles: {
         Row: {
           bio: string | null

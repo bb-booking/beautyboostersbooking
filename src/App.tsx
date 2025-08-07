@@ -21,8 +21,9 @@ import AdminInquiries from "./pages/admin/AdminInquiries";
 import AdminBookers from "./pages/admin/AdminBookers";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminJobs from "./pages/admin/AdminJobs";
-import AdminBoosters from "./pages/admin/AdminBoosters";
+import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminFinance from "./pages/admin/AdminFinance";
+import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
@@ -53,9 +54,10 @@ const App = () => (
                   <Route index element={<AdminDashboard />} />
                   <Route path="inquiries" element={<AdminInquiries />} />
                   <Route path="jobs" element={<AdminJobs />} />
-                  <Route path="boosters" element={<AdminBoosters />} />
+                  <Route path="calendar" element={<AdminCalendar />} />
                   <Route path="bookings" element={<AdminBookings />} />
                   <Route path="finance" element={<AdminFinance />} />
+                  <Route path="boosters" element={<AdminBoosters />} />
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

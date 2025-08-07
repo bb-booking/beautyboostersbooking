@@ -7,7 +7,8 @@ import {
   LogOut,
   Settings,
   UserCheck,
-  DollarSign
+  DollarSign,
+  CalendarDays
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,6 +29,7 @@ const adminItems = [
   { title: "Forespørgsler", url: "/admin/inquiries", icon: MessageSquare },
   { title: "Jobs", url: "/admin/jobs", icon: Calendar },
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
+  { title: "Kalender", url: "/admin/calendar", icon: CalendarDays },
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
   { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
 ];
