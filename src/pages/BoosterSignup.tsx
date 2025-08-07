@@ -300,26 +300,31 @@ const BoosterSignup = () => {
               
               <div className="space-y-3 text-xs">
                 <div>
-                  <h4 className="font-semibold">Hovepunkter:</h4>
-                  <p><strong>1. Services:</strong> Du udfører beauty services på kunders adresser. Du er ansvarlig for transport og at møde rettidigt.</p>
+                  <h4 className="font-semibold">Væsentlige bestemmelser:</h4>
                   
-                  <p><strong>2. Betaling:</strong> Du får 60% af totalbeløbet uden moms. Udbetaling sker månedligt som {formData.businessType === 'cvr' ? 'faktura (send senest d. 28.)' : 'B-indkomst via lønseddel'}.</p>
+                  <p><strong>1. Services og transport:</strong> Du udfører beauty services på kunders adresser. Du vælger selv transportmiddel (cykel, offentlig transport, bil) og betaler alle omkostninger forbundet hermed. Du er ansvarlig for at møde rettidigt og skal tage højde for parkering, billet eller pendlerkort.</p>
                   
-                  <p><strong>3. Forsikring:</strong> Du skal have gyldig ansvars- og arbejdsskadeforsikring.</p>
+                  <p><strong>2. Bøder og afgifter:</strong> Hvis du får parkerings- eller transportbøder under udførelse af opgaver, er det BeautyBoosters økonomisk uvedkommende. Du bærer selv alle risici forbundet med dit valgte transportmiddel.</p>
                   
-                  <p><strong>4. Professionalisme:</strong> Lever høj kvalitet. Ved utilfredshed kan behandling kræves genudført gratis.</p>
+                  <p><strong>3. Betaling:</strong> Du får 60% af totalbeløbet uden moms. Udbetaling sker månedligt som {formData.businessType === 'cvr' ? 'faktura (send senest d. 28.)' : 'B-indkomst via lønseddel'}. Ved utilfredshed hvor kunden ikke betaler grundet bevist forsømmelighed, modtager du ikke løn.</p>
                   
-                  <p><strong>5. Konkurrence:</strong> Du må ikke kontakte BeautyBoosters' kunder direkte eller opfordre til direkte booking. Overtrædelse fører til øjeblikkelig opsigelse og bod på kr. 10.000 pr. kunde.</p>
+                  <p><strong>4. Forsikring og ansvar:</strong> Du skal have gyldig ansvars-, ulykke- og arbejdsskadeforsikring. Ved tab eller tyveri af udstyr udleveret af BeautyBoosters skal dette dækkes af din forsikring. Du hæfter personligt hvis du ikke er forsikret.</p>
                   
-                  <p><strong>6. Sociale medier:</strong> Tag @beautyboostersdk når du poster om opgaver fra BeautyBoosters.</p>
+                  <p><strong>5. Professionalisme:</strong> Lever høj kvalitet og engagement. Ved utilfredshed kan behandling kræves genudført gratis. Ved utilfredsstillende udførelse forbeholder BeautyBoosters sig ret til at opsige samarbejdet øjeblikkeligt.</p>
                   
-                  <p><strong>7. Sygdom:</strong> Meld afbud senest kl. 08.00 eller 2 timer før første kunde på tlf. 71786575.</p>
+                  <p><strong>6. Konkurrenceklausul:</strong> Du må ikke kontakte BeautyBoosters' kunder direkte, dele kontaktoplysninger eller opfordre til direkte booking. Dette gælder alle kunder du har arbejdet for gennem BeautyBoosters. Overtrædelse fører til øjeblikkelig opsigelse og bod på kr. 10.000 pr. kunde.</p>
                   
-                  <p><strong>8. Opsigelse:</strong> Begge parter kan opsige med løbende måned plus en måned.</p>
+                  <p><strong>7. Sociale medier:</strong> Tag @beautyboostersdk når du poster om opgaver fra BeautyBoosters. Kunder må gerne skrive "Lavet af [dit navn] fra @beautyboostersdk" når de tagger dig. Du må ikke opfordre kunder til at tagge dig direkte.</p>
                   
-                  <p><strong>9. Databeskyttelse:</strong> Du samtykker til at BeautyBoosters håndterer dine persondata i henhold til databeskyttelsesloven.</p>
+                  <p><strong>8. Sygdom og afbud:</strong> Meld afbud senest kl. 08.00 eller 2 timer før første kunde på tlf. 71786575. Ved gentagne forsinkelser forbeholder BeautyBoosters sig ret til at ophøre samarbejdet. Du har ikke ret til løn under sygdom.</p>
                   
-                  <p><strong>10. Tvister:</strong> Afgøres ved danske domstole efter dansk ret.</p>
+                  <p><strong>9. Misligholdelse:</strong> Ved væsentlig eller gentagen misligholdelse kan aftalen ophæves efter skriftligt påkrav med 10 dages afhjælpningsfrist. Hver part kan kræve erstatning for direkte dokumenterbare tab.</p>
+                  
+                  <p><strong>10. Opsigelse:</strong> Begge parter kan opsige med løbende måned plus en måned. Opsigelse sker skriftligt via e-mail.</p>
+                  
+                  <p><strong>11. Databeskyttelse:</strong> Du samtykker til at BeautyBoosters håndterer dine persondata i henhold til databeskyttelsesloven. Dette inkluderer navn, adresse, e-mail, telefon, bank- og CPR/CVR-information.</p>
+                  
+                  <p><strong>12. Tvister:</strong> Afgøres ved danske domstole efter dansk ret.</p>
                 </div>
               </div>
             </div>
