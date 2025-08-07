@@ -122,6 +122,159 @@ export type Database = {
         }
         Relationships: []
       }
+      job_applications: {
+        Row: {
+          applied_at: string
+          booster_id: string
+          id: string
+          job_id: string
+          message: string | null
+          status: string
+        }
+        Insert: {
+          applied_at?: string
+          booster_id: string
+          id?: string
+          job_id: string
+          message?: string | null
+          status?: string
+        }
+        Update: {
+          applied_at?: string
+          booster_id?: string
+          id?: string
+          job_id?: string
+          message?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_booster_id_fkey"
+            columns: ["booster_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          assigned_booster_id: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          date_needed: string
+          description: string | null
+          duration_hours: number | null
+          hourly_rate: number
+          id: string
+          location: string
+          required_skills: string[] | null
+          service_type: string
+          status: string
+          time_needed: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_booster_id?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_needed: string
+          description?: string | null
+          duration_hours?: number | null
+          hourly_rate: number
+          id?: string
+          location: string
+          required_skills?: string[] | null
+          service_type: string
+          status?: string
+          time_needed?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_booster_id?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_needed?: string
+          description?: string | null
+          duration_hours?: number | null
+          hourly_rate?: number
+          id?: string
+          location?: string
+          required_skills?: string[] | null
+          service_type?: string
+          status?: string
+          time_needed?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string | null
+          message: string
+          read_at: string | null
+          recipient_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          message: string
+          read_at?: string | null
+          recipient_id: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          message?: string
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
