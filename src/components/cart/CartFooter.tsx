@@ -1,9 +1,11 @@
 import { useCart } from '@/contexts/CartContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Clock, ShoppingCart, X } from 'lucide-react';
 
 const CartFooter = () => {
+  const navigate = useNavigate();
   const { items, removeFromCart, getTotalPrice, getTotalDuration, getItemCount } = useCart();
 
   if (getItemCount() === 0) {
@@ -11,8 +13,8 @@ const CartFooter = () => {
   }
 
   const handleContinue = () => {
-    // Navigate to booking page with cart items
-    console.log('Continue to booking with items:', items);
+    // Navigate to address page to continue the booking flow
+    navigate('/address');
   };
 
   return (
