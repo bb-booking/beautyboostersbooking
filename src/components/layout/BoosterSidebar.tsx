@@ -25,8 +25,13 @@ import {
 
 const menuItems = [
   {
-    title: "Dashboard",
+    title: "Kalender",
     url: "/booster",
+    icon: Calendar,
+  },
+  {
+    title: "Dashboard",
+    url: "/booster/dashboard",
     icon: Home,
   },
   {
