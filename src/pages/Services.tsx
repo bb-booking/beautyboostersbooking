@@ -33,13 +33,28 @@ const Services = () => {
 
   const fetchServices = async () => {
     try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) throw error;
-      setServices(data || []);
+      // Mock data until database is set up
+      const mockServices = [
+        {
+          id: '1',
+          name: 'Bryllup Makeup',
+          description: 'Professionel bryllup makeup med langvarig finish',
+          price: 1500,
+          duration: 2,
+          category: 'Makeup',
+          difficulty: 'Ekspert'
+        },
+        {
+          id: '2', 
+          name: 'Fest Hår',
+          description: 'Elegant opsætning til fest og galla',
+          price: 800,
+          duration: 1.5,
+          category: 'Hår',
+          difficulty: 'Mellem'
+        }
+      ];
+      setServices(mockServices);
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
@@ -88,9 +103,9 @@ const Services = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Booking Services</h1>
+        <h1 className="text-3xl font-bold mb-4">Beauty Services</h1>
         <p className="text-muted-foreground mb-6">
-          Vælg den service der passer bedst til dine behov
+          Vælg den beauty-behandling der passer bedst til din anledning
         </p>
 
         <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -110,9 +125,10 @@ const Services = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Kategorier</SelectItem>
-              <SelectItem value="Rank Boost">Rank Boost</SelectItem>
-              <SelectItem value="Coaching">Coaching</SelectItem>
-              <SelectItem value="Account Leveling">Account Leveling</SelectItem>
+              <SelectItem value="Makeup">Makeup</SelectItem>
+              <SelectItem value="Hår">Hår</SelectItem>
+              <SelectItem value="Negle">Negle</SelectItem>
+              <SelectItem value="Bryn & Vipper">Bryn & Vipper</SelectItem>
             </SelectContent>
           </Select>
 

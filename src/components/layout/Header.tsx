@@ -8,15 +8,15 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <Calendar className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold text-foreground">BookingBooster</span>
+          <span className="text-2xl font-bold text-foreground">BeautyBoosters</span>
         </Link>
         
         <nav className="hidden md:flex items-center space-x-6">
           <Link to="/services" className="text-muted-foreground hover:text-foreground transition-colors">
             Services
           </Link>
-          <Link to="/boosters" className="text-muted-foreground hover:text-foreground transition-colors">
-            Boosters
+          <Link to="/stylists" className="text-muted-foreground hover:text-foreground transition-colors">
+            Stylister
           </Link>
           <Link to="/bookings" className="text-muted-foreground hover:text-foreground transition-colors">
             Mine Bookinger
