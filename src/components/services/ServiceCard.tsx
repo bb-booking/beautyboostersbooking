@@ -38,24 +38,45 @@ const ServiceCard = ({
   onClick 
 }: ServiceCardProps) => {
   const { addToCart } = useCart();
+  const [people, setPeople] = useState(1);
   const [boosters, setBoosters] = useState(1);
   const [extraHours, setExtraHours] = useState(0);
 
   const calculatePrice = () => {
     if (isInquiry) return 0;
     
-    let basePrice = price * boosters;
+    let basePrice;
+    
+    // For business services: use boosters logic
+    if (category === "Virksomhed") {
+      basePrice = price * boosters;
+    } else {
+      // For private services: use group pricing or base price * people
+      if (groupPricing && people <= 4) {
+        basePrice = groupPricing[people as keyof typeof groupPricing];
+      } else {
+        basePrice = price * people;
+      }
+    }
     
     // Add extra hours cost
     if (hasExtraHours && extraHours > 0 && extraHourPrice) {
-      basePrice += extraHours * extraHourPrice * boosters;
+      if (category === "Virksomhed") {
+        basePrice += extraHours * extraHourPrice * boosters;
+      } else {
+        basePrice += extraHours * extraHourPrice * people;
+      }
     }
     
     return basePrice;
   };
 
   const calculateDuration = () => {
-    return (duration + extraHours) * boosters;
+    if (category === "Virksomhed") {
+      return (duration + extraHours) * boosters;
+    } else {
+      return duration + extraHours;
+    }
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -67,7 +88,7 @@ const ServiceCard = ({
       basePrice: price,
       duration,
       category,
-      people: 1,
+      people: category === "Virksomhed" ? 1 : people,
       boosters,
       finalPrice: calculatePrice(),
       totalDuration: calculateDuration(),
@@ -107,29 +128,67 @@ const ServiceCard = ({
         {/* Boosters and Extra Hours selectors */}
         {!isInquiry && (
           <div className="space-y-4 mb-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Antal boosters:</span>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={decrementBoosters}
-                  disabled={boosters <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{boosters}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={incrementBoosters}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+            {/* People selector - only for private services */}
+            {category !== "Virksomhed" && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Antal personer:</span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (people > 1) {
+                        setPeople(prev => prev - 1);
+                      }
+                    }}
+                    disabled={people <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center font-medium">{people}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPeople(prev => prev + 1);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Boosters selector - only for business services */}
+            {category === "Virksomhed" && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Antal boosters:</span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={decrementBoosters}
+                    disabled={boosters <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center font-medium">{boosters}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={incrementBoosters}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Extra hours selector - only show for services with extra hours */}
             {hasExtraHours && (
