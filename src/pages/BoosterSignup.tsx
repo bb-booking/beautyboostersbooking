@@ -8,9 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+
+interface Education {
+  school: string;
+  year: string;
+  isAutodidact: boolean;
+}
 
 interface FormData {
   skills: string[];
@@ -23,6 +29,8 @@ interface FormData {
   address: string;
   workRadius: number;
   primaryTransport: string;
+  education: Education[];
+  yearsExperience: number;
   contractAccepted: boolean;
 }
 
@@ -40,7 +48,7 @@ const BoosterSignup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 6;
+  const totalSteps = 7;
   
   const [formData, setFormData] = useState<FormData>({
     skills: [],
@@ -53,6 +61,8 @@ const BoosterSignup = () => {
     address: '',
     workRadius: 50,
     primaryTransport: '',
+    education: [],
+    yearsExperience: 1,
     contractAccepted: false
   });
 
@@ -106,9 +116,33 @@ const BoosterSignup = () => {
       case 3: return formData.name && formData.email && formData.phone;
       case 4: return formData.address && formData.workRadius > 0;
       case 5: return formData.primaryTransport;
-      case 6: return formData.contractAccepted;
+      case 6: return formData.yearsExperience > 0; // Erfaring krævet, uddannelser er valgfrie
+      case 7: return formData.contractAccepted;
       default: return false;
     }
+  };
+
+  const addEducation = () => {
+    setFormData(prev => ({
+      ...prev,
+      education: [...prev.education, { school: '', year: '', isAutodidact: false }]
+    }));
+  };
+
+  const updateEducation = (index: number, field: keyof Education, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      education: prev.education.map((edu, i) => 
+        i === index ? { ...edu, [field]: value } : edu
+      )
+    }));
+  };
+
+  const removeEducation = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      education: prev.education.filter((_, i) => i !== index)
+    }));
   };
 
   const renderStep = () => {
@@ -312,6 +346,105 @@ const BoosterSignup = () => {
         return (
           <div className="space-y-6">
             <div>
+              <h2 className="text-2xl font-bold mb-2">Uddannelse og erfaring</h2>
+              <p className="text-muted-foreground">Fortæl os om din baggrund</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="experience">Hvor mange års erfaring har du?</Label>
+                <Input
+                  id="experience"
+                  type="number"
+                  min="0"
+                  max="50"
+                  value={formData.yearsExperience}
+                  onChange={(e) => setFormData(prev => ({ ...prev, yearsExperience: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Uddannelser og certificeringer (valgfri)</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addEducation}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tilføj uddannelse
+                  </Button>
+                </div>
+                
+                {formData.education.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Ingen uddannelser tilføjet endnu.</p>
+                    <p className="text-sm mt-2">Klik "Tilføj uddannelse" for at tilføje din baggrund eller certificeringer.</p>
+                  </div>
+                )}
+
+                {formData.education.map((edu, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Uddannelse {index + 1}</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeEducation(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Checkbox
+                        id={`autodidact-${index}`}
+                        checked={edu.isAutodidact}
+                        onCheckedChange={(checked) => 
+                          updateEducation(index, 'isAutodidact', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`autodidact-${index}`} className="text-sm">
+                        Autodidakt/selvlært
+                      </Label>
+                    </div>
+
+                    {!edu.isAutodidact && (
+                      <div className="space-y-2">
+                        <Label htmlFor={`school-${index}`}>Skole/institution</Label>
+                        <Input
+                          id={`school-${index}`}
+                          placeholder="Fx. Copenhagen Beauty School"
+                          value={edu.school}
+                          onChange={(e) => updateEducation(index, 'school', e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`year-${index}`}>
+                        {edu.isAutodidact ? 'Beskrivelse af erfaring' : 'Afgangsår eller periode'}
+                      </Label>
+                      <Input
+                        id={`year-${index}`}
+                        placeholder={edu.isAutodidact ? 'Fx. Selvlært gennem tutorials og praksis siden 2020' : 'Fx. 2022 eller 2020-2022'}
+                        value={edu.year}
+                        onChange={(e) => updateEducation(index, 'year', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 7:
+        return (
+          <div className="space-y-6">
+            <div>
               <h2 className="text-2xl font-bold mb-2">Kontrakt</h2>
               <p className="text-muted-foreground">Læs og accepter vores kontrakt</p>
             </div>
@@ -331,6 +464,17 @@ const BoosterSignup = () => {
                 <p>Adresse: {formData.address}</p>
                 <p>{formData.businessType === 'cvr' ? `CVR-nummer: ${formData.cvrNumber}` : `CPR-nummer: ${formData.cprNumber}`}</p>
                 <p>Primært transportmiddel: {formData.primaryTransport}</p>
+                <p>Års erfaring: {formData.yearsExperience}</p>
+                {formData.education.length > 0 && (
+                  <div>
+                    <p><strong>Uddannelser:</strong></p>
+                    {formData.education.map((edu, index) => (
+                      <p key={index}>
+                        {edu.isAutodidact ? 'Autodidakt' : edu.school} - {edu.year}
+                      </p>
+                    ))}
+                  </div>
+                )}
                 <br />
                 <p><strong>Aftale indgået:</strong> {new Date().toLocaleDateString('da-DK')}</p>
               </div>
