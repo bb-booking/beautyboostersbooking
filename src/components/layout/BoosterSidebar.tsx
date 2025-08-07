@@ -8,7 +8,8 @@ import {
   Settings,
   Tag,
   User,
-  Briefcase
+  Briefcase,
+  Star
 } from "lucide-react"
 
 import {
@@ -68,6 +69,11 @@ const menuItems = [
     title: "Beskeder",
     url: "/booster/messages",
     icon: MessageSquare,
+  },
+  {
+    title: "Anmeldelser",
+    url: "/booster/reviews",
+    icon: Star,
   },
   {
     title: "Indstillinger",
