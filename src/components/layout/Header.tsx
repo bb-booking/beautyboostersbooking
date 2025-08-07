@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Calendar, User, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
+import AuthModal from "@/components/auth/AuthModal";
 
 const Header = () => {
   return (
@@ -19,7 +20,7 @@ const Header = () => {
             Services
           </Link>
           <Link to="/stylists" className="text-primary-foreground hover:text-background transition-colors">
-            Boosters
+            Vores Boosters
           </Link>
           <Link to="/bookings" className="text-primary-foreground hover:text-background transition-colors">
             Mine Bookinger
@@ -27,13 +28,14 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
-            <User className="h-4 w-4 mr-2" />
-            Log Ind
-          </Button>
-          <Button variant="secondary" size="sm">
-            Tilmeld Dig
-          </Button>
+          <AuthModal 
+            trigger={
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
+                <User className="h-4 w-4 mr-2" />
+                Log Ind
+              </Button>
+            }
+          />
         </div>
       </div>
     </header>

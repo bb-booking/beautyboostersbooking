@@ -117,7 +117,7 @@ const Stylists = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-center mb-4">Vores Talentfulde Boosters</h1>
+        <h1 className="text-4xl font-bold text-center mb-4">Vores Boosters</h1>
         <p className="text-muted-foreground text-center max-w-2xl mx-auto">
           Book din næste skønhedsbehandling med en af vores professionelle makeup artists og hårstylister
         </p>
@@ -211,15 +211,15 @@ const Stylists = () => {
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                 {booster.bio}
               </p>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-lg">
-                  {booster.hourly_rate} kr/time
-                </span>
-                <Link to={`/stylist/${booster.id}`}>
-                  <Button size="sm">
-                    Se Profil
+              <div className="flex gap-2">
+                <Link to={`/stylist/${booster.id}`} className="flex-1">
+                  <Button size="sm" variant="outline" className="w-full">
+                    Se profil
                   </Button>
                 </Link>
+                <Button size="sm" className="flex-1">
+                  Send forespørgsel
+                </Button>
               </div>
             </CardContent>
           </Card>
