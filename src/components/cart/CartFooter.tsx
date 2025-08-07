@@ -1,7 +1,7 @@
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Clock, DollarSign, ShoppingCart } from 'lucide-react';
+import { Clock, ShoppingCart } from 'lucide-react';
 
 const CartFooter = () => {
   const { items, getTotalPrice, getTotalDuration, getItemCount } = useCart();
@@ -30,9 +30,8 @@ const CartFooter = () => {
               <span>{getTotalDuration()} timer</span>
             </div>
             
-            <div className="flex items-center space-x-2 text-lg font-semibold text-primary">
-              <DollarSign className="h-5 w-5" />
-              <span>{getTotalPrice()} DKK</span>
+            <div className="text-lg font-semibold text-primary">
+              {getTotalPrice()} DKK
             </div>
           </div>
           
