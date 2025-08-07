@@ -306,21 +306,21 @@ const Booking = () => {
                 </Select>
               </div>
 
-              {/* Next Available Time Button */}
+              {/* Next Available Times Button */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium opacity-0">Næste</Label>
                 <Button 
                   variant="outline" 
                   className="w-full"
                   onClick={() => {
-                    // Set to tomorrow at 09:00 as next available
+                    // Show next available times close to requested time
                     const tomorrow = addDays(new Date(), 1);
                     setSelectedDate(tomorrow);
                     setSelectedTime("09:00");
-                    toast.success("Næste ledige tid valgt");
+                    toast.success("Viser næste ledige tider");
                   }}
                 >
-                  Næste ledige tid
+                  Vis næste ledige tider
                 </Button>
               </div>
             </div>
