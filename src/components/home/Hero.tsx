@@ -7,10 +7,10 @@ const Hero = () => {
     <section className="relative py-20 px-4">
       <div className="container mx-auto text-center">
         <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-          BeautyBoosters
+          Book professionelle makeup artister og stylister direkte til døren
         </h1>
         <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-          Book professionelle makeup artister og hårstylister til dit næste event
+          Få den perfekte styling til dit næste event
         </p>
         
         <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-12">
@@ -23,7 +23,7 @@ const Hero = () => {
           <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
             <Link to="/stylists">
               <Users className="mr-2 h-5 w-5" />
-              Bliv Stylist
+              Bliv Booster
             </Link>
           </Button>
         </div>
