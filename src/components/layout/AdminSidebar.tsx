@@ -24,8 +24,10 @@ import { Button } from "@/components/ui/button";
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Forespørgsler", url: "/admin/inquiries", icon: MessageSquare },
+  { title: "Jobs", url: "/admin/jobs", icon: Calendar },
   { title: "Boosters", url: "/admin/boosters", icon: Users },
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
+  { title: "Økonomi", url: "/admin/finance", icon: LayoutDashboard },
 ];
 
 export function AdminSidebar() {
