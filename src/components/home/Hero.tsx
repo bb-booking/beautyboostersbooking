@@ -21,7 +21,7 @@ const Hero = () => {
             </Link>
           </Button>
           <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
-            <Link to="/stylists">
+            <Link to="/booster-signup">
               <Users className="mr-2 h-5 w-5" />
               Bliv Booster
             </Link>

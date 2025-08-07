@@ -15,6 +15,7 @@ import Booking from "./pages/Booking";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import Bookings from "./pages/Bookings";
 import NotFound from "./pages/NotFound";
+import BoosterSignup from "./pages/BoosterSignup";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInquiries from "./pages/admin/AdminInquiries";
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/booking" element={<Booking />} />
                 <Route path="/booking-confirmation" element={<BookingConfirmation />} />
                 <Route path="/bookings" element={<Bookings />} />
+                <Route path="/booster-signup" element={<BoosterSignup />} />
                 {/* Admin routes */}
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
