@@ -41,7 +41,7 @@ const InquiryForm = () => {
       // Here you would normally send the data to your backend
       console.log("Inquiry form data:", { serviceId, ...formData });
       
-      toast.success("Din forespørgsel er sendt! Vi kontakter dig inden for 24 timer.");
+      toast.success("Din forespørgsel er sendt! Vi kontakter dig hurtigst muligt.");
       
       // Reset form
       setFormData({
@@ -79,7 +79,13 @@ const InquiryForm = () => {
         </Link>
         <h1 className="text-3xl font-bold">Send forespørgsel</h1>
         <p className="text-muted-foreground mt-2">
-          Udfyld formularen nedenfor, så kontakter vi dig inden for 24 timer med et tilpasset tilbud.
+          Udfyld formularen nedenfor, så kontakter vi dig hurtigst muligt med et tilpasset tilbud.
+        </p>
+        <p className="text-muted-foreground mt-2">
+          Hvis det haster, så ring til os på{" "}
+          <a href="tel:+4571786575" className="text-primary hover:text-primary/80 underline">
+            +45 71 78 65 75
+          </a>
         </p>
       </div>
 
