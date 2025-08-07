@@ -167,9 +167,11 @@ export type Database = {
       jobs: {
         Row: {
           assigned_booster_id: string | null
+          boosters_needed: number | null
           client_email: string | null
           client_name: string | null
           client_phone: string | null
+          client_type: string | null
           created_at: string
           created_by: string | null
           date_needed: string
@@ -187,9 +189,11 @@ export type Database = {
         }
         Insert: {
           assigned_booster_id?: string | null
+          boosters_needed?: number | null
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
+          client_type?: string | null
           created_at?: string
           created_by?: string | null
           date_needed: string
@@ -207,9 +211,11 @@ export type Database = {
         }
         Update: {
           assigned_booster_id?: string | null
+          boosters_needed?: number | null
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
+          client_type?: string | null
           created_at?: string
           created_by?: string | null
           date_needed?: string

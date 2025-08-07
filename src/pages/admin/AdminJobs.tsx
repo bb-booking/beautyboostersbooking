@@ -159,7 +159,7 @@ const AdminJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select('*, client_type, boosters_needed')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
