@@ -12,6 +12,9 @@ interface ServiceCardProps {
   price: number;
   duration: number;
   category: string;
+  isInquiry?: boolean;
+  hasExtraHours?: boolean;
+  extraHourPrice?: number;
   groupPricing?: {
     1: number;
     2: number;
@@ -28,60 +31,76 @@ const ServiceCard = ({
   price, 
   duration, 
   category, 
+  isInquiry,
+  hasExtraHours,
+  extraHourPrice,
   groupPricing,
-  
   onClick 
 }: ServiceCardProps) => {
   const { addToCart } = useCart();
   const [people, setPeople] = useState(1);
   const [boosters, setBoosters] = useState(1);
+  const [extraHours, setExtraHours] = useState(0);
 
   const calculatePrice = () => {
-    if (!groupPricing) return price * boosters;
+    if (isInquiry) return 0;
     
-    // New logic: Optimal distribution of people across boosters
-    if (people === boosters) {
-      // Each person gets their own booster - individual pricing
-      return price * people;
-    } else if (boosters === 1) {
-      // All people share one booster - group pricing
-      const groupPrice = groupPricing[Math.min(people, 4) as keyof typeof groupPricing] || 
-                        (price + (people - 1) * Math.floor(price * 0.6));
-      return groupPrice;
+    let basePrice = 0;
+    
+    if (!groupPricing) {
+      basePrice = price * boosters;
     } else {
-      // Multiple boosters, fewer than people - optimal distribution
-      let totalCost = 0;
-      let remainingPeople = people;
-      
-      for (let i = 0; i < boosters; i++) {
-        if (remainingPeople <= 0) break;
+      // New logic: Optimal distribution of people across boosters
+      if (people === boosters) {
+        // Each person gets their own booster - individual pricing
+        basePrice = price * people;
+      } else if (boosters === 1) {
+        // All people share one booster - group pricing
+        const groupPrice = groupPricing[Math.min(people, 4) as keyof typeof groupPricing] || 
+                          (price + (people - 1) * Math.floor(price * 0.6));
+        basePrice = groupPrice;
+      } else {
+        // Multiple boosters, fewer than people - optimal distribution
+        let totalCost = 0;
+        let remainingPeople = people;
         
-        // Try to fit as many people as possible on this booster optimally
-        let optimalPeopleForThisBooster = 1;
-        let bestPrice = price; // price for 1 person
-        
-        for (let testPeople = 1; testPeople <= Math.min(remainingPeople, 4); testPeople++) {
-          const testPrice = groupPricing[testPeople as keyof typeof groupPricing] || 
-                           (price + (testPeople - 1) * Math.floor(price * 0.6));
-          const pricePerPerson = testPrice / testPeople;
-          const currentBestPricePerPerson = bestPrice / optimalPeopleForThisBooster;
+        for (let i = 0; i < boosters; i++) {
+          if (remainingPeople <= 0) break;
           
-          if (pricePerPerson <= currentBestPricePerPerson) {
-            optimalPeopleForThisBooster = testPeople;
-            bestPrice = testPrice;
+          // Try to fit as many people as possible on this booster optimally
+          let optimalPeopleForThisBooster = 1;
+          let bestPrice = price; // price for 1 person
+          
+          for (let testPeople = 1; testPeople <= Math.min(remainingPeople, 4); testPeople++) {
+            const testPrice = groupPricing[testPeople as keyof typeof groupPricing] || 
+                             (price + (testPeople - 1) * Math.floor(price * 0.6));
+            const pricePerPerson = testPrice / testPeople;
+            const currentBestPricePerPerson = bestPrice / optimalPeopleForThisBooster;
+            
+            if (pricePerPerson <= currentBestPricePerPerson) {
+              optimalPeopleForThisBooster = testPeople;
+              bestPrice = testPrice;
+            }
           }
+          
+          totalCost += bestPrice;
+          remainingPeople -= optimalPeopleForThisBooster;
         }
         
-        totalCost += bestPrice;
-        remainingPeople -= optimalPeopleForThisBooster;
+        basePrice = totalCost;
       }
-      
-      return totalCost;
     }
+    
+    // Add extra hours cost
+    if (hasExtraHours && extraHours > 0 && extraHourPrice) {
+      basePrice += extraHours * extraHourPrice * boosters;
+    }
+    
+    return basePrice;
   };
 
   const calculateDuration = () => {
-    return duration * Math.max(people, boosters);
+    return (duration + extraHours) * Math.max(people, boosters);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -201,34 +220,78 @@ const ServiceCard = ({
                 </div>
               </div>
             )}
+
+            {/* Extra hours selector - only show for services with extra hours */}
+            {hasExtraHours && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Ekstra timer:</span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExtraHours(prev => Math.max(0, prev - 1));
+                    }}
+                    disabled={extraHours <= 0}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center font-medium">{extraHours}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExtraHours(prev => prev + 1);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
         
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center text-sm text-muted-foreground">
             <Clock className="h-4 w-4 mr-1" />
-            {calculateDuration()} timer
+            {isInquiry ? "Tilpasset varighed" : `${calculateDuration()} timer`}
           </div>
         </div>
         
         <div className="text-lg font-semibold text-foreground">
-          {calculatePrice()} DKK
+          {isInquiry ? "Send forespørgsel" : `${calculatePrice()} DKK`}
         </div>
       </CardContent>
       
       <CardFooter className="gap-2">
-        <Button 
-          className="flex-1"
-          onClick={handleAddToCart}
-        >
-          Læg i kurv
-        </Button>
-        <Button 
-          className="flex-1"
-          onClick={handleBookNow}
-        >
-          Book Nu
-        </Button>
+        {isInquiry ? (
+          <Button 
+            className="w-full"
+            onClick={handleBookNow}
+          >
+            Send forespørgsel
+          </Button>
+        ) : (
+          <>
+            <Button 
+              className="flex-1"
+              onClick={handleAddToCart}
+            >
+              Læg i kurv
+            </Button>
+            <Button 
+              className="flex-1"
+              onClick={handleBookNow}
+            >
+              Book Nu
+            </Button>
+          </>
+        )}
       </CardFooter>
     </Card>
   );

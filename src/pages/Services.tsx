@@ -17,6 +17,8 @@ interface Service {
   category: string;
   clientType: 'privat' | 'virksomhed';
   isInquiry?: boolean;
+  hasExtraHours?: boolean;
+  extraHourPrice?: number;
   groupPricing?: {
     1: number;
     2: number;
@@ -164,8 +166,11 @@ const Services = () => {
           description: 'Professionel makeup & hårstyling til shoot, reklamefilm mv. Op til 3 timer, ekstra timer +1000 kr/time. Mulighed for flere boosters',
           price: 4499,
           duration: 3,
-          category: 'Makeup & Hårstyling',
-          clientType: 'virksomhed' as const
+          category: 'Shoot/reklame',
+          clientType: 'virksomhed' as const,
+          groupPricing: { 1: 4499, 2: 8999, 3: 13499, 4: 17999 },
+          hasExtraHours: true,
+          extraHourPrice: 1000
         },
         {
           id: '21',
@@ -173,7 +178,7 @@ const Services = () => {
           description: 'Erfaren makeup artist til store projekter - udfyld formular og send forespørgsel',
           price: 0,
           duration: 0,
-          category: 'Specialister',
+          category: 'Specialister til projekt',
           clientType: 'virksomhed' as const,
           isInquiry: true
         },
@@ -183,7 +188,7 @@ const Services = () => {
           description: 'Dygtig makeup assistent til dit projekt - udfyld formular og send forespørgsel',
           price: 0,
           duration: 0,
-          category: 'Specialister',
+          category: 'Specialister til projekt',
           clientType: 'virksomhed' as const,
           isInquiry: true
         },
@@ -193,7 +198,7 @@ const Services = () => {
           description: 'Specialist i special effects makeup - udfyld formular og send forespørgsel',
           price: 0,
           duration: 0,
-          category: 'Specialister',
+          category: 'Specialister til projekt',
           clientType: 'virksomhed' as const,
           isInquiry: true
         },
@@ -203,7 +208,7 @@ const Services = () => {
           description: 'Professionel parykdesigner til dit projekt - udfyld formular og send forespørgsel',
           price: 0,
           duration: 0,
-          category: 'Specialister',
+          category: 'Specialister til projekt',
           clientType: 'virksomhed' as const,
           isInquiry: true
         },
@@ -213,17 +218,17 @@ const Services = () => {
           description: 'Makeup artist specialiseret i film og TV produktion - udfyld formular og send forespørgsel',
           price: 0,
           duration: 0,
-          category: 'Specialister',
+          category: 'Specialister til projekt',
           clientType: 'virksomhed' as const,
           isInquiry: true
         },
         {
           id: '26',
-          name: 'Event Services',
-          description: 'Omfattende event services - udfyld formular med antal gæster, boosters, tema, materialer og spejle',
+          name: 'Event Makeup Services',
+          description: 'Omfattende event makeup services - udfyld formular med antal gæster, boosters, tema, materialer og spejle',
           price: 0,
           duration: 0,
-          category: 'Event',
+          category: 'Makeup / styling til Event',
           clientType: 'virksomhed' as const,
           isInquiry: true
         }
@@ -255,9 +260,9 @@ const Services = () => {
     } else {
       return [
         ...baseCategories,
-        { value: "Makeup & Hårstyling", label: "Makeup & Hårstyling" },
-        { value: "Specialister", label: "Specialister" },
-        { value: "Event", label: "Event" }
+        { value: "Shoot/reklame", label: "Shoot/reklame" },
+        { value: "Specialister til projekt", label: "Specialister til projekt" },
+        { value: "Makeup / styling til Event", label: "Makeup / styling til Event" }
       ];
     }
   };
