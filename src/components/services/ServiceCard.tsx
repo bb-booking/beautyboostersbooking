@@ -53,11 +53,16 @@ const ServiceCard = ({
     if (clientType === "virksomhed") {
       basePrice = price * boosters;
     } else {
-      // For private services: use group pricing or base price * people, then multiply by boosters
+      // For private services: use group pricing or base price per person, multiplied by number of boosters
       if (groupPricing && people <= 4) {
-        basePrice = groupPricing[people as keyof typeof groupPricing] * boosters;
+        basePrice = groupPricing[people as keyof typeof groupPricing];
       } else {
-        basePrice = price * people * boosters;
+        basePrice = price * people;
+      }
+      
+      // For private services, if more than 1 booster, add cost for additional boosters
+      if (boosters > 1) {
+        basePrice += (boosters - 1) * 999; // 999 DKK per additional booster
       }
     }
     
@@ -66,7 +71,7 @@ const ServiceCard = ({
       if (clientType === "virksomhed") {
         basePrice += extraHours * extraHourPrice * boosters;
       } else {
-        basePrice += extraHours * extraHourPrice * people * boosters;
+        basePrice += extraHours * extraHourPrice * boosters;
       }
     }
     
@@ -105,7 +110,10 @@ const ServiceCard = ({
 
   const incrementBoosters = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setBoosters(prev => prev + 1);
+    const maxBoosters = clientType === "virksomhed" ? 20 : people; // Max boosters = number of people for private
+    if (boosters < maxBoosters) {
+      setBoosters(prev => prev + 1);
+    }
   };
 
   const decrementBoosters = (e: React.MouseEvent) => {
@@ -185,6 +193,7 @@ const ServiceCard = ({
                     size="icon"
                     className="h-8 w-8"
                     onClick={incrementBoosters}
+                    disabled={clientType === "privat" && boosters >= people}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
