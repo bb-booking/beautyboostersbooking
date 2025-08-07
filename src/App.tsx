@@ -25,6 +25,8 @@ import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminSettings from "./pages/admin/AdminSettings";
+import { BoosterLayout } from "@/components/layout/BoosterLayout";
+import BoosterDashboard from "./pages/booster/BoosterDashboard";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,10 @@ const App = () => (
                   <Route path="finance" element={<AdminFinance />} />
                   <Route path="boosters" element={<AdminBoosters />} />
                   <Route path="settings" element={<AdminSettings />} />
+                </Route>
+                {/* Booster routes */}
+                <Route path="/booster" element={<BoosterLayout />}>
+                  <Route index element={<BoosterDashboard />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
