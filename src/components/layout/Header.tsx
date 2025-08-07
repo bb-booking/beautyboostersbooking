@@ -10,7 +10,7 @@ const Header = () => {
           <img 
             src="/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png" 
             alt="BeautyBoosters Logo" 
-            className="h-12 w-auto"
+            className="h-12 w-auto mix-blend-multiply"
           />
         </Link>
         
