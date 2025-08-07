@@ -110,7 +110,12 @@ export default function Confirmation() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
-              <span>{displayBooking.booking_date || displayBooking.date}</span>
+              <span>
+                {(() => {
+                  const date = displayBooking.booking_date || displayBooking.date;
+                  return typeof date === 'string' ? date : date?.toLocaleDateString?.('da-DK') || 'N/A';
+                })()}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Clock className="h-5 w-5 text-muted-foreground" />

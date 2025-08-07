@@ -109,7 +109,7 @@ export default function Checkout() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span>{booking.date}</span>
+                <span>{typeof booking.date === 'string' ? booking.date : booking.date?.toLocaleDateString?.('da-DK') || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-muted-foreground" />
