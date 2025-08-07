@@ -12,6 +12,7 @@ interface ServiceCardProps {
   price: number;
   duration: number;
   category: string;
+  clientType: 'privat' | 'virksomhed';
   isInquiry?: boolean;
   hasExtraHours?: boolean;
   extraHourPrice?: number;
@@ -30,7 +31,8 @@ const ServiceCard = ({
   description, 
   price, 
   duration, 
-  category, 
+  category,
+  clientType, 
   isInquiry,
   hasExtraHours,
   extraHourPrice,
@@ -48,7 +50,7 @@ const ServiceCard = ({
     let basePrice;
     
     // For business services: use boosters logic
-    if (category === "Virksomhed") {
+    if (clientType === "virksomhed") {
       basePrice = price * boosters;
     } else {
       // For private services: use group pricing or base price * people, then multiply by boosters
@@ -61,7 +63,7 @@ const ServiceCard = ({
     
     // Add extra hours cost
     if (hasExtraHours && extraHours > 0 && extraHourPrice) {
-      if (category === "Virksomhed") {
+      if (clientType === "virksomhed") {
         basePrice += extraHours * extraHourPrice * boosters;
       } else {
         basePrice += extraHours * extraHourPrice * people * boosters;
@@ -72,7 +74,7 @@ const ServiceCard = ({
   };
 
   const calculateDuration = () => {
-    if (category === "Virksomhed") {
+    if (clientType === "virksomhed") {
       return (duration + extraHours) * boosters;
     } else {
       return duration + extraHours;
@@ -88,7 +90,7 @@ const ServiceCard = ({
       basePrice: price,
       duration,
       category,
-      people: category === "Virksomhed" ? 1 : people,
+      people: clientType === "virksomhed" ? 1 : people,
       boosters,
       finalPrice: calculatePrice(),
       totalDuration: calculateDuration(),
@@ -129,7 +131,7 @@ const ServiceCard = ({
         {!isInquiry && (
           <div className="space-y-4 mb-4">
             {/* People selector - only for private services */}
-            {category !== "Virksomhed" && (
+            {clientType !== "virksomhed" && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Antal personer:</span>
                 <div className="flex items-center space-x-2">
@@ -164,7 +166,7 @@ const ServiceCard = ({
             )}
 
             {/* Boosters selector - for business services, or private services with more than 1 person */}
-            {(category === "Virksomhed" || (category !== "Virksomhed" && people > 1)) && (
+            {(clientType === "virksomhed" || (clientType === "privat" && people > 1)) && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Antal boosters:</span>
                 <div className="flex items-center space-x-2">

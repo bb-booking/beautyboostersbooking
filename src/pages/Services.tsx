@@ -288,8 +288,14 @@ const Services = () => {
   };
 
   const handleServiceClick = (serviceId: string) => {
-    // Navigate to address page with selected service
-    window.location.href = `/address?service=${serviceId}`;
+    const service = services.find(s => s.id === serviceId);
+    if (service?.isInquiry) {
+      // Navigate to inquiry form for inquiry-based services
+      window.location.href = `/inquiry?service=${serviceId}`;
+    } else {
+      // Navigate to address page with selected service
+      window.location.href = `/address?service=${serviceId}`;
+    }
   };
 
   if (loading) {
