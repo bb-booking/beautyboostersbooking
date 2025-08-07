@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Send } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const InquiryForm = () => {
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get('service');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     navn: "",
@@ -38,10 +40,55 @@ const InquiryForm = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      // Here you would normally send the data to your backend
-      console.log("Inquiry form data:", { serviceId, ...formData });
-      
+      // Save to database
+      const { data: inquiryData, error: dbError } = await supabase
+        .from('inquiries')
+        .insert([
+          {
+            navn: formData.navn,
+            email: formData.email,
+            telefon: formData.telefon,
+            virksomhed: formData.virksomhed || null,
+            service_id: serviceId || null,
+            projekt_type: formData.projektType || null,
+            start_dato: formData.startDato || null,
+            slut_dato: formData.slutDato || null,
+            lokation: formData.lokation || null,
+            antal_personer: formData.antalPersoner ? parseInt(formData.antalPersoner) : null,
+            budget: formData.budget || null,
+            beskrivelse: formData.beskrivelse,
+            specielle_krav: formData.specialeKrav || null,
+            status: 'new'
+          }
+        ])
+        .select()
+        .single();
+
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
+
+      // Send emails via edge function
+      const { error: emailError } = await supabase.functions.invoke('send-inquiry-email', {
+        body: {
+          navn: formData.navn,
+          email: formData.email,
+          telefon: formData.telefon,
+          virksomhed: formData.virksomhed,
+          projekt_type: formData.projektType,
+          budget: formData.budget,
+          beskrivelse: formData.beskrivelse,
+        }
+      });
+
+      if (emailError) {
+        console.error("Email error:", emailError);
+        // Don't fail the whole process if email fails
+      }
+
       toast.success("Din forespørgsel er sendt! Vi kontakter dig hurtigst muligt.");
       
       // Reset form
@@ -59,8 +106,11 @@ const InquiryForm = () => {
         beskrivelse: "",
         specialeKrav: ""
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error submitting inquiry:", error);
       toast.error("Der opstod en fejl. Prøv igen senere.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -250,9 +300,9 @@ const InquiryForm = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
               <Send className="h-4 w-4 mr-2" />
-              Send forespørgsel
+              {isSubmitting ? "Sender..." : "Send forespørgsel"}
             </Button>
           </form>
         </CardContent>
