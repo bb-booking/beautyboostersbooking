@@ -18,6 +18,9 @@ import NotFound from "./pages/NotFound";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInquiries from "./pages/admin/AdminInquiries";
+import AdminBookers from "./pages/admin/AdminBookers";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -46,9 +49,9 @@ const App = () => (
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="inquiries" element={<AdminInquiries />} />
-                  <Route path="boosters" element={<div>Boosters admin kommer snart</div>} />
-                  <Route path="bookings" element={<div>Bookings admin kommer snart</div>} />
-                  <Route path="settings" element={<div>Indstillinger kommer snart</div>} />
+                  <Route path="boosters" element={<AdminBookers />} />
+                  <Route path="bookings" element={<AdminBookings />} />
+                  <Route path="settings" element={<AdminSettings />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
