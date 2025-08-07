@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ServiceCard from "@/components/services/ServiceCard";
 import CartFooter from "@/components/cart/CartFooter";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
 interface Service {
@@ -194,8 +194,8 @@ const Services = () => {
             Vælg den beauty-behandling der passer bedst til din anledning
           </p>
 
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
+          <div className="space-y-4">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Søg efter services..."
@@ -205,25 +205,34 @@ const Services = () => {
               />
             </div>
 
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Kategori" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                <SelectItem value="all">Alle Kategorier</SelectItem>
-                <SelectItem value="Makeup">Makeup</SelectItem>
-                <SelectItem value="Hår">Hår</SelectItem>
-                <SelectItem value="Kombineret">Kombineret</SelectItem>
-                <SelectItem value="Solning">Solning</SelectItem>
-                <SelectItem value="Konfirmation">Konfirmation</SelectItem>
-                <SelectItem value="Bryllup">Bryllup</SelectItem>
-                <SelectItem value="Undervisning">Undervisning</SelectItem>
-                <SelectItem value="Event">Event</SelectItem>
-                <SelectItem value="Børn">Børn</SelectItem>
-                <SelectItem value="Professionelt">Professionelt</SelectItem>
-              </SelectContent>
-            </Select>
-
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: "all", label: "Alle" },
+                { value: "Makeup", label: "Makeup" },
+                { value: "Hår", label: "Hår" },
+                { value: "Kombineret", label: "Kombineret" },
+                { value: "Solning", label: "Solning" },
+                { value: "Konfirmation", label: "Konfirmation" },
+                { value: "Bryllup", label: "Bryllup" },
+                { value: "Undervisning", label: "Undervisning" },
+                { value: "Event", label: "Event" },
+                { value: "Børn", label: "Børn" },
+                { value: "Professionelt", label: "Professionelt" }
+              ].map((category) => (
+                <Button
+                  key={category.value}
+                  variant={categoryFilter === category.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCategoryFilter(category.value)}
+                  className={`${categoryFilter === category.value 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-card text-foreground hover:bg-primary/20 border-primary/30"
+                  } transition-all duration-200`}
+                >
+                  {category.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
