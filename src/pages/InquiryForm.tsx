@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,12 +153,19 @@ const InquiryForm = () => {
               
               <div>
                 <Label htmlFor="projektType">Type projekt</Label>
-                <Input
-                  id="projektType"
-                  value={formData.projektType}
-                  onChange={(e) => handleInputChange("projektType", e.target.value)}
-                  placeholder="F.eks. reklameshoot, bryllup, event"
-                />
+                <Select value={formData.projektType} onValueChange={(value) => handleInputChange("projektType", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vælg projekttype" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="film-tv">Film/TV</SelectItem>
+                    <SelectItem value="teater">Teater</SelectItem>
+                    <SelectItem value="shoot-reklame">Shoot/Reklame</SelectItem>
+                    <SelectItem value="event">Event</SelectItem>
+                    <SelectItem value="bryllup">Bryllup</SelectItem>
+                    <SelectItem value="andet">Andet</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
