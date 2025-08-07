@@ -207,8 +207,21 @@ const Booking = () => {
     setShowFallback(false);
     
     try {
-      // Mock availability check
-      const mockAvailableBoosters: Booster[] = [];
+      // Show available boosters instead of empty array
+      const mockAvailableBoosters: Booster[] = [
+        {
+          id: '1',
+          name: 'Sarah Nielsen',
+          specialties: ['Makeup', 'Bryllup', 'Event'],
+          hourly_rate: 1999,
+          portfolio_image_url: '/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png',
+          location: 'København N',
+          rating: 4.8,
+          review_count: 127,
+          years_experience: 5,
+          bio: 'Professionel makeup artist med speciale i bryllups- og event makeup'
+        }
+      ];
       
       // Mock nearby boosters for fallback
       const mockNearbyBoosters: Booster[] = [
