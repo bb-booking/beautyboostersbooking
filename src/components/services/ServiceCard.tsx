@@ -163,30 +163,32 @@ const ServiceCard = ({
               </div>
             )}
 
-            {/* Boosters selector - for both private and business services */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Antal boosters:</span>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={decrementBoosters}
-                  disabled={boosters <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{boosters}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={incrementBoosters}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+            {/* Boosters selector - for business services, or private services with more than 1 person */}
+            {(category === "Virksomhed" || (category !== "Virksomhed" && people > 1)) && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Antal boosters:</span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={decrementBoosters}
+                    disabled={boosters <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center font-medium">{boosters}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={incrementBoosters}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Extra hours selector - only show for services with extra hours */}
             {hasExtraHours && (
