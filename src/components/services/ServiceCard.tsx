@@ -10,7 +10,13 @@ interface ServiceCardProps {
   price: number;
   duration: number;
   category: string;
-  difficulty: string;
+  groupPricing?: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+  };
+  maxPeople?: number;
   onClick: () => void;
 }
 
@@ -20,17 +26,10 @@ const ServiceCard = ({
   price, 
   duration, 
   category, 
-  difficulty,
+  groupPricing,
+  maxPeople,
   onClick 
 }: ServiceCardProps) => {
-  const getDifficultyColor = (diff: string) => {
-    switch (diff.toLowerCase()) {
-      case 'begynder': return 'bg-green-500/10 text-green-700 dark:text-green-400';
-      case 'mellem': return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400';
-      case 'ekspert': return 'bg-red-500/10 text-red-700 dark:text-red-400';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer" onClick={onClick}>
@@ -44,20 +43,36 @@ const ServiceCard = ({
       <CardContent>
         <p className="text-muted-foreground mb-4 line-clamp-2">{description}</p>
         
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center text-sm text-muted-foreground">
             <Clock className="h-4 w-4 mr-1" />
             {duration} timer
           </div>
-          <Badge className={getDifficultyColor(difficulty)}>
-            {difficulty}
-          </Badge>
+          {maxPeople && (
+            <Badge variant="outline">
+              Op til {maxPeople} personer
+            </Badge>
+          )}
         </div>
         
-        <div className="flex items-center text-lg font-semibold text-primary">
-          <DollarSign className="h-5 w-5 mr-1" />
-          {price} DKK
-        </div>
+        {groupPricing ? (
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-foreground">Priser (DKK):</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {Object.entries(groupPricing).map(([people, cost]) => (
+                <div key={people} className="flex justify-between">
+                  <span className="text-muted-foreground">{people} person{parseInt(people) > 1 ? 'er' : ''}:</span>
+                  <span className="font-medium">{cost} DKK</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center text-lg font-semibold text-primary">
+            <DollarSign className="h-5 w-5 mr-1" />
+            {price} DKK
+          </div>
+        )}
       </CardContent>
       
       <CardFooter>

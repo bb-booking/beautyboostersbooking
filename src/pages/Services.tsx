@@ -12,7 +12,13 @@ interface Service {
   price: number;
   duration: number;
   category: string;
-  difficulty: string;
+  groupPricing?: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+  };
+  maxPeople?: number;
 }
 
 const Services = () => {
@@ -20,7 +26,6 @@ const Services = () => {
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +34,7 @@ const Services = () => {
 
   useEffect(() => {
     filterServices();
-  }, [services, searchTerm, categoryFilter, difficultyFilter]);
+  }, [services, searchTerm, categoryFilter]);
 
   const fetchServices = async () => {
     try {
@@ -37,39 +42,43 @@ const Services = () => {
       const mockServices = [
         {
           id: '1',
-          name: 'Makeup Styling (1 person)',
+          name: 'Makeup Styling',
           description: 'Professionel makeup styling til enhver lejlighed',
           price: 1999,
           duration: 1,
           category: 'Makeup',
-          difficulty: 'Begynder'
+          groupPricing: { 1: 1999, 2: 3499, 3: 4899, 4: 5999 },
+          maxPeople: 4
         },
         {
           id: '2',
-          name: 'Hårstyling / håropsætning (1 person)',
+          name: 'Hårstyling / håropsætning',
           description: 'Professionel hårstyling eller opsætning',
           price: 1999,
           duration: 1,
           category: 'Hår',
-          difficulty: 'Begynder'
+          groupPricing: { 1: 1999, 2: 3499, 3: 4899, 4: 5999 },
+          maxPeople: 4
         },
         {
           id: '3',
-          name: 'Makeup & Hårstyling (1 person)',
+          name: 'Makeup & Hårstyling',
           description: 'Makeup & Hårstyling - hvilket look drømmer du om til dit næste event?',
           price: 2999,
           duration: 1.5,
           category: 'Kombineret',
-          difficulty: 'Mellem'
+          groupPricing: { 1: 2999, 2: 5199, 3: 7199, 4: 8799 },
+          maxPeople: 4
         },
         {
           id: '4',
-          name: 'Spraytan (1 person)',
+          name: 'Spraytan',
           description: 'Skræddersyet spraytan med high-end væske som er lugtfri og giver naturlige nuancer',
           price: 499,
           duration: 0.5,
           category: 'Solning',
-          difficulty: 'Begynder'
+          groupPricing: { 1: 499, 2: 849, 3: 1149, 4: 1399 },
+          maxPeople: 4
         },
         {
           id: '5',
@@ -78,7 +87,8 @@ const Services = () => {
           price: 2999,
           duration: 1.5,
           category: 'Konfirmation',
-          difficulty: 'Mellem'
+          groupPricing: { 1: 2999, 2: 5199, 3: 7199, 4: 8799 },
+          maxPeople: 4
         },
         {
           id: '6',
@@ -86,8 +96,7 @@ const Services = () => {
           description: 'Lad os style dig til dit bryllup og give dig det bedste udgangspunkt for den perfekte dag',
           price: 4999,
           duration: 3,
-          category: 'Bryllup',
-          difficulty: 'Ekspert'
+          category: 'Bryllup'
         },
         {
           id: '7',
@@ -95,8 +104,7 @@ const Services = () => {
           description: 'Professionel brudestyling med prøvestyling. Bliv den smukkeste udgave af dig selv',
           price: 6499,
           duration: 4.5,
-          category: 'Bryllup',
-          difficulty: 'Ekspert'
+          category: 'Bryllup'
         },
         {
           id: '8',
@@ -104,8 +112,7 @@ const Services = () => {
           description: 'Lær at lægge den perfekte makeup af en professionel makeupartist',
           price: 2499,
           duration: 1.5,
-          category: 'Undervisning',
-          difficulty: 'Begynder'
+          category: 'Undervisning'
         },
         {
           id: '9',
@@ -113,8 +120,7 @@ const Services = () => {
           description: 'Makeup kursus på 3 timer for op til 10 personer. Lær både hverdags- og gå-i-byen look',
           price: 4499,
           duration: 3,
-          category: 'Undervisning',
-          difficulty: 'Mellem'
+          category: 'Undervisning'
         },
         {
           id: '10',
@@ -122,8 +128,7 @@ const Services = () => {
           description: 'Makeup artist til rådighed i 3 timer - du bestemmer hvordan tiden fordeles',
           price: 4499,
           duration: 3,
-          category: 'Event',
-          difficulty: 'Mellem'
+          category: 'Event'
         },
         {
           id: '11',
@@ -131,8 +136,7 @@ const Services = () => {
           description: 'Sjov ansigtsmaling til børn til events og fester',
           price: 4499,
           duration: 3,
-          category: 'Børn',
-          difficulty: 'Begynder'
+          category: 'Børn'
         },
         {
           id: '12',
@@ -140,8 +144,7 @@ const Services = () => {
           description: 'Professionel makeup artist til dit næste projekt - op til tre timer',
           price: 4499,
           duration: 3,
-          category: 'Professionelt',
-          difficulty: 'Ekspert'
+          category: 'Professionelt'
         }
       ];
       setServices(mockServices);
@@ -166,9 +169,6 @@ const Services = () => {
       filtered = filtered.filter(service => service.category === categoryFilter);
     }
 
-    if (difficultyFilter !== "all") {
-      filtered = filtered.filter(service => service.difficulty === difficultyFilter);
-    }
 
     setFilteredServices(filtered);
   };
@@ -228,17 +228,6 @@ const Services = () => {
             </SelectContent>
           </Select>
 
-          <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Sværhedsgrad" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Niveauer</SelectItem>
-              <SelectItem value="Begynder">Begynder</SelectItem>
-              <SelectItem value="Mellem">Mellem</SelectItem>
-              <SelectItem value="Ekspert">Ekspert</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
