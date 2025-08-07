@@ -256,17 +256,21 @@ const Booking = () => {
   };
 
   const handleBookBooster = (booster: Booster) => {
-    if (!selectedDate || !selectedTime || !service) return;
+    if (!selectedDate || !selectedTime || !service || !bookingDetails) return;
     
-    // Navigate to confirmation with all booking details
-    navigate('/booking-confirmation', {
-      state: {
-        service,
-        booster,
-        date: selectedDate,
-        time: selectedTime,
-        location: bookingDetails?.location
-      }
+    const booking = {
+      service: service.name,
+      date: selectedDate,
+      time: selectedTime,
+      booster: booster.name,
+      boosterId: booster.id,
+      duration: service.duration,
+      price: service.price,
+      location: bookingDetails.location.address
+    };
+
+    navigate('/checkout', { 
+      state: { booking, booster, service, bookingDetails } 
     });
   };
 

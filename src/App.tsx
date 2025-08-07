@@ -12,6 +12,8 @@ import InquiryForm from "./pages/InquiryForm";
 import Stylists from "./pages/Stylists";
 import StylistDetail from "./pages/StylistDetail";
 import Booking from "./pages/Booking";
+import Checkout from "./pages/Checkout";
+import Confirmation from "./pages/Confirmation";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import Bookings from "./pages/Bookings";
 import NotFound from "./pages/NotFound";
@@ -59,6 +61,8 @@ const App = () => (
                 <Route path="/stylist/:id" element={<StylistDetail />} />
                 <Route path="/book/:boosterId" element={<Booking />} />
                 <Route path="/booking" element={<Booking />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/confirmation" element={<Confirmation />} />
                 <Route path="/booking-confirmation" element={<BookingConfirmation />} />
                 <Route path="/bookings" element={<Bookings />} />
                 <Route path="/booster-signup" element={<BoosterSignup />} />

@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          amount: number
+          booking_date: string
+          booking_time: string
+          booster_id: string | null
+          booster_name: string | null
+          cancellation_policy_accepted: boolean | null
+          created_at: string
+          customer_email: string
+          customer_name: string | null
+          customer_phone: string | null
+          duration_hours: number | null
+          id: string
+          location: string | null
+          payment_captured_at: string | null
+          payment_intent_id: string | null
+          service_name: string
+          special_requests: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          booking_date: string
+          booking_time: string
+          booster_id?: string | null
+          booster_name?: string | null
+          cancellation_policy_accepted?: boolean | null
+          created_at?: string
+          customer_email: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          duration_hours?: number | null
+          id?: string
+          location?: string | null
+          payment_captured_at?: string | null
+          payment_intent_id?: string | null
+          service_name: string
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_date?: string
+          booking_time?: string
+          booster_id?: string | null
+          booster_name?: string | null
+          cancellation_policy_accepted?: boolean | null
+          created_at?: string
+          customer_email?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          duration_hours?: number | null
+          id?: string
+          location?: string | null
+          payment_captured_at?: string | null
+          payment_intent_id?: string | null
+          service_name?: string
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       booster_availability: {
         Row: {
           booster_id: string | null
