@@ -13,8 +13,15 @@ const CartFooter = () => {
   }
 
   const handleContinue = () => {
-    // Navigate to address page to continue the booking flow
-    navigate('/address');
+    // For multiple items in cart, take the first service to start the flow
+    // Later we can enhance this to handle multiple services better
+    const firstService = items[0];
+    if (firstService) {
+      // Navigate to address page with the first service, then user can continue the full booking flow
+      navigate(`/address?service=${firstService.id.split('-')[0]}`); // Remove timestamp from ID
+    } else {
+      navigate('/address');
+    }
   };
 
   return (

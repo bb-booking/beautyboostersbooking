@@ -117,8 +117,17 @@ const Address = () => {
       return;
     }
 
-    // Save address to session storage for use in booking
-    sessionStorage.setItem("selectedAddress", JSON.stringify(address));
+    // Save booking details in the format expected by booking page
+    const bookingDetails = {
+      serviceId: serviceId,
+      location: {
+        address: address.street,
+        postalCode: address.postalCode,
+        city: address.city
+      }
+    };
+    
+    sessionStorage.setItem("bookingDetails", JSON.stringify(bookingDetails));
     
     // Navigate to booking with service ID
     navigate(`/booking?service=${serviceId}`);
