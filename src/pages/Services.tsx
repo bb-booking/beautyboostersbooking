@@ -15,6 +15,8 @@ interface Service {
   price: number;
   duration: number;
   category: string;
+  clientType: 'privat' | 'virksomhed';
+  isInquiry?: boolean;
   groupPricing?: {
     1: number;
     2: number;
@@ -41,15 +43,16 @@ const Services = () => {
 
   const fetchServices = async () => {
     try {
-      // Services based on BeautyBoosters website
-      const mockServices = [
+      const privatServices = [
+        // Makeup & Hår
         {
           id: '1',
           name: 'Makeup Styling',
           description: 'Professionel makeup styling til enhver lejlighed',
           price: 1999,
           duration: 1,
-          category: 'Makeup',
+          category: 'Makeup & Hår',
+          clientType: 'privat' as const,
           groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
@@ -58,7 +61,8 @@ const Services = () => {
           description: 'Professionel hårstyling eller opsætning',
           price: 1999,
           duration: 1,
-          category: 'Hår',
+          category: 'Makeup & Hår',
+          clientType: 'privat' as const,
           groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
@@ -67,18 +71,22 @@ const Services = () => {
           description: 'Makeup & Hårstyling - hvilket look drømmer du om til dit næste event?',
           price: 2999,
           duration: 1.5,
-          category: 'Kombineret',
+          category: 'Makeup & Hår',
+          clientType: 'privat' as const,
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
+        // Spraytan
         {
           id: '4',
           name: 'Spraytan',
-          description: 'Skræddersyet spraytan med high-end væske som er lugtfri og giver naturlige nuancer',
+          description: 'Skræddersyet spraytan med high-end væske som er lugtfri og giver naturlige nuancer (Kun København og Roskilde + omegn)',
           price: 499,
           duration: 0.5,
-          category: 'Solning',
+          category: 'Spraytan',
+          clientType: 'privat' as const,
           groupPricing: { 1: 499, 2: 799, 3: 1099, 4: 1399 }
         },
+        // Konfirmation
         {
           id: '5',
           name: 'Konfirmationsstyling - Makeup OG Hårstyling',
@@ -86,15 +94,18 @@ const Services = () => {
           price: 2999,
           duration: 1.5,
           category: 'Konfirmation',
+          clientType: 'privat' as const,
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
+        // Bryllup - Brudestyling
         {
           id: '6',
           name: 'Brudestyling - Hår & Makeup (uden prøvestyling)',
           description: 'Lad os style dig til dit bryllup og give dig det bedste udgangspunkt for den perfekte dag',
           price: 4999,
           duration: 3,
-          category: 'Bryllup'
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const
         },
         {
           id: '7',
@@ -102,50 +113,124 @@ const Services = () => {
           description: 'Professionel brudestyling med prøvestyling. Bliv den smukkeste udgave af dig selv',
           price: 6499,
           duration: 4.5,
-          category: 'Bryllup'
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const
         },
+        // Makeup Kurser
         {
           id: '8',
           name: '1:1 Makeup Session',
           description: 'Lær at lægge den perfekte makeup af en professionel makeupartist',
           price: 2499,
           duration: 1.5,
-          category: 'Undervisning'
+          category: 'Makeup Kurser',
+          clientType: 'privat' as const
         },
         {
           id: '9',
           name: 'The Beauty Bar (makeup kursus)',
-          description: 'Makeup kursus på 3 timer for op til 10 personer. Lær både hverdags- og gå-i-byen look',
+          description: 'Makeup kursus på 3 timer for op til 12 personer. Lær både hverdags- og gå-i-byen look',
           price: 4499,
           duration: 3,
-          category: 'Undervisning'
+          category: 'Makeup Kurser',
+          clientType: 'privat' as const
         },
+        // Event
         {
           id: '10',
           name: 'Makeup Artist til Touch Up (3 timer)',
-          description: 'Makeup artist til rådighed i 3 timer - du bestemmer hvordan tiden fordeles',
+          description: 'Makeup artist til rådighed i 3 timer - mulighed for ekstra timer (1200 kr/time) og boosters (4499 kr/booster)',
           price: 4499,
           duration: 3,
-          category: 'Event'
+          category: 'Event',
+          clientType: 'privat' as const
         },
+        // Børn
         {
           id: '11',
           name: 'Ansigtsmaling til børn',
-          description: 'Sjov ansigtsmaling til børn til events og fester',
+          description: 'Sjov ansigtsmaling til børn til events og fester - samme logik som event touch up',
           price: 4499,
           duration: 3,
-          category: 'Børn'
-        },
-        {
-          id: '12',
-          name: 'Makeup Artist til Shoot/Event/Film/TV',
-          description: 'Professionel makeup artist til dit næste projekt - op til tre timer',
-          price: 4499,
-          duration: 3,
-          category: 'Professionelt'
+          category: 'Børn',
+          clientType: 'privat' as const
         }
       ];
-      setServices(mockServices);
+
+      const virksomhedServices = [
+        {
+          id: '20',
+          name: 'Makeup & Hårstyling til Shoot/Reklamefilm',
+          description: 'Professionel makeup & hårstyling til shoot, reklamefilm mv. Op til 3 timer, ekstra timer +1000 kr/time. Mulighed for flere boosters',
+          price: 4499,
+          duration: 3,
+          category: 'Makeup & Hårstyling',
+          clientType: 'virksomhed' as const
+        },
+        {
+          id: '21',
+          name: 'Key Makeup Artist til projekt',
+          description: 'Erfaren makeup artist til store projekter - udfyld formular og send forespørgsel',
+          price: 0,
+          duration: 0,
+          category: 'Specialister',
+          clientType: 'virksomhed' as const,
+          isInquiry: true
+        },
+        {
+          id: '22',
+          name: 'Makeup Assistent til projekt',
+          description: 'Dygtig makeup assistent til dit projekt - udfyld formular og send forespørgsel',
+          price: 0,
+          duration: 0,
+          category: 'Specialister',
+          clientType: 'virksomhed' as const,
+          isInquiry: true
+        },
+        {
+          id: '23',
+          name: 'SFX Expert',
+          description: 'Specialist i special effects makeup - udfyld formular og send forespørgsel',
+          price: 0,
+          duration: 0,
+          category: 'Specialister',
+          clientType: 'virksomhed' as const,
+          isInquiry: true
+        },
+        {
+          id: '24',
+          name: 'Parykdesign',
+          description: 'Professionel parykdesigner til dit projekt - udfyld formular og send forespørgsel',
+          price: 0,
+          duration: 0,
+          category: 'Specialister',
+          clientType: 'virksomhed' as const,
+          isInquiry: true
+        },
+        {
+          id: '25',
+          name: 'MUA til Film/TV',
+          description: 'Makeup artist specialiseret i film og TV produktion - udfyld formular og send forespørgsel',
+          price: 0,
+          duration: 0,
+          category: 'Specialister',
+          clientType: 'virksomhed' as const,
+          isInquiry: true
+        },
+        {
+          id: '26',
+          name: 'Event Services',
+          description: 'Omfattende event services - udfyld formular med antal gæster, boosters, tema, materialer og spejle',
+          price: 0,
+          duration: 0,
+          category: 'Event',
+          clientType: 'virksomhed' as const,
+          isInquiry: true
+        }
+      ];
+
+      const allServices = [...privatServices, ...virksomhedServices];
+      setServices(allServices);
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
@@ -153,8 +238,35 @@ const Services = () => {
     }
   };
 
+  const getAvailableCategories = () => {
+    const baseCategories = [{ value: "all", label: "Alle" }];
+    
+    if (clientType === "privat") {
+      return [
+        ...baseCategories,
+        { value: "Makeup & Hår", label: "Makeup & Hår" },
+        { value: "Spraytan", label: "Spraytan" },
+        { value: "Konfirmation", label: "Konfirmation" },
+        { value: "Bryllup - Brudestyling", label: "Bryllup - Brudestyling" },
+        { value: "Makeup Kurser", label: "Makeup Kurser" },
+        { value: "Event", label: "Event" },
+        { value: "Børn", label: "Børn" }
+      ];
+    } else {
+      return [
+        ...baseCategories,
+        { value: "Makeup & Hårstyling", label: "Makeup & Hårstyling" },
+        { value: "Specialister", label: "Specialister" },
+        { value: "Event", label: "Event" }
+      ];
+    }
+  };
+
   const filterServices = () => {
     let filtered = [...services];
+
+    // Filter by client type first
+    filtered = filtered.filter(service => service.clientType === clientType);
 
     if (searchTerm) {
       filtered = filtered.filter(service =>
@@ -166,7 +278,6 @@ const Services = () => {
     if (categoryFilter !== "all") {
       filtered = filtered.filter(service => service.category === categoryFilter);
     }
-
 
     setFilteredServices(filtered);
   };
@@ -208,6 +319,9 @@ const Services = () => {
                 <Label htmlFor="virksomhed" className="text-sm font-medium">Virksomhed</Label>
               </div>
             </RadioGroup>
+            {clientType === "virksomhed" && (
+              <p className="text-sm text-muted-foreground mt-2">Alle priser er ex. moms</p>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -222,19 +336,7 @@ const Services = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {[
-                { value: "all", label: "Alle" },
-                { value: "Makeup", label: "Makeup" },
-                { value: "Hår", label: "Hår" },
-                { value: "Kombineret", label: "Kombineret" },
-                { value: "Solning", label: "Solning" },
-                { value: "Konfirmation", label: "Konfirmation" },
-                { value: "Bryllup", label: "Bryllup" },
-                { value: "Undervisning", label: "Undervisning" },
-                { value: "Event", label: "Event" },
-                { value: "Børn", label: "Børn" },
-                { value: "Professionelt", label: "Professionelt" }
-              ].map((category) => (
+              {getAvailableCategories().map((category) => (
                 <Button
                   key={category.value}
                   variant={categoryFilter === category.value ? "default" : "outline"}
