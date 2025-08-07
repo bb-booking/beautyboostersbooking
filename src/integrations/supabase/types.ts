@@ -62,6 +62,66 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiries: {
+        Row: {
+          antal_personer: number | null
+          beskrivelse: string
+          budget: string | null
+          created_at: string
+          email: string
+          id: string
+          lokation: string | null
+          navn: string
+          projekt_type: string | null
+          service_id: string | null
+          slut_dato: string | null
+          specielle_krav: string | null
+          start_dato: string | null
+          status: string | null
+          telefon: string
+          updated_at: string
+          virksomhed: string | null
+        }
+        Insert: {
+          antal_personer?: number | null
+          beskrivelse: string
+          budget?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          lokation?: string | null
+          navn: string
+          projekt_type?: string | null
+          service_id?: string | null
+          slut_dato?: string | null
+          specielle_krav?: string | null
+          start_dato?: string | null
+          status?: string | null
+          telefon: string
+          updated_at?: string
+          virksomhed?: string | null
+        }
+        Update: {
+          antal_personer?: number | null
+          beskrivelse?: string
+          budget?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          lokation?: string | null
+          navn?: string
+          projekt_type?: string | null
+          service_id?: string | null
+          slut_dato?: string | null
+          specielle_krav?: string | null
+          start_dato?: string | null
+          status?: string | null
+          telefon?: string
+          updated_at?: string
+          virksomhed?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
