@@ -19,7 +19,6 @@ interface Service {
     3: number;
     4: number;
   };
-  maxPeople?: number;
 }
 
 const Services = () => {
@@ -48,8 +47,7 @@ const Services = () => {
           price: 1999,
           duration: 1,
           category: 'Makeup',
-          groupPricing: { 1: 1999, 2: 3499, 3: 4899, 4: 5999 },
-          maxPeople: 4
+          groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
           id: '2',
@@ -58,8 +56,7 @@ const Services = () => {
           price: 1999,
           duration: 1,
           category: 'Hår',
-          groupPricing: { 1: 1999, 2: 3499, 3: 4899, 4: 5999 },
-          maxPeople: 4
+          groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
           id: '3',
@@ -68,8 +65,7 @@ const Services = () => {
           price: 2999,
           duration: 1.5,
           category: 'Kombineret',
-          groupPricing: { 1: 2999, 2: 5199, 3: 7199, 4: 8799 },
-          maxPeople: 4
+          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
         {
           id: '4',
@@ -78,8 +74,7 @@ const Services = () => {
           price: 499,
           duration: 0.5,
           category: 'Solning',
-          groupPricing: { 1: 499, 2: 849, 3: 1149, 4: 1399 },
-          maxPeople: 4
+          groupPricing: { 1: 499, 2: 799, 3: 1099, 4: 1399 }
         },
         {
           id: '5',
@@ -88,8 +83,7 @@ const Services = () => {
           price: 2999,
           duration: 1.5,
           category: 'Konfirmation',
-          groupPricing: { 1: 2999, 2: 5199, 3: 7199, 4: 8799 },
-          maxPeople: 4
+          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
         {
           id: '6',

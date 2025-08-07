@@ -18,7 +18,6 @@ interface ServiceCardProps {
     3: number;
     4: number;
   };
-  maxPeople?: number;
   onClick: () => void;
 }
 
@@ -30,7 +29,7 @@ const ServiceCard = ({
   duration, 
   category, 
   groupPricing,
-  maxPeople,
+  
   onClick 
 }: ServiceCardProps) => {
   const { addToCart } = useCart();
@@ -40,12 +39,44 @@ const ServiceCard = ({
   const calculatePrice = () => {
     if (!groupPricing) return price * boosters;
     
-    // Logic: If people <= boosters, use group pricing for people
-    // If people > boosters, use individual pricing per person
-    if (people <= boosters) {
-      return (groupPricing[people as keyof typeof groupPricing] || price) * boosters;
-    } else {
+    // New logic: Optimal distribution of people across boosters
+    if (people === boosters) {
+      // Each person gets their own booster - individual pricing
       return price * people;
+    } else if (boosters === 1) {
+      // All people share one booster - group pricing
+      const groupPrice = groupPricing[Math.min(people, 4) as keyof typeof groupPricing] || 
+                        (price + (people - 1) * Math.floor(price * 0.6));
+      return groupPrice;
+    } else {
+      // Multiple boosters, fewer than people - optimal distribution
+      let totalCost = 0;
+      let remainingPeople = people;
+      
+      for (let i = 0; i < boosters; i++) {
+        if (remainingPeople <= 0) break;
+        
+        // Try to fit as many people as possible on this booster optimally
+        let optimalPeopleForThisBooster = 1;
+        let bestPrice = price; // price for 1 person
+        
+        for (let testPeople = 1; testPeople <= Math.min(remainingPeople, 4); testPeople++) {
+          const testPrice = groupPricing[testPeople as keyof typeof groupPricing] || 
+                           (price + (testPeople - 1) * Math.floor(price * 0.6));
+          const pricePerPerson = testPrice / testPeople;
+          const currentBestPricePerPerson = bestPrice / optimalPeopleForThisBooster;
+          
+          if (pricePerPerson <= currentBestPricePerPerson) {
+            optimalPeopleForThisBooster = testPeople;
+            bestPrice = testPrice;
+          }
+        }
+        
+        totalCost += bestPrice;
+        remainingPeople -= optimalPeopleForThisBooster;
+      }
+      
+      return totalCost;
     }
   };
 
@@ -77,9 +108,7 @@ const ServiceCard = ({
 
   const incrementPeople = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!maxPeople || people < maxPeople) {
-      setPeople(prev => prev + 1);
-    }
+    setPeople(prev => prev + 1);
   };
 
   const decrementPeople = (e: React.MouseEvent) => {
@@ -139,7 +168,6 @@ const ServiceCard = ({
                   size="icon"
                   className="h-8 w-8"
                   onClick={incrementPeople}
-                  disabled={maxPeople ? people >= maxPeople : false}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -181,11 +209,6 @@ const ServiceCard = ({
             <Clock className="h-4 w-4 mr-1" />
             {calculateDuration()} timer
           </div>
-          {maxPeople && (
-            <Badge variant="outline">
-              Op til {maxPeople} personer
-            </Badge>
-          )}
         </div>
         
         <div className="text-lg font-semibold text-primary">
@@ -195,14 +218,14 @@ const ServiceCard = ({
       
       <CardFooter className="gap-2">
         <Button 
-          variant="outline" 
+          variant="cart" 
           className="flex-1"
           onClick={handleAddToCart}
         >
           Læg i kurv
         </Button>
         <Button 
-          className="flex-1 bg-primary hover:bg-primary/90"
+          className="flex-1"
           onClick={handleBookNow}
         >
           Book Nu
