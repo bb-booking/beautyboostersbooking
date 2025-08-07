@@ -4,6 +4,8 @@ import ServiceCard from "@/components/services/ServiceCard";
 import CartFooter from "@/components/cart/CartFooter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
 
 interface Service {
@@ -26,6 +28,7 @@ const Services = () => {
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [clientType, setClientType] = useState("privat");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +37,7 @@ const Services = () => {
 
   useEffect(() => {
     filterServices();
-  }, [services, searchTerm, categoryFilter]);
+  }, [services, searchTerm, categoryFilter, clientType]);
 
   const fetchServices = async () => {
     try {
@@ -189,10 +192,23 @@ const Services = () => {
     <>
       <div className="container mx-auto px-4 py-8 pb-32">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Beauty Services</h1>
+          <h1 className="text-3xl font-bold mb-4">Vælg Service</h1>
           <p className="text-muted-foreground mb-6">
             Vælg den beauty-behandling der passer bedst til din anledning
           </p>
+          
+          <div className="mb-6">
+            <RadioGroup value={clientType} onValueChange={setClientType} className="flex gap-6">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="privat" id="privat" />
+                <Label htmlFor="privat" className="text-sm font-medium">Privat</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="virksomhed" id="virksomhed" />
+                <Label htmlFor="virksomhed" className="text-sm font-medium">Virksomhed</Label>
+              </div>
+            </RadioGroup>
+          </div>
 
           <div className="space-y-4">
             <div className="relative">
