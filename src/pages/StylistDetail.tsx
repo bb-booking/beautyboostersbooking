@@ -147,22 +147,6 @@ const StylistDetail = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Priser
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {booster.hourly_rate} kr/time
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Minimumsbooking: 1 time
-              </p>
-            </CardContent>
-          </Card>
 
           <div className="space-y-3">
             <Link 

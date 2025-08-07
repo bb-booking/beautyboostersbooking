@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { format, addDays, isBefore, startOfDay } from "date-fns";
 import { da } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,12 +49,14 @@ interface BookingDetails {
 const Booking = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { boosterId } = useParams();
   
-  // Get service ID from URL
-  const serviceId = searchParams.get('service');
+  // Get service ID from URL (if coming from services) or use default if coming from booster
+  const serviceId = searchParams.get('service') || '1'; // Default to basic makeup service
   
   // State
   const [service, setService] = useState<Service | null>(null);
+  const [specificBooster, setSpecificBooster] = useState<Booster | null>(null);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -62,6 +64,7 @@ const Booking = () => {
   const [nearbyBoosters, setNearbyBoosters] = useState<Booster[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingBoosters, setLoadingBoosters] = useState(false);
+  const [loadingSpecificBooster, setLoadingSpecificBooster] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
 
   // Generate time slots in 30-minute intervals from 06:00-23:00
@@ -83,18 +86,36 @@ const Booking = () => {
       fetchService();
     }
     
-    // Get booking details from sessionStorage
+    if (boosterId) {
+      fetchSpecificBooster();
+    }
+    
+    // Get booking details from sessionStorage or create default
     const savedDetails = sessionStorage.getItem('bookingDetails');
     if (savedDetails) {
       setBookingDetails(JSON.parse(savedDetails));
+    } else if (boosterId) {
+      // Create default booking details for direct booster booking
+      setBookingDetails({
+        serviceId: '1',
+        location: {
+          address: 'Kundens adresse',
+          postalCode: '0000',
+          city: 'Ikke specificeret'
+        }
+      });
     }
-  }, [serviceId]);
+  }, [serviceId, boosterId]);
 
   useEffect(() => {
     if (selectedDate && selectedTime && bookingDetails) {
-      fetchAvailableBoosters();
+      if (boosterId) {
+        checkSpecificBoosterAvailability();
+      } else {
+        fetchAvailableBoosters();
+      }
     }
-  }, [selectedDate, selectedTime, bookingDetails]);
+  }, [selectedDate, selectedTime, bookingDetails, boosterId]);
 
   const fetchService = async () => {
     try {
@@ -114,6 +135,55 @@ const Booking = () => {
       toast.error("Kunne ikke hente service information");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSpecificBooster = async () => {
+    if (!boosterId) return;
+    
+    setLoadingSpecificBooster(true);
+    try {
+      const { data, error } = await supabase
+        .from('booster_profiles')
+        .select('*')
+        .eq('id', boosterId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setSpecificBooster(data);
+    } catch (error) {
+      console.error('Error fetching specific booster:', error);
+      toast.error("Kunne ikke hente booster information");
+    } finally {
+      setLoadingSpecificBooster(false);
+    }
+  };
+
+  const checkSpecificBoosterAvailability = async () => {
+    if (!specificBooster) return;
+    
+    setLoadingBoosters(true);
+    setShowFallback(false);
+    
+    try {
+      // Mock availability check for specific booster
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate random availability (80% chance available)
+      const isAvailable = Math.random() > 0.2;
+      
+      if (isAvailable) {
+        setAvailableBoosters([specificBooster]);
+      } else {
+        setShowFallback(true);
+        setNearbyBoosters([specificBooster]);
+      }
+    } catch (error) {
+      console.error('Error checking booster availability:', error);
+      setShowFallback(true);
+      setNearbyBoosters([specificBooster]);
+    } finally {
+      setLoadingBoosters(false);
     }
   };
 
@@ -201,7 +271,7 @@ const Booking = () => {
     console.log('Inquiry data:', inquiryData);
   };
 
-  if (loading) {
+  if (loading || (boosterId && loadingSpecificBooster)) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-8 w-48 mb-6" />
@@ -213,7 +283,7 @@ const Booking = () => {
     );
   }
 
-  if (!service || !bookingDetails) {
+  if (!service || (!bookingDetails && !boosterId)) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Link to="/services" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
@@ -233,17 +303,23 @@ const Booking = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link to="/services" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
+      <Link to={boosterId ? `/stylist/${boosterId}` : "/services"} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-4 w-4" />
-        Tilbage til Services
+        {boosterId ? 'Tilbage til Booster' : 'Tilbage til Services'}
       </Link>
 
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">Book {service.name}</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {boosterId && specificBooster ? `Book ${specificBooster.name}` : `Book ${service.name}`}
+          </h1>
           <p className="text-muted-foreground">
-            {bookingDetails.location.address}, {bookingDetails.location.postalCode} {bookingDetails.location.city}
+            {bookingDetails?.location?.address ? (
+              `${bookingDetails.location.address}, ${bookingDetails.location.postalCode} ${bookingDetails.location.city}`
+            ) : (
+              'Lokation specificeres under booking processen'
+            )}
           </p>
         </div>
 
@@ -350,12 +426,12 @@ const Booking = () => {
                   <span className="text-sm text-muted-foreground">{service.duration} time{service.duration > 1 ? 'r' : ''}</span>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-semibold">Fra {service.price} kr</div>
-                <div className="text-sm text-muted-foreground">
-                  {bookingDetails.location.city}
+                <div className="text-right">
+                  <div className="font-semibold">Fra {service.price} kr</div>
+                  <div className="text-sm text-muted-foreground">
+                    {bookingDetails?.location?.city || 'Lokation ikke specificeret'}
+                  </div>
                 </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -364,7 +440,9 @@ const Booking = () => {
         {selectedDate && selectedTime && (
           <div>
             <h2 className="text-2xl font-semibold mb-6">
-              {loadingBoosters ? 'Søger ledige boosters...' : showFallback ? 'Ingen ledige på dette tidspunkt' : 'Tilgængelige boosters'}
+              {loadingBoosters ? 'Søger ledige tider...' : 
+               showFallback ? (boosterId ? `${specificBooster?.name} er ikke ledig på dette tidspunkt` : 'Ingen ledige på dette tidspunkt') : 
+               boosterId ? `Ledig tid for ${specificBooster?.name}` : 'Tilgængelige boosters'}
             </h2>
 
             {loadingBoosters ? (
