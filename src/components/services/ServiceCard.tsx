@@ -218,7 +218,6 @@ const ServiceCard = ({
       
       <CardFooter className="gap-2">
         <Button 
-          variant="cart" 
           className="flex-1"
           onClick={handleAddToCart}
         >
