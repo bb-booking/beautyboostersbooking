@@ -51,8 +51,9 @@ const Booking = () => {
   const navigate = useNavigate();
   const { boosterId } = useParams();
   
-  // Get service ID from URL (if coming from services) or use default if coming from booster
-  const serviceId = searchParams.get('service') || '1'; // Default to basic makeup service
+  // Get service ID from URL (if coming from services) or determine from booster specialties
+  const [determinedServiceId, setDeterminedServiceId] = useState<string>(searchParams.get('service') || '1');
+  const serviceId = determinedServiceId;
   
   // State
   const [service, setService] = useState<Service | null>(null);
@@ -81,11 +82,30 @@ const Booking = () => {
 
   const timeSlots = generateTimeSlots();
 
-  useEffect(() => {
-    if (serviceId) {
-      fetchService();
+  // Function to map specialties to service IDs
+  const getServiceIdFromSpecialties = (specialties: string[]): string => {
+    const serviceMap: { [key: string]: string } = {
+      'Spraytan': '9',
+      'Makeup': '1',
+      'Bryllup': '2',
+      'Event': '3',
+      'Shoot/Reklame': '4',
+      'SFX': '5',
+      'Hår': '6',
+      'Hårstyling': '6',
+      'Fashion': '1'
+    };
+
+    // Find the first matching specialty or default to basic makeup
+    for (const specialty of specialties) {
+      if (serviceMap[specialty]) {
+        return serviceMap[specialty];
+      }
     }
-    
+    return '1'; // Default to basic makeup
+  };
+
+  useEffect(() => {
     if (boosterId) {
       fetchSpecificBooster();
     }
@@ -97,7 +117,7 @@ const Booking = () => {
     } else if (boosterId) {
       // Create default booking details for direct booster booking
       setBookingDetails({
-        serviceId: '1',
+        serviceId: determinedServiceId,
         location: {
           address: 'Kundens adresse',
           postalCode: '0000',
@@ -105,7 +125,21 @@ const Booking = () => {
         }
       });
     }
-  }, [serviceId, boosterId]);
+  }, [boosterId, determinedServiceId]);
+
+  // Update service ID when booster data is loaded
+  useEffect(() => {
+    if (specificBooster && boosterId && !searchParams.get('service')) {
+      const newServiceId = getServiceIdFromSpecialties(specificBooster.specialties);
+      setDeterminedServiceId(newServiceId);
+    }
+  }, [specificBooster, boosterId, searchParams]);
+
+  useEffect(() => {
+    if (serviceId) {
+      fetchService();
+    }
+  }, [serviceId]);
 
   useEffect(() => {
     if (selectedDate && selectedTime && bookingDetails) {
@@ -129,6 +163,7 @@ const Booking = () => {
         '6': { id: '6', name: 'Hårstyling', price: 1799, duration: 1, category: 'Makeup & Hår' },
         '7': { id: '7', name: 'Komplet Makeover', price: 2799, duration: 2, category: 'Makeup & Hår' },
         '8': { id: '8', name: 'Bryllups Hår', price: 2199, duration: 2, category: 'Bryllup' },
+        '9': { id: '9', name: 'Spraytan', price: 899, duration: 1, category: 'Kropsbrunering' },
       };
       
       let serviceData = mockServices[serviceId as keyof typeof mockServices];
