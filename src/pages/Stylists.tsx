@@ -217,9 +217,9 @@ const Stylists = () => {
                     Se profil
                   </Button>
                 </Link>
-                <Link to={`/inquiry?booster=${booster.id}`} className="flex-1">
+                <Link to={`/booking?booster=${booster.id}`} className="flex-1">
                   <Button size="sm" className="w-full">
-                    Send forespørgsel
+                    Book nu
                   </Button>
                 </Link>
               </div>
