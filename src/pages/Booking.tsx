@@ -253,58 +253,70 @@ const Booking = () => {
     setShowFallback(false);
     
     try {
-      // Show available boosters instead of empty array
-      const mockAvailableBoosters: Booster[] = [
-        {
-          id: '1',
-          name: 'Sarah Nielsen',
-          specialties: ['Makeup', 'Bryllup', 'Event'],
-          hourly_rate: 1999,
-          portfolio_image_url: '/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png',
-          location: 'København N',
-          rating: 4.8,
-          review_count: 127,
-          years_experience: 5,
-          bio: 'Professionel makeup artist med speciale i bryllups- og event makeup'
-        }
-      ];
+      // Get service category to filter boosters
+      const serviceCategory = service?.category || '';
+      const serviceName = service?.name || '';
       
-      // Mock nearby boosters for fallback
-      const mockNearbyBoosters: Booster[] = [
-        {
-          id: '1',
-          name: 'Sarah Nielsen',
-          specialties: ['Makeup', 'Bryllup', 'Event'],
-          hourly_rate: 950,
-          portfolio_image_url: '/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png',
-          location: 'København',
-          rating: 4.8,
-          review_count: 127,
-          years_experience: 5,
-          bio: 'Professionel makeup artist med speciale i bryllups- og event makeup'
-        },
-        {
-          id: '2',
-          name: 'Maria Andersen',
-          specialties: ['Makeup', 'Hår', 'Fashion'],
-          hourly_rate: 1100,
-          portfolio_image_url: '/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png',
-          location: 'Frederiksberg',
-          rating: 4.9,
-          review_count: 89,
-          years_experience: 7,
-          bio: 'Erfaren stylist med fokus på moderne trends og personlig stil'
-        }
-      ];
+      // Filter boosters based on service type
+      let filteredBoosters: Booster[] = [];
+      
+      if (serviceName.toLowerCase().includes('spraytan') || serviceCategory === 'Spraytan') {
+        // Only Josephine O for spraytan
+        filteredBoosters = [
+          {
+            id: 'ef8feb8b-b471-4c75-a729-6b569c296e75',
+            name: 'Josephine O',
+            specialties: ['Spraytan'],
+            hourly_rate: 499,
+            portfolio_image_url: '/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png',
+            location: 'København',
+            rating: 4.9,
+            review_count: 89,
+            years_experience: 3,
+            bio: 'Specialist i spraytan med fokus på naturlige nuancer'
+          }
+        ];
+      } else {
+        // For other services, include makeup artists
+        filteredBoosters = [
+          {
+            id: '1',
+            name: 'Sarah Nielsen',
+            specialties: ['Makeup', 'Bryllup', 'Event'],
+            hourly_rate: 1999,
+            portfolio_image_url: '/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png',
+            location: 'København N',
+            rating: 4.8,
+            review_count: 127,
+            years_experience: 5,
+            bio: 'Professionel makeup artist med speciale i bryllups- og event makeup'
+          },
+          {
+            id: '2',
+            name: 'Maria Andersen',
+            specialties: ['Makeup', 'Hår', 'Fashion'],
+            hourly_rate: 1100,
+            portfolio_image_url: '/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png',
+            location: 'Frederiksberg',
+            rating: 4.9,
+            review_count: 89,
+            years_experience: 7,
+            bio: 'Erfaren stylist med fokus på moderne trends og personlig stil'
+          }
+        ];
+      }
+
+      // Mock nearby boosters for fallback (with same filtering)
+      const mockNearbyBoosters = filteredBoosters;
 
       // Simulate checking availability
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (mockAvailableBoosters.length === 0) {
+      if (filteredBoosters.length === 0) {
         setShowFallback(true);
         setNearbyBoosters(mockNearbyBoosters);
       } else {
-        setAvailableBoosters(mockAvailableBoosters);
+        setAvailableBoosters(filteredBoosters);
       }
     } catch (error) {
       console.error('Error fetching boosters:', error);
@@ -479,42 +491,28 @@ const Booking = () => {
               </div>
             </div>
 
-            {/* Selected Summary */}
+            {/* Selected Summary - Clickable */}
             {selectedDate && selectedTime && (
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+              <div 
+                className="mt-4 p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
+                onClick={() => {
+                  // Allow clicking on summary to edit time
+                  setSelectedTime("");
+                }}
+              >
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-primary" />
                   <span>
                     <strong>{format(selectedDate, 'EEEE d. MMMM yyyy', { locale: da })}</strong> kl. {selectedTime}
                   </span>
+                  <span className="text-muted-foreground ml-auto">Klik for at ændre tid</span>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Service Summary - More Compact */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">{service.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">{service.category}</Badge>
-                  <span className="text-sm text-muted-foreground">{service.duration} time{service.duration > 1 ? 'r' : ''}</span>
-                </div>
-              </div>
-                <div className="text-right">
-                  <div className="font-semibold">Fra {service.price} kr</div>
-                  <div className="text-sm text-muted-foreground">
-                    {bookingDetails?.location?.city || 'Lokation ikke specificeret'}
-                  </div>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Available Boosters */}
+        {/* Available Boosters - Moved up and only show when date/time selected */}
         {selectedDate && selectedTime && (
           <div>
             <h2 className="text-2xl font-semibold mb-6">
@@ -579,7 +577,7 @@ const Booking = () => {
                                 ))}
                               </div>
                               <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">{booster.hourly_rate} kr/time</span>
+                                <span className="text-sm font-medium">{service.price} kr</span>
                                 <Button 
                                   size="sm"
                                   variant="outline"
@@ -638,7 +636,7 @@ const Booking = () => {
                         )}
 
                         <div className="flex items-center justify-between pt-2 border-t">
-                          <span className="font-medium">{booster.hourly_rate} kr/time</span>
+                          <span className="font-medium">{service.price} kr</span>
                           <Button 
                             onClick={() => handleBookBooster(booster)}
                             size="sm"
