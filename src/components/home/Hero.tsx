@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, Zap, Users, Search, MapPin, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Zap, Users, Search, MapPin, Clock, Navigation } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const Hero = () => {
   const navigate = useNavigate();
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [searchData, setSearchData] = useState({
     service: "",
     location: "",
@@ -14,14 +16,41 @@ const Hero = () => {
     time: ""
   });
 
-  const handleSearch = () => {
-    if (searchData.service.trim()) {
-      const params = new URLSearchParams();
-      if (searchData.service) params.set('search', searchData.service);
-      navigate(`/services?${params.toString()}`);
-    } else {
-      navigate('/services');
+  const serviceCategories = [
+    { value: "all", label: "Alle services" },
+    { value: "Makeup & Hår", label: "Makeup & Hår" },
+    { value: "Spraytan", label: "Spraytan" },
+    { value: "Konfirmation", label: "Konfirmation" },
+    { value: "Bryllup - Brudestyling", label: "Bryllup - Brudestyling" },
+    { value: "Makeup Kurser", label: "Makeup Kurser" },
+    { value: "Event", label: "Event" },
+    { value: "Børn", label: "Børn" }
+  ];
+
+  const getCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // For demo - set mock location
+          setSearchData(prev => ({...prev, location: "København N, 2200"}));
+        },
+        (error) => {
+          console.error("Location error:", error);
+        }
+      );
     }
+  };
+
+  const handleDateIconClick = () => {
+    dateInputRef.current?.showPicker();
+  };
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchData.service && searchData.service !== "all") {
+      params.set('category', searchData.service);
+    }
+    navigate(`/services?${params.toString()}`);
   };
 
   return (
@@ -38,45 +67,81 @@ const Hero = () => {
         <Card className="max-w-4xl mx-auto mb-12 bg-card/80 backdrop-blur-sm border-border/50">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Service Dropdown */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-left block">Behandling</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Makeup, spraytan, hår..."
-                    value={searchData.service}
-                    onChange={(e) => setSearchData(prev => ({...prev, service: e.target.value}))}
-                    className="pl-10"
-                  />
-                </div>
+                <label className="text-sm font-medium text-left block">Service</label>
+                <Select value={searchData.service} onValueChange={(value) => setSearchData(prev => ({...prev, service: value}))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Vælg service kategori" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    {serviceCategories.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
+              {/* Location with Current Location Option */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-left block">Lokation</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2 z-10">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    {!searchData.location && (
+                      <button
+                        type="button"
+                        onClick={getCurrentLocation}
+                        className="text-xs text-primary hover:underline whitespace-nowrap"
+                      >
+                        Nuværende
+                      </button>
+                    )}
+                  </div>
                   <Input
-                    placeholder="København, Aalborg..."
+                    placeholder={searchData.location ? "" : "Skriv lokation..."}
                     value={searchData.location}
                     onChange={(e) => setSearchData(prev => ({...prev, location: e.target.value}))}
-                    className="pl-10"
+                    className={`${!searchData.location ? "pl-20" : "pl-10"}`}
+                    list="locations"
                   />
+                  <datalist id="locations">
+                    <option value="København, 1000" />
+                    <option value="København N, 2200" />
+                    <option value="København S, 2300" />
+                    <option value="Frederiksberg, 2000" />
+                    <option value="Aalborg, 9000" />
+                    <option value="Aarhus, 8000" />
+                    <option value="Odense, 5000" />
+                  </datalist>
                 </div>
               </div>
               
+              {/* Date with clickable calendar icon */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-left block">Dato</label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
+                    ref={dateInputRef}
                     type="date"
                     value={searchData.date}
                     onChange={(e) => setSearchData(prev => ({...prev, date: e.target.value}))}
-                    className="pl-10"
+                    className="pr-10 appearance-none"
+                    style={{ colorScheme: 'light' }}
                   />
+                  <button
+                    type="button"
+                    onClick={handleDateIconClick}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
               
+              {/* Time */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-left block">Tidspunkt</label>
                 <div className="relative">
