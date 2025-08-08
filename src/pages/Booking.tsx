@@ -82,18 +82,19 @@ const Booking = () => {
 
   const timeSlots = generateTimeSlots();
 
-  // Function to map specialties to service IDs
+  // Function to map specialties to service IDs (updated to match Services.tsx)
   const getServiceIdFromSpecialties = (specialties: string[]): string => {
     const serviceMap: { [key: string]: string } = {
-      'Spraytan': '9',
+      'Spraytan': '4',
       'Makeup': '1',
-      'Bryllup': '2',
-      'Event': '3',
-      'Shoot/Reklame': '4',
-      'SFX': '5',
-      'Hår': '6',
-      'Hårstyling': '6',
-      'Fashion': '1'
+      'Bryllup': '6',
+      'Event': '10',
+      'Shoot/Reklame': '20',
+      'SFX': '23',
+      'Hår': '2',
+      'Hårstyling': '2',
+      'Fashion': '1',
+      'Konfirmation': '5'
     };
 
     // Find the first matching specialty or default to basic makeup
@@ -156,14 +157,14 @@ const Booking = () => {
       // Mock service data - replace with actual API call
       const mockServices = {
         '1': { id: '1', name: 'Makeup Styling', price: 1999, duration: 1, category: 'Makeup & Hår' },
-        '2': { id: '2', name: 'Bryllups Makeup', price: 2999, duration: 2, category: 'Bryllup' },
-        '3': { id: '3', name: 'Event Makeup', price: 1499, duration: 1, category: 'Events' },
-        '4': { id: '4', name: 'Shoot/Reklame Makeup', price: 2499, duration: 2, category: 'Shoot/Reklame' },
-        '5': { id: '5', name: 'SFX Makeup', price: 3499, duration: 3, category: 'SFX' },
-        '6': { id: '6', name: 'Hårstyling', price: 1799, duration: 1, category: 'Makeup & Hår' },
-        '7': { id: '7', name: 'Komplet Makeover', price: 2799, duration: 2, category: 'Makeup & Hår' },
-        '8': { id: '8', name: 'Bryllups Hår', price: 2199, duration: 2, category: 'Bryllup' },
-        '9': { id: '9', name: 'Spraytan', price: 899, duration: 1, category: 'Kropsbrunering' },
+        '2': { id: '2', name: 'Hårstyling / håropsætning', price: 1999, duration: 1, category: 'Makeup & Hår' },
+        '3': { id: '3', name: 'Makeup & Hårstyling', price: 2999, duration: 1.5, category: 'Makeup & Hår' },
+        '4': { id: '4', name: 'Spraytan', price: 499, duration: 0.5, category: 'Spraytan' },
+        '5': { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, duration: 1.5, category: 'Konfirmation' },
+        '6': { id: '6', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, duration: 3, category: 'Bryllup - Brudestyling' },
+        '7': { id: '7', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, duration: 4.5, category: 'Bryllup - Brudestyling' },
+        '8': { id: '8', name: '1:1 Makeup Session', price: 2499, duration: 1.5, category: 'Makeup Kurser' },
+        '20': { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, duration: 3, category: 'Shoot/reklame' },
       };
       
       let serviceData = mockServices[serviceId as keyof typeof mockServices];
