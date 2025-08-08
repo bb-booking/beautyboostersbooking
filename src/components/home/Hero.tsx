@@ -9,9 +9,10 @@ import { useState, useRef } from "react";
 const Hero = () => {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const timeInputRef = useRef<HTMLInputElement>(null);
   const [searchData, setSearchData] = useState({
     service: "",
-    location: "",
+    location: "Nuværende lokation",
     date: "",
     time: ""
   });
@@ -27,22 +28,12 @@ const Hero = () => {
     { value: "Børn", label: "Børn" }
   ];
 
-  const getCurrentLocation = () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // For demo - set mock location
-          setSearchData(prev => ({...prev, location: "København N, 2200"}));
-        },
-        (error) => {
-          console.error("Location error:", error);
-        }
-      );
-    }
-  };
-
   const handleDateIconClick = () => {
     dateInputRef.current?.showPicker();
+  };
+
+  const handleTimeIconClick = () => {
+    timeInputRef.current?.showPicker();
   };
 
   const handleSearch = () => {
@@ -64,61 +55,51 @@ const Hero = () => {
         </p>
         
         {/* Quick Search Widget */}
-        <Card className="max-w-4xl mx-auto mb-12 bg-card/80 backdrop-blur-sm border-border/50">
+        <Card className="max-w-5xl mx-auto mb-12 bg-card/80 backdrop-blur-sm border-border/50">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Service Dropdown */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-left block">Service</label>
-                <Select value={searchData.service} onValueChange={(value) => setSearchData(prev => ({...prev, service: value}))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Vælg service kategori" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {serviceCategories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Service Selection */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-left block mb-2">Service</label>
+              <Select value={searchData.service} onValueChange={(value) => setSearchData(prev => ({...prev, service: value}))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Vælg service kategori" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-50">
+                  {serviceCategories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-left block mb-2">Lokation</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder=""
+                  value={searchData.location}
+                  onChange={(e) => setSearchData(prev => ({...prev, location: e.target.value}))}
+                  className="pl-10 text-foreground"
+                  list="locations"
+                />
+                <datalist id="locations">
+                  <option value="København, 1000" />
+                  <option value="København N, 2200" />
+                  <option value="København S, 2300" />
+                  <option value="Frederiksberg, 2000" />
+                  <option value="Aalborg, 9000" />
+                  <option value="Aarhus, 8000" />
+                  <option value="Odense, 5000" />
+                </datalist>
               </div>
-              
-              {/* Location with Current Location Option */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-left block">Lokation</label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2 z-10">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    {!searchData.location && (
-                      <button
-                        type="button"
-                        onClick={getCurrentLocation}
-                        className="text-xs text-primary hover:underline whitespace-nowrap"
-                      >
-                        Nuværende
-                      </button>
-                    )}
-                  </div>
-                  <Input
-                    placeholder={searchData.location ? "" : "Skriv lokation..."}
-                    value={searchData.location}
-                    onChange={(e) => setSearchData(prev => ({...prev, location: e.target.value}))}
-                    className={`${!searchData.location ? "pl-20" : "pl-10"}`}
-                    list="locations"
-                  />
-                  <datalist id="locations">
-                    <option value="København, 1000" />
-                    <option value="København N, 2200" />
-                    <option value="København S, 2300" />
-                    <option value="Frederiksberg, 2000" />
-                    <option value="Aalborg, 9000" />
-                    <option value="Aarhus, 8000" />
-                    <option value="Odense, 5000" />
-                  </datalist>
-                </div>
-              </div>
-              
+            </div>
+            
+            {/* Date, Time and Search in one row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               {/* Date with clickable calendar icon */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-left block">Dato</label>
@@ -128,7 +109,7 @@ const Hero = () => {
                     type="date"
                     value={searchData.date}
                     onChange={(e) => setSearchData(prev => ({...prev, date: e.target.value}))}
-                    className="pr-10 appearance-none"
+                    className="pr-10 text-sm h-10 appearance-none"
                     style={{ colorScheme: 'light' }}
                   />
                   <button
@@ -141,26 +122,42 @@ const Hero = () => {
                 </div>
               </div>
               
-              {/* Time */}
+              {/* Time with clickable calendar icon */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-left block">Tidspunkt</label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
+                    ref={timeInputRef}
                     type="time"
                     value={searchData.time}
                     onChange={(e) => setSearchData(prev => ({...prev, time: e.target.value}))}
-                    className="pl-10"
+                    className="pr-10 text-sm h-10"
                   />
+                  <button
+                    type="button"
+                    onClick={handleTimeIconClick}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </button>
                 </div>
+              </div>
+
+              {/* Search Button */}
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-left block">Anmod om booking</label>
+                <Button 
+                  size="default" 
+                  className="w-full h-10" 
+                  onClick={handleSearch}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  Søg ledige tider
+                </Button>
               </div>
             </div>
             
             <div className="flex flex-col md:flex-row gap-4 justify-center items-center mt-6">
-              <Button size="lg" className="text-lg px-8 py-3 w-full md:w-auto" onClick={handleSearch}>
-                <Search className="mr-2 h-5 w-5" />
-                Søg behandlinger
-              </Button>
               <Button variant="outline" size="lg" className="text-lg px-8 py-3 w-full md:w-auto" asChild>
                 <Link to="/services">
                   Se alle services
