@@ -122,28 +122,84 @@ const Services = () => {
           clientType: 'privat' as const,
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
-        // Bryllup - Brudestyling
+        // Bryllup - Brudestyling (alle services fra billedet)
         {
           id: '6',
+          name: 'Brudestyling - Makeup Styling',
+          description: 'Professionel makeup styling til bruden',
+          price: 2999,
+          duration: 2,
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const
+        },
+        {
+          id: '7',
+          name: 'Brudestyling - Hårstyling',
+          description: 'Professionel hårstyling til bruden',
+          price: 2999,
+          duration: 2,
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const
+        },
+        {
+          id: '8',
           name: 'Brudestyling - Hår & Makeup (uden prøvestyling)',
-          description: 'Lad os style dig til dit bryllup og give dig det bedste udgangspunkt for den perfekte dag',
+          description: 'Komplet hår og makeup styling til bruden uden prøvestyling',
           price: 4999,
           duration: 3,
           category: 'Bryllup - Brudestyling',
           clientType: 'privat' as const
         },
         {
-          id: '7',
+          id: '9',
           name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)',
-          description: 'Professionel brudestyling med prøvestyling. Bliv den smukkeste udgave af dig selv',
+          description: 'Komplet hår og makeup styling til bruden med prøvestyling',
           price: 6499,
           duration: 4.5,
           category: 'Bryllup - Brudestyling',
           clientType: 'privat' as const
         },
+        {
+          id: '10',
+          name: 'Brudestyling Premium - Makeup og Hårstyling (Makeup Artist i op til 8 timer)',
+          description: 'Premium brudestyling med makeup artist til rådighed i op til 8 timer',
+          price: 8999,
+          duration: 8,
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const
+        },
+        {
+          id: '11',
+          name: 'Brudepigestyling - Makeup & Hår (1 person)',
+          description: 'Makeup og hårstyling til brudepige',
+          price: 2999,
+          duration: 1.5,
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const,
+          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
+        },
+        {
+          id: '12',
+          name: 'Brudepigestyling - Makeup & Hår (2 personer)',
+          description: 'Makeup og hårstyling til 2 brudepiger',
+          price: 4999,
+          duration: 2.5,
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const,
+          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
+        },
+        {
+          id: '13',
+          name: 'Brudestyling Hår & Makeup + Hår og Makeup til 1 person (mor, brudepige, gæst)',
+          description: 'Brudestyling plus styling til én ekstra person (mor, brudepige eller gæst)',
+          price: 7499,
+          duration: 4,
+          category: 'Bryllup - Brudestyling',
+          clientType: 'privat' as const
+        },
         // Makeup Kurser
         {
-          id: '8',
+          id: '14',
           name: '1:1 Makeup Session',
           description: 'Lær at lægge den perfekte makeup af en professionel makeupartist',
           price: 2499,
@@ -152,7 +208,7 @@ const Services = () => {
           clientType: 'privat' as const
         },
         {
-          id: '9',
+          id: '15',
           name: 'The Beauty Bar (makeup kursus)',
           description: 'Makeup kursus på 3 timer for op til 12 personer. Lær både hverdags- og gå-i-byen look',
           price: 4499,
@@ -162,7 +218,7 @@ const Services = () => {
         },
         // Event
         {
-          id: '10',
+          id: '16',
           name: 'Makeup Artist til Touch Up (3 timer)',
           description: 'Makeup artist til rådighed i 3 timer - mulighed for ekstra timer (1200 kr/time) og boosters (4499 kr/booster)',
           price: 4499,
@@ -172,7 +228,7 @@ const Services = () => {
         },
         // Børn
         {
-          id: '11',
+          id: '17',
           name: 'Ansigtsmaling til børn',
           description: 'Sjov ansigtsmaling til børn til events og fester - samme logik som event touch up',
           price: 4499,

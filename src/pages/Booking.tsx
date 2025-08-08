@@ -82,19 +82,21 @@ const Booking = () => {
 
   const timeSlots = generateTimeSlots();
 
-  // Function to map specialties to service IDs (updated to match Services.tsx)
+  // Function to map specialties to service IDs (updated to match all Services.tsx)
   const getServiceIdFromSpecialties = (specialties: string[]): string => {
     const serviceMap: { [key: string]: string } = {
       'Spraytan': '4',
       'Makeup': '1',
-      'Bryllup': '6',
-      'Event': '10',
+      'Bryllup': '8', // Default bryllup til basis styling
+      'Event': '16',
       'Shoot/Reklame': '20',
       'SFX': '23',
       'Hår': '2',
       'Hårstyling': '2',
       'Fashion': '1',
-      'Konfirmation': '5'
+      'Konfirmation': '5',
+      'Makeup Kurser': '14',
+      'Børn': '17'
     };
 
     // Find the first matching specialty or default to basic makeup
@@ -161,9 +163,17 @@ const Booking = () => {
         '3': { id: '3', name: 'Makeup & Hårstyling', price: 2999, duration: 1.5, category: 'Makeup & Hår' },
         '4': { id: '4', name: 'Spraytan', price: 499, duration: 0.5, category: 'Spraytan' },
         '5': { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, duration: 1.5, category: 'Konfirmation' },
-        '6': { id: '6', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, duration: 3, category: 'Bryllup - Brudestyling' },
-        '7': { id: '7', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, duration: 4.5, category: 'Bryllup - Brudestyling' },
-        '8': { id: '8', name: '1:1 Makeup Session', price: 2499, duration: 1.5, category: 'Makeup Kurser' },
+        '6': { id: '6', name: 'Brudestyling - Makeup Styling', price: 2999, duration: 2, category: 'Bryllup - Brudestyling' },
+        '7': { id: '7', name: 'Brudestyling - Hårstyling', price: 2999, duration: 2, category: 'Bryllup - Brudestyling' },
+        '8': { id: '8', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, duration: 3, category: 'Bryllup - Brudestyling' },
+        '9': { id: '9', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, duration: 4.5, category: 'Bryllup - Brudestyling' },
+        '10': { id: '10', name: 'Brudestyling Premium - Makeup og Hårstyling', price: 8999, duration: 8, category: 'Bryllup - Brudestyling' },
+        '11': { id: '11', name: 'Brudepigestyling - Makeup & Hår (1 person)', price: 2999, duration: 1.5, category: 'Bryllup - Brudestyling' },
+        '12': { id: '12', name: 'Brudepigestyling - Makeup & Hår (2 personer)', price: 4999, duration: 2.5, category: 'Bryllup - Brudestyling' },
+        '13': { id: '13', name: 'Brudestyling + 1 person ekstra', price: 7499, duration: 4, category: 'Bryllup - Brudestyling' },
+        '14': { id: '14', name: '1:1 Makeup Session', price: 2499, duration: 1.5, category: 'Makeup Kurser' },
+        '16': { id: '16', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, duration: 3, category: 'Event' },
+        '17': { id: '17', name: 'Ansigtsmaling til børn', price: 4499, duration: 3, category: 'Børn' },
         '20': { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, duration: 3, category: 'Shoot/reklame' },
       };
       
