@@ -44,6 +44,7 @@ const Services = () => {
     // Check for URL parameters or sessionStorage
     const urlClient = searchParams.get('client');
     const urlCategory = searchParams.get('category');
+    const urlSearch = searchParams.get('search');
     const storedClient = sessionStorage.getItem('selectedClientType');
     const storedCategory = sessionStorage.getItem('selectedCategory');
     
@@ -59,6 +60,10 @@ const Services = () => {
     } else if (storedCategory) {
       setCategoryFilter(storedCategory);
       sessionStorage.removeItem('selectedCategory');
+    }
+
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
     }
   }, [searchParams]);
 
