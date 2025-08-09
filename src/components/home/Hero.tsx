@@ -178,7 +178,7 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
 
         <div className="container relative z-10 mx-auto px-4">
-          <div className="max-w-3xl text-left">
+          <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight animate-fade-in">
               Book professionelle beauty‑stylister – direkte til din dør
             </h1>
@@ -188,7 +188,7 @@ const Hero = () => {
           </div>
 
           {/* Search Widget */}
-          <Card className="mt-6 md:mt-8 max-w-3xl bg-card/80 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+          <Card className="mt-6 md:mt-8 max-w-3xl mx-auto bg-card/80 backdrop-blur-md border-border/50 shadow-xl animate-enter">
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div>
@@ -256,7 +256,7 @@ const Hero = () => {
                 </div>
 
                 {/* Quick filters */}
-                <div className="flex flex-wrap items-center gap-2 pt-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                   {["Bryllup - Brudestyling", "Makeup & Hår", "Spraytan", "Event"].map((label) => (
                     <Button
                       key={label}
@@ -275,14 +275,14 @@ const Hero = () => {
           </Card>
 
           {/* Trust bar */}
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm text-muted-foreground">
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm text-muted-foreground justify-items-center text-center">
             <div className="flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> 4.9/5 kundetilfredshed</div>
             <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Certificerede stylister</div>
             <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> DK‑dækkende</div>
           </div>
 
           {/* Secondary CTA */}
-          <div className="mt-10 flex flex-col sm:flex-row gap-3">
+          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
             <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
               <Link to="/booster-signup">
                 <Users className="mr-2 h-5 w-5" />
@@ -303,7 +303,7 @@ const Hero = () => {
           </div>
 
           {/* Feature highlights */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mt-10">
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-10">
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <Zap className="h-8 w-8 text-primary" />
