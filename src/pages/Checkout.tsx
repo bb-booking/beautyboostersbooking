@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, MapPin, User, CreditCard } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function Checkout() {
   const location = useLocation();
@@ -25,6 +29,101 @@ export default function Checkout() {
   
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Editable booking state
+  const [localBooking, setLocalBooking] = useState(booking);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    typeof booking.date === 'string' ? new Date(booking.date) : booking.date
+  );
+  const [selectedTime, setSelectedTime] = useState<string>(booking.time);
+
+  // Address editing with autocomplete + current location
+  const [addressQuery, setAddressQuery] = useState<string>(
+    bookingDetails?.location
+      ? `${bookingDetails.location.address}, ${bookingDetails.location.postalCode} ${bookingDetails.location.city}`
+      : (booking.location || '')
+  );
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+
+  const timeSlots = Array.from({ length: 24 * 2 - 1 }).map((_, i) => {
+    const hour = Math.floor(i / 2) + 0;
+    const minute = i % 2 === 0 ? '00' : '30';
+    return `${hour.toString().padStart(2, '0')}:${minute}`;
+  });
+
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      if (navigator?.permissions?.query) {
+        // @ts-ignore
+        navigator.permissions.query({ name: 'geolocation' }).then((res: any) => {
+          setHasLocationPermission(res.state === 'granted');
+        }).catch(() => {});
+      }
+    } catch {}
+  }, []);
+
+  // Autocomplete
+  useEffect(() => {
+    const q = addressQuery.trim();
+    if (q.length < 3) { setSuggestions([]); return; }
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const url = `https://api.dataforsyningen.dk/autocomplete?q=${encodeURIComponent(q)}&type=adresse&fuzzy=true&per_side=8`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        const data = await res.json();
+        const opts = (Array.isArray(data) ? data : []).map((d: any) => d.tekst || d.forslagstekst || d.adressebetegnelse).filter(Boolean);
+        setSuggestions(opts);
+        setShowSuggestions(true);
+      } catch {}
+    }, 250);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [addressQuery]);
+
+  const parseAddressFromText = (text: string) => {
+    const m = text.match(/^(.*?),\s*(\d{4})\s+(.+)$/);
+    if (m) return { street: m[1], postalCode: m[2], city: m[3] };
+    return null;
+  };
+
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) return;
+    setIsLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        let street = '', postalCode = '', city = '';
+        const endpoints = [
+          `https://api.dataforsyningen.dk/adresser/reverse?x=${coords.longitude}&y=${coords.latitude}&struktur=mini`,
+          `https://api.dataforsyningen.dk/adgangsadresser/reverse?x=${coords.longitude}&y=${coords.latitude}&struktur=mini`,
+        ];
+        for (const url of endpoints) {
+          try {
+            const r = await fetch(url);
+            if (!r.ok) continue;
+            const data = await r.json();
+            const d = Array.isArray(data) ? data[0] : data;
+            if (!d) continue;
+            const vej = d.vejnavn || d.vejstykke?.navn || d.adgangsadresse?.vejstykke?.navn || '';
+            const husnr = d.husnr || d.adgangsadresse?.husnr || '';
+            street = [vej, husnr].filter(Boolean).join(' ').trim();
+            postalCode = d.postnr || d.postnummer?.nr || d.adgangsadresse?.postnr || '';
+            city = d.postnrnavn || d.postnummer?.navn || d.adgangsadresse?.postnummernavn || '';
+            if (street && postalCode && city) break;
+          } catch {}
+        }
+        const full = [street, `${postalCode} ${city}`].filter(Boolean).join(', ');
+        setAddressQuery(full);
+        setHasLocationPermission(true);
+      } finally {
+        setIsLoadingLocation(false);
+      }
+    }, () => setIsLoadingLocation(false), { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  };
+
 
   if (!booking || !booster) {
     return (
@@ -62,9 +161,9 @@ export default function Checkout() {
             serviceName: service.name,
             boosterId: booster.id,
             boosterName: booster.name,
-            date: booking.date,
-            time: booking.time,
-            location: bookingDetails.address,
+            date: selectedDate || booking.date,
+            time: selectedTime,
+            location: addressQuery,
             specialRequests: customerInfo.specialRequests
           }
         }
@@ -105,37 +204,138 @@ export default function Checkout() {
           <Card>
             <CardHeader>
               <CardTitle>Booking oversigt</CardTitle>
+              <CardDescription>Redigér dato/tid og adresse inden betaling</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span>{typeof booking.date === 'string' ? booking.date : booking.date?.toLocaleDateString?.('da-DK') || 'N/A'}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <span>{booking.time} ({booking.duration} timer)</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
-                <span>{booking.location}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <span>{booking.booster}</span>
-              </div>
-              
-              <Separator />
-              
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Service:</span>
-                <span>{booking.service}</span>
-              </div>
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total:</span>
-                <span>{booking.price} DKK</span>
+            <CardContent className="space-y-5">
+              {/* Date */}
+              <div className="space-y-2">
+                <Label>Dato</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? selectedDate.toLocaleDateString('da-DK') : "Vælg dato"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(d) => {
+                        setSelectedDate(d);
+                        setLocalBooking((prev: any) => ({ ...prev, date: d }));
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+              {/* Time */}
+              <div className="space-y-2">
+                <Label>Tidspunkt</Label>
+                <Select value={selectedTime} onValueChange={(v) => {
+                  setSelectedTime(v);
+                  setLocalBooking((prev: any) => ({ ...prev, time: v }));
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vælg tidspunkt" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50 max-h-72">
+                    {timeSlots.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Address */}
+              <div className="space-y-2">
+                <Label>Adresse</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="F.eks. Husumgade 1, 2200 København N"
+                    value={addressQuery}
+                    onChange={(e) => setAddressQuery(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                  />
+                  {showSuggestions && addressQuery.trim().length >= 3 && (
+                    <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-56 overflow-auto">
+                      {suggestions.slice(0,8).map((opt) => (
+                        <div
+                          key={opt}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setAddressQuery(opt);
+                            setShowSuggestions(false);
+                            const parsed = parseAddressFromText(opt);
+                            if (parsed) {
+                              const full = `${parsed.street}, ${parsed.postalCode} ${parsed.city}`;
+                              setLocalBooking((p: any) => ({ ...p, location: full }));
+                              const stored = sessionStorage.getItem('bookingDetails');
+                              try {
+                                const bd = stored ? JSON.parse(stored) : {};
+                                const newBD = {
+                                  ...bd,
+                                  location: { address: parsed.street, postalCode: parsed.postalCode, city: parsed.city },
+                                };
+                                sessionStorage.setItem('bookingDetails', JSON.stringify(newBD));
+                              } catch {}
+                            }
+                          }}
+                        >
+                          {opt}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Button variant="outline" size="sm" onClick={getCurrentLocation} disabled={isLoadingLocation} className="mt-2">
+                    {isLoadingLocation ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />
+                        Finder lokation...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Brug nuværende lokation
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Service controls */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Service:</span>
+                  <span>{service.name}</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/services')}>Tilføj service</Button>
+                  <Button variant="destructive" size="sm" onClick={() => navigate('/services')}>Fjern service</Button>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-lg font-bold">
+                <span>Total:</span>
+                <span>{service.price} DKK</span>
+              </div>
+
+              <div className="mt-2 p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-semibold mb-2">Betalingsbetingelser:</h4>
                 <ul className="text-sm space-y-1 text-muted-foreground">
                   <li>• Beløbet reserveres på dit kort indtil service er udført</li>
