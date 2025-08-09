@@ -32,6 +32,11 @@ const Address = () => {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
+  // Autocomplete state
+  const [addressQuery, setAddressQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   useEffect(() => {
     // Check if geolocation is supported and has permission
     if ("geolocation" in navigator) {
@@ -40,6 +45,41 @@ const Address = () => {
       });
     }
   }, []);
+
+  // Parse "Husumgade 1, 2200 København N" -> fields
+  const parseAddressFromText = (text: string) => {
+    const m = text.match(/^(.*?),\s*(\d{4})\s+(.+)$/);
+    if (m) {
+      return { street: m[1], postalCode: m[2], city: m[3] };
+    }
+    return null;
+  };
+
+  // Autocomplete using Dataforsyningen after 3+ chars
+  useEffect(() => {
+    const q = addressQuery.trim();
+    if (q.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://api.dataforsyningen.dk/autocomplete?q=${encodeURIComponent(q)}&type=adresse&fuzzy=true&per_side=8`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        const data = await res.json();
+        const opts = (Array.isArray(data) ? data : [])
+          .map((d: any) => d.tekst || d.forslagstekst || d.adressebetegnelse)
+          .filter(Boolean);
+        setSuggestions(opts);
+        setShowSuggestions(true);
+      } catch {}
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [addressQuery]);
 
   const getCurrentLocation = async () => {
     if (!navigator.geolocation) {
@@ -54,16 +94,57 @@ const Address = () => {
         const { latitude, longitude } = position.coords;
         
         try {
-          // Use reverse geocoding to get address from coordinates
-          // For demo purposes, we'll simulate this with a mock address
-          const mockAddress = {
-            street: "Københavnsgade 15",
-            city: "København N",
-            postalCode: "2200",
-            coordinates: { lat: latitude, lng: longitude }
+          // Reverse geocoding using Dataforsyningen with graceful fallbacks
+          let street = "";
+          let postalCode = "";
+          let city = "";
+
+          const tryReverse = async () => {
+            const endpoints = [
+              `https://api.dataforsyningen.dk/adresser/reverse?x=${longitude}&y=${latitude}&struktur=mini`,
+              `https://api.dataforsyningen.dk/adgangsadresser/reverse?x=${longitude}&y=${latitude}&struktur=mini`,
+              `https://api.dataforsyningen.dk/adresser?cirkel=${longitude},${latitude},50&per_side=1&struktur=mini`,
+            ];
+            for (const url of endpoints) {
+              try {
+                const res = await fetch(url);
+                if (!res.ok) continue;
+                const data = await res.json();
+                const d = Array.isArray(data) ? data[0] : data;
+                if (!d) continue;
+                const vej = d.vejnavn || d.vejstykke?.navn || d.adgangsadresse?.vejstykke?.navn || "";
+                const husnr = d.husnr || d.adgangsadresse?.husnr || "";
+                street = [vej, husnr].filter(Boolean).join(" ").trim();
+                postalCode = d.postnr || d.postnummer?.nr || d.adgangsadresse?.postnr || "";
+                city = d.postnrnavn || d.postnummer?.navn || d.adgangsadresse?.postnummernavn || "";
+                if (street && postalCode && city) return true;
+              } catch {}
+            }
+            return false;
           };
-          
-          setAddress(mockAddress);
+
+          const ok = await tryReverse();
+          if (!ok) {
+            // Fallback to OpenStreetMap Nominatim
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+            const j = await res.json();
+            const a = j?.address || {};
+            street = [a.road, a.house_number].filter(Boolean).join(" ");
+            postalCode = a.postcode || "";
+            city = a.city || a.town || a.village || "";
+          }
+
+          if (!street) throw new Error("No address resolved");
+
+          const resolved = {
+            street,
+            city,
+            postalCode,
+            coordinates: { lat: latitude, lng: longitude },
+          };
+
+          setAddress(resolved);
+          setAddressQuery(`${street}, ${postalCode} ${city}`);
           setHasLocationPermission(true);
           toast.success("Adresse fundet automatisk!");
           
@@ -129,8 +210,9 @@ const Address = () => {
     
     sessionStorage.setItem("bookingDetails", JSON.stringify(bookingDetails));
     
-    // Navigate to booking with service ID
-    navigate(`/booking?service=${serviceId}`);
+    // Navigate to next step: if service chosen earlier -> booking, otherwise -> services
+    const nextUrl = serviceId ? `/booking?service=${serviceId}` : "/services";
+    navigate(nextUrl);
   };
 
   return (
@@ -211,6 +293,43 @@ const Address = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="relative">
+              <Label htmlFor="searchAddress">Søg adresse (auto-udfyld)</Label>
+              <Input
+                id="searchAddress"
+                placeholder="F.eks. Husumgade 1, 2200 København N"
+                value={addressQuery}
+                onChange={(e) => setAddressQuery(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+              />
+              {showSuggestions && addressQuery.trim().length >= 3 && (
+                <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-56 overflow-auto">
+                  {suggestions.slice(0, 8).map((opt) => (
+                    <div
+                      key={opt}
+                      className="px-3 py-2 hover:bg-accent cursor-pointer"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const parsed = parseAddressFromText(opt);
+                        if (parsed) {
+                          setAddress({
+                            street: parsed.street,
+                            postalCode: parsed.postalCode,
+                            city: parsed.city,
+                          });
+                        }
+                        setAddressQuery(opt);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      {opt}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
               <Label htmlFor="street">Gade og nummer *</Label>
               <Input
@@ -250,7 +369,7 @@ const Address = () => {
           size="lg"
           disabled={!isAddressValid()}
         >
-          Fortsæt til booking
+          {serviceId ? "Fortsæt til booking" : "Fortsæt til services"}
         </Button>
       </div>
     </div>
