@@ -31,6 +31,7 @@ const adminItems = [
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
   { title: "Kalender", url: "/admin/calendar", icon: CalendarDays },
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
+  { title: "Beskeder", url: "/admin/messages", icon: MessageSquare },
   { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
 ];
 

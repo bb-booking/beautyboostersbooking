@@ -1,8 +1,23 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AdminLayout() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) navigate("/admin/login");
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) navigate("/admin/login");
+    }).finally(() => setChecking(false));
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -15,7 +30,7 @@ export function AdminLayout() {
           </header>
           
           <main className="flex-1 p-6">
-            <Outlet />
+            {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : <Outlet />}
           </main>
         </div>
       </div>

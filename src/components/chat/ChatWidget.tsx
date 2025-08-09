@@ -3,17 +3,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MessageCircle, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const ChatWidget = () => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const { toast } = useToast();
 
-  const handleSend = () => {
-    const subject = encodeURIComponent("Chat besked fra " + (name || "kunde"));
-    const body = encodeURIComponent(`${message}\n\n— Navn: ${name}\nEmail: ${email}`);
-    window.location.href = `mailto:hello@beautyboosters.dk?subject=${subject}&body=${body}`;
+  const handleSend = async () => {
+    const text = message.trim();
+    if (!text) return;
+    try {
+      setSending(true);
+
+      let convId = conversationId;
+      if (!convId) {
+        const { data: conv, error: convErr } = await supabase
+          .from("conversations")
+          .insert([{ name: name || null, email: email || null, status: "open" }])
+          .select("id")
+          .single();
+        if (convErr) throw convErr;
+        convId = conv.id;
+        setConversationId(convId);
+      }
+
+      const { error: msgErr } = await supabase
+        .from("conversation_messages")
+        .insert([{ conversation_id: convId, sender: "user", message: text, email: email || null }]);
+      if (msgErr) throw msgErr;
+
+      await supabase.functions.invoke("send-chat-email", {
+        body: { conversationId: convId, name, email, message: text },
+      });
+
+      toast({ title: "Besked sendt", description: "Vi vender hurtigt tilbage i chatten." });
+      setMessage("");
+      if (!open) setOpen(true);
+    } catch (error: any) {
+      console.error(error);
+      toast({ title: "Kunne ikke sende beskeden", description: error.message || "Prøv igen.", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -31,7 +68,7 @@ const ChatWidget = () => {
             <Input type="email" placeholder="Din email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <Textarea placeholder="Skriv din besked…" value={message} onChange={(e) => setMessage(e.target.value)} className="min-h-24" />
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={handleSend}>Send</Button>
+              <Button className="flex-1" onClick={handleSend} disabled={sending || !message.trim()}>Send</Button>
               <Button variant="outline" className="flex-1" asChild>
                 <a href="tel:+4571786575"><Phone className="mr-2 h-4 w-4" /> Ring</a>
               </Button>

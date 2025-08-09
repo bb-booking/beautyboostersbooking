@@ -233,6 +233,80 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          email: string | null
+          id: string
+          message: string | null
+          read_at: string | null
+          sender: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string | null
+          read_at?: string | null
+          sender: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string | null
+          read_at?: string | null
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_message_at: string | null
+          name: string | null
+          phone: string | null
+          status: string
+          unread_admin_count: number
+          unread_user_count: number
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_message_at?: string | null
+          name?: string | null
+          phone?: string | null
+          status?: string
+          unread_admin_count?: number
+          unread_user_count?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_message_at?: string | null
+          name?: string | null
+          phone?: string | null
+          status?: string
+          unread_admin_count?: number
+          unread_user_count?: number
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           antal_personer: number | null

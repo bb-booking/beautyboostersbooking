@@ -33,6 +33,8 @@ import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminMessages from "./pages/admin/AdminMessages";
+import AdminLogin from "./pages/admin/AdminLogin";
 import { BoosterLayout } from "@/components/layout/BoosterLayout";
 import BoosterDashboard from "./pages/booster/BoosterDashboard";
 import BoosterCalendar from "./pages/booster/BoosterCalendar";
@@ -75,6 +77,7 @@ const App = () => (
                 <Route path="/booster-signup" element={<BoosterSignup />} />
                 <Route path="/for-salons" element={<ForSalons />} />
                 {/* Admin routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="inquiries" element={<AdminInquiries />} />
@@ -83,6 +86,7 @@ const App = () => (
                   <Route path="bookings" element={<AdminBookings />} />
                   <Route path="finance" element={<AdminFinance />} />
                   <Route path="boosters" element={<AdminBoosters />} />
+                  <Route path="messages" element={<AdminMessages />} />
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>
                 {/* Booster routes */}
