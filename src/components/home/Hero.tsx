@@ -255,31 +255,10 @@ const Hero = () => {
                   </Button>
                 </div>
 
-                {/* Quick filters */}
-                <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                  {["Bryllup - Brudestyling", "Makeup & Hår", "Spraytan", "Event"].map((label) => (
-                    <Button
-                      key={label}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full hover-scale"
-                      onClick={() => navigate('/services')}
-                      aria-label={`Se ${label}`}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Trust bar */}
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm text-muted-foreground justify-items-center text-center">
-            <div className="flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> 4.9/5 kundetilfredshed</div>
-            <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Certificerede stylister</div>
-            <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> DK‑dækkende</div>
-          </div>
 
           {/* Secondary CTA */}
           <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
