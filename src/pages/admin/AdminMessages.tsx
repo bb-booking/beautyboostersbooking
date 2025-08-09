@@ -91,14 +91,36 @@ export default function AdminMessages() {
   const sendReply = async () => {
     const text = reply.trim();
     if (!text || !selectedId) return;
+
+    // Insert message first
     const { error } = await supabase
       .from("conversation_messages")
       .insert([{ conversation_id: selectedId, sender: "admin", message: text }]);
+
     if (error) {
       console.error(error);
       toast({ title: "Kunne ikke sende", description: error.message, variant: "destructive" });
       return;
     }
+
+    // Fire-and-forget email to customer if we have their email
+    try {
+      const conv = conversations.find((c) => c.id === selectedId);
+      if (conv?.email) {
+        await supabase.functions.invoke("send-chat-email", {
+          body: {
+            conversationId: selectedId,
+            name: conv.name,
+            email: conv.email,
+            message: text,
+            sender: "admin",
+          },
+        });
+      }
+    } catch (e: any) {
+      console.warn("Email send failed:", e?.message || e);
+    }
+
     setReply("");
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
   };

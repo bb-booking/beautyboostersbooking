@@ -20,9 +20,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+  SidebarMenuBadge,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
@@ -53,6 +56,61 @@ export function AdminSidebar() {
       ? "bg-primary text-primary-foreground font-medium" 
       : "hover:bg-muted/50";
 
+  const [counts, setCounts] = useState({ messages: 0, inquiries: 0, jobs: 0 });
+
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const [msgRes, inqRes, jobRes] = await Promise.all([
+          supabase.from("conversations").select("id").gt("unread_admin_count", 0),
+          supabase.from("inquiries").select("id").eq("status", "new"),
+          supabase.from("jobs").select("id").eq("status", "open"),
+        ]);
+        setCounts({
+          messages: msgRes.data?.length || 0,
+          inquiries: inqRes.data?.length || 0,
+          jobs: jobRes.data?.length || 0,
+        });
+      } catch (e) {
+        // noop
+      }
+    };
+    refresh();
+
+    const ch1 = supabase
+      .channel("conversations-count")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "conversations" },
+        () => refresh()
+      )
+      .subscribe();
+
+    const ch2 = supabase
+      .channel("inquiries-count")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "inquiries" },
+        () => refresh()
+      )
+      .subscribe();
+
+    const ch3 = supabase
+      .channel("jobs-count")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" },
+        () => refresh()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch1);
+      supabase.removeChannel(ch2);
+      supabase.removeChannel(ch3);
+    };
+  }, []);
+
   return (
     <Sidebar
       className={collapsed ? "w-14" : "w-60"}
@@ -65,20 +123,27 @@ export function AdminSidebar() {
           <SidebarGroupLabel>Beauty Boosters Admin</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/admin"}
-                      className={getNavCls(isActive(item.url))}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span className="ml-2">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {adminItems.map((item) => {
+                const badge =
+                  item.title === "Beskeder" ? counts.messages :
+                  item.title === "Forespørgsler" ? counts.inquiries :
+                  item.title === "Jobs" ? counts.jobs : 0;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end={item.url === "/admin"}
+                        className={getNavCls(isActive(item.url))}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span className="ml-2">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                    {badge > 0 && <SidebarMenuBadge>{badge}</SidebarMenuBadge>}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
