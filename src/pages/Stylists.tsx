@@ -174,6 +174,12 @@ const Stylists = () => {
                     'anna g': '/lovable-uploads/0af9a841-777c-4b12-b3af-7203257907e4.png',
                     'angelica': '/lovable-uploads/angelica-profile.png',
                     'angelika': '/lovable-uploads/angelica-profile.png',
+                    'ann-katrine': '/lovable-uploads/profiles/ann-katrine.png',
+                    'ann katrine': '/lovable-uploads/profiles/ann-katrine.png',
+                    'bela': '/lovable-uploads/profiles/bela.png',
+                    'carla sofie f': '/lovable-uploads/profiles/carla-sofie-f.png',
+                    'clara alma': '/lovable-uploads/profiles/clara-alma.png',
+                    'darun': '/lovable-uploads/profiles/darun.png',
                   };
                   return overrides[n] ?? booster.portfolio_image_url;
                 })()}
