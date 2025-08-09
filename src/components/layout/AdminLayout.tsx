@@ -7,14 +7,44 @@ import { supabase } from "@/integrations/supabase/client";
 export function AdminLayout() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) navigate("/admin/login");
+      if (!session) {
+        setAuthorized(false);
+        setChecking(false);
+        navigate("/admin/login");
+      } else {
+        // Defer Supabase calls to avoid deadlocks
+        setTimeout(async () => {
+          const { data, error } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id);
+          const isAdmin = !error && (data?.some(r => r.role === "admin") ?? false);
+          setAuthorized(isAdmin);
+          setChecking(false);
+          if (!isAdmin) navigate("/admin/login");
+        }, 0);
+      }
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/admin/login");
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setAuthorized(false);
+        navigate("/admin/login");
+      } else {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id);
+        const isAdmin = !error && (data?.some(r => r.role === "admin") ?? false);
+        setAuthorized(isAdmin);
+        if (!isAdmin) navigate("/admin/login");
+      }
     }).finally(() => setChecking(false));
+
     return () => subscription.unsubscribe();
   }, [navigate]);
 
@@ -30,7 +60,7 @@ export function AdminLayout() {
           </header>
           
           <main className="flex-1 p-6">
-            {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : <Outlet />}
+            {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : authorized ? <Outlet /> : <div className="text-sm text-muted-foreground">Ingen adgang</div>}
           </main>
         </div>
       </div>

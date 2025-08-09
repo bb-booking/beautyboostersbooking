@@ -8,6 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { User, Briefcase, Mail, Facebook, Apple } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface AuthModalProps {
   trigger: React.ReactNode;
@@ -30,17 +31,19 @@ const AuthModal = ({ trigger }: AuthModalProps) => {
           <div className="space-y-3">
             <h3 className="font-medium text-sm">Som Kunde</h3>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-3">
-                <Mail className="h-4 w-4" />
-                Log ind / Opret med email
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-3">
+              <Link to="/auth">
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Mail className="h-4 w-4" />
+                  Log ind / Opret med email
+                </Button>
+              </Link>
+              <Button variant="outline" className="w-full justify-start gap-3" disabled>
                 <Facebook className="h-4 w-4" />
-                Fortsæt med Facebook
+                Fortsæt med Facebook (snart)
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-3">
+              <Button variant="outline" className="w-full justify-start gap-3" disabled>
                 <Apple className="h-4 w-4" />
-                Fortsæt med Apple
+                Fortsæt med Apple (snart)
               </Button>
             </div>
           </div>
@@ -50,14 +53,18 @@ const AuthModal = ({ trigger }: AuthModalProps) => {
           <div className="space-y-3">
             <h3 className="font-medium text-sm">Som Booster</h3>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-3">
-                <Briefcase className="h-4 w-4" />
-                Log ind som Booster
-              </Button>
-              <Button className="w-full justify-start gap-3">
-                <User className="h-4 w-4" />
-                Bliv Booster
-              </Button>
+              <Link to="/booster/login">
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Briefcase className="h-4 w-4" />
+                  Log ind som Booster
+                </Button>
+              </Link>
+              <Link to="/booster-signup">
+                <Button className="w-full justify-start gap-3">
+                  <User className="h-4 w-4" />
+                  Bliv Booster
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

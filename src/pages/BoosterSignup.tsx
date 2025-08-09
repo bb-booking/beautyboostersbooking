@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Education {
   school: string;
@@ -25,6 +26,7 @@ interface FormData {
   cprNumber: string;
   name: string;
   email: string;
+  password: string;
   phone: string;
   address: string;
   workRadius: number;
@@ -57,6 +59,7 @@ const BoosterSignup = () => {
     cprNumber: '',
     name: '',
     email: '',
+    password: '',
     phone: '',
     address: '',
     workRadius: 50,
@@ -87,7 +90,7 @@ const BoosterSignup = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.contractAccepted) {
       toast({
         title: "Kontrakt skal accepteres",
@@ -97,13 +100,26 @@ const BoosterSignup = () => {
       return;
     }
 
-    // Here you would submit the form data
-    toast({
-      title: "Ansøgning sendt!",
-      description: "Vi tager kontakt til dig inden for 2 hverdage.",
-    });
-    
-    navigate("/");
+    try {
+      const redirectUrl = `${window.location.origin}/booster/login`;
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: { emailRedirectTo: redirectUrl }
+      });
+      if (error) throw error;
+
+      // Markér at brugeren skal have booster-rolle ved første login
+      localStorage.setItem('pending_role', 'booster');
+
+      toast({
+        title: "Ansøgning sendt!",
+        description: "Tjek din e-mail for at bekræfte din konto."
+      });
+      navigate("/booster/login");
+    } catch (e: any) {
+      toast({ title: "Fejl ved oprettelse", description: e.message, variant: "destructive" });
+    }
   };
 
   const canProceedFromStep = (step: number) => {
@@ -262,12 +278,13 @@ const BoosterSignup = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefon</Label>
+                <Label htmlFor="password">Adgangskode</Label>
                 <Input
-                  id="phone"
-                  placeholder="12 34 56 78"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  id="password"
+                  type="password"
+                  placeholder="Vælg en adgangskode"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 />
               </div>
             </div>
