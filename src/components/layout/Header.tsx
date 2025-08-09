@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, User, LogOut, Search, Menu } from "lucide-react";
+import { Calendar, User, LogOut, Search, Menu, Store } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -81,6 +81,18 @@ const Header = () => {
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                 </nav>
 
+                <div className="grid gap-3">
+                  <Link to="/booster-signup">
+                    <Button className="w-full" variant="secondary">Bliv Booster</Button>
+                  </Link>
+                  <Link to="/for-salons">
+                    <Button className="w-full" variant="secondary">
+                      <Store className="h-4 w-4 mr-2" />
+                      Opret salon
+                    </Button>
+                  </Link>
+                </div>
+
                 <div>
                   <AuthModal 
                     trigger={
@@ -95,6 +107,17 @@ const Header = () => {
 
         {/* Desktop actions */}
         <div className="hidden md:flex items-center space-x-4">
+          <Link to="/booster-signup">
+            <Button variant="secondary" size="sm">
+              Bliv Booster
+            </Button>
+          </Link>
+          <Link to="/for-salons">
+            <Button variant="secondary" size="sm">
+              <Store className="h-4 w-4 mr-2" />
+              Opret Salon
+            </Button>
+          </Link>
           <AuthModal 
             trigger={
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
