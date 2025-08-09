@@ -24,6 +24,12 @@ const Hero = () => {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
+  // Hero video config (trim loop)
+  const VIDEO_START = 0;
+  const VIDEO_END = 12; // seconds – adjust if needed
+  const HERO_VIDEO = "https://drive.google.com/uc?export=download&id=1hz0tBN57MbxfvhNbC4C7fKOAuf8jkmc0";
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
   // Fetch real DK addresses after 3+ chars (Dataforsyningen API)
   useEffect(() => {
     const q = searchData.location.trim();
@@ -154,6 +160,21 @@ const Hero = () => {
           className="absolute inset-0 h-full w-full object-cover"
           loading="eager"
         />
+        {/* Background video (desktop) */}
+        <video
+          ref={videoRef}
+          className="absolute inset-0 h-full w-full object-cover hidden md:block"
+          muted
+          playsInline
+          autoPlay
+          preload="metadata"
+          aria-label="Stemningsvideo af makeup artist – BeautyBoosters"
+          poster="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
+          onLoadedMetadata={(e) => { try { const v = e.currentTarget; v.currentTime = VIDEO_START; v.play().catch(() => {}); } catch {} }}
+          onTimeUpdate={(e) => { const v = e.currentTarget; if (v.currentTime >= VIDEO_END) { v.currentTime = VIDEO_START; v.play().catch(() => {}); } }}
+        >
+          <source src={HERO_VIDEO} type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
 
         <div className="container relative z-10 mx-auto px-4">
