@@ -109,13 +109,22 @@ const Angelica = () => {
         <section className="mt-12" aria-labelledby="portfolio-heading">
           <h2 id="portfolio-heading" className="text-2xl font-bold mb-4">Portfolio</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <img
-              src={collageImg}
-              alt="Angelika portfolio collage – beauty looks"
-              className="w-full h-full object-cover rounded-lg"
-              loading="lazy"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
-            />
+            {[
+              'left top', 'center top', 'right top',
+              'left center', 'center center', 'right center',
+              'left bottom', 'center bottom', 'right bottom'
+            ].map((pos, idx) => (
+              <div key={pos} className="aspect-square overflow-hidden rounded-lg">
+                <img
+                  src={collageImg}
+                  alt={`Angelika portfolio ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: pos }}
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                />
+              </div>
+            ))}
           </div>
         </section>
       </section>
