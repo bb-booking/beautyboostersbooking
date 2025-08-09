@@ -2,17 +2,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Zap, Users, Search, MapPin, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Zap, Users, Search, Clock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import PopularServices from "@/components/home/PopularServices";
 
 const Hero = () => {
   const navigate = useNavigate();
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const timeInputRef = useRef<HTMLInputElement>(null);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+
+  const locationOptions = [
+    "København, 1000",
+    "København N, 2200",
+    "København S, 2300",
+    "Frederiksberg, 2000",
+    "Aarhus, 8000",
+    "Aalborg, 9000",
+    "Odense, 5000",
+    "Esbjerg, 6700",
+    "Randers, 8900",
+    "Kolding, 6000",
+  ];
   const [searchData, setSearchData] = useState({
     service: "",
-    location: "Nuværende lokation",
+    location: "",
     date: "",
     time: ""
   });
@@ -58,13 +73,6 @@ const Hero = () => {
     { value: "Børn", label: "Børn" }
   ];
 
-  const handleDateIconClick = () => {
-    dateInputRef.current?.showPicker();
-  };
-
-  const handleTimeIconClick = () => {
-    timeInputRef.current?.showPicker();
-  };
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -106,70 +114,119 @@ const Hero = () => {
                 </Select>
               </div>
 
-              {/* Location */}
+              {/* Location with custom autocomplete */}
               <div className="md:col-span-3">
                 <label className="text-sm font-medium text-left block mb-2">Lokation</label>
                 <div className="relative">
                   <Input
-                    placeholder=""
+                    placeholder="Søg adresse"
                     value={searchData.location}
                     onChange={(e) => setSearchData(prev => ({...prev, location: e.target.value}))}
+                    onFocus={() => setShowLocationSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
                     className="h-9 text-foreground"
-                    list="locations"
                   />
-                  <datalist id="locations">
-                    <option value="København, 1000" />
-                    <option value="København N, 2200" />
-                    <option value="København S, 2300" />
-                    <option value="Frederiksberg, 2000" />
-                    <option value="Aalborg, 9000" />
-                    <option value="Aarhus, 8000" />
-                    <option value="Odense, 5000" />
-                  </datalist>
+                  {/* Suggestions */}
+                  {showLocationSuggestions && searchData.location.trim().length >= 3 && (
+                    <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-56 overflow-auto">
+                      {locationOptions
+                        .filter((opt) =>
+                          opt.toLowerCase().includes(searchData.location.toLowerCase())
+                        )
+                        .slice(0, 8)
+                        .map((opt) => (
+                          <div
+                            key={opt}
+                            className="px-3 py-2 hover:bg-accent cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSearchData((prev) => ({ ...prev, location: opt }));
+                              setShowLocationSuggestions(false);
+                            }}
+                          >
+                            {opt}
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
               
-              {/* Date with clickable calendar icon */}
+              {/* Date with clickable calendar icon via Popover */}
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-left block mb-2">dato</label>
-                <div className="relative">
-                  <Input
-                    ref={dateInputRef}
-                    type="date"
-                    value={searchData.date}
-                    onChange={(e) => setSearchData(prev => ({...prev, date: e.target.value}))}
-                    className="pr-8 text-sm h-9 appearance-none"
-                    style={{ colorScheme: 'light' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleDateIconClick}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Calendar className="h-3 w-3" />
-                  </button>
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-9 w-full justify-between px-3 text-sm font-normal"
+                    >
+                      <span>
+                        {searchData.date
+                          ? (() => {
+                              const d = new Date(searchData.date);
+                              const dd = String(d.getDate()).padStart(2, "0");
+                              const mm = String(d.getMonth() + 1).padStart(2, "0");
+                              const yy = String(d.getFullYear()).slice(-2);
+                              return `${dd}.${mm}.${yy}`;
+                            })()
+                          : ""}
+                      </span>
+                      <CalendarIcon className="h-3 w-3 opacity-70" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-background border" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={searchData.date ? new Date(searchData.date) : undefined}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        const yyyy = date.getFullYear();
+                        const mm = String(date.getMonth() + 1).padStart(2, "0");
+                        const dd = String(date.getDate()).padStart(2, "0");
+                        setSearchData((prev) => ({ ...prev, date: `${yyyy}-${mm}-${dd}` }));
+                      }}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-              
-              {/* Time with clickable clock icon */}
+
+              {/* Time with clickable clock icon via Popover */}
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-left block mb-2">Tidspunkt</label>
-                <div className="relative">
-                  <Input
-                    ref={timeInputRef}
-                    type="time"
-                    value={searchData.time}
-                    onChange={(e) => setSearchData(prev => ({...prev, time: e.target.value}))}
-                    className="pr-8 text-sm h-9"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleTimeIconClick}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Clock className="h-3 w-3" />
-                  </button>
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-9 w-full justify-between px-3 text-sm font-normal"
+                    >
+                      <span>{searchData.time}</span>
+                      <Clock className="h-3 w-3 opacity-70" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-40 p-1 z-50 bg-background border" align="start">
+                    <div className="max-h-48 overflow-y-auto">
+                      {Array.from({ length: 24 }).map((_, i) => {
+                        const hh = String(i).padStart(2, "0");
+                        const t = `${hh}:00`;
+                        return (
+                          <button
+                            key={t}
+                            className="w-full text-left px-2 py-1 rounded hover:bg-accent"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSearchData((prev) => ({ ...prev, time: t }));
+                            }}
+                          >
+                            {t}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Search Button */}
@@ -205,7 +262,13 @@ const Hero = () => {
           </Button>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        {/* Popular Services moved here */}
+        <div className="mt-8">
+          <PopularServices />
+        </div>
+
+        {/* Feature highlights */}
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-8">
           <div className="text-center">
             <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Zap className="h-8 w-8 text-primary" />
@@ -224,7 +287,7 @@ const Hero = () => {
           
           <div className="text-center">
             <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <Calendar className="h-8 w-8 text-primary" />
+              <CalendarIcon className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Fleksible Tider</h3>
             <p className="text-muted-foreground">Find stylister der passer din tidsplan</p>
