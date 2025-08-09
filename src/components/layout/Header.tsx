@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, User, LogOut, Search } from "lucide-react";
+import { Calendar, User, LogOut, Search, Menu } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -51,7 +52,49 @@ const Header = () => {
           </Link>
         </nav>
 
-        <div className="flex items-center space-x-4">
+        {/* Mobile menu */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-primary-foreground">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Åbn menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80">
+              <div className="space-y-6 mt-6">
+                <form onSubmit={handleSearch} className="block">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Søg efter services..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </form>
+
+                <nav className="grid gap-3">
+                  <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
+                  <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
+                </nav>
+
+                <div>
+                  <AuthModal 
+                    trigger={
+                      <Button className="w-full">Log Ind</Button>
+                    }
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Desktop actions */}
+        <div className="hidden md:flex items-center space-x-4">
           <AuthModal 
             trigger={
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
