@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Zap, Users, Search, MapPin, Clock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -16,6 +16,36 @@ const Hero = () => {
     date: "",
     time: ""
   });
+
+  // Prefill with tomorrow's date and next whole hour
+  useEffect(() => {
+    setSearchData((prev) => {
+      if (prev.date && prev.time) return prev;
+
+      const now = new Date();
+
+      // Tomorrow's date in yyyy-mm-dd for native date input
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      const yyyy = tomorrow.getFullYear();
+      const mm = String(tomorrow.getMonth() + 1).padStart(2, "0");
+      const dd = String(tomorrow.getDate()).padStart(2, "0");
+      const dateISO = `${yyyy}-${mm}-${dd}`;
+
+      // Next whole hour as HH:MM
+      const nextHour = new Date(now);
+      nextHour.setMinutes(0, 0, 0);
+      nextHour.setHours(nextHour.getHours() + 1);
+      const hh = String(nextHour.getHours()).padStart(2, "0");
+      const timeStr = `${hh}:00`;
+
+      return {
+        ...prev,
+        date: prev.date || dateISO,
+        time: prev.time || timeStr,
+      };
+    });
+  }, []);
 
   const serviceCategories = [
     { value: "all", label: "Alle services" },
@@ -101,7 +131,7 @@ const Hero = () => {
               
               {/* Date with clickable calendar icon */}
               <div className="md:col-span-2">
-                <label className="text-sm font-medium text-left block mb-2">Dato</label>
+                <label className="text-sm font-medium text-left block mb-2">dato</label>
                 <div className="relative">
                   <Input
                     ref={dateInputRef}
