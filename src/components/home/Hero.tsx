@@ -180,8 +180,8 @@ const Hero = () => {
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-2xl md:text-4xl leading-tight tracking-tight animate-fade-in max-w-[28ch] mx-auto">
-              <span className="font-normal block">Professionelle beauty services.</span>
-              <span className="font-extralight italic block">Hvor som helst, når som helst.</span>
+              <span className="font-semibold block">Professionelle beauty services.</span>
+              <span className="font-extralight block">Hvor som helst, når som helst.</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in max-w-[28ch] mx-auto tracking-wide">
               Få din beauty service til døren eller besøg en salon i nærheden. Hurtigt og fleksibelt.
