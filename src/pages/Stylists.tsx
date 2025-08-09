@@ -212,10 +212,13 @@ const Stylists = () => {
                     <Clock className="h-3 w-3" />
                     {booster.years_experience} år
                     {booster.name.toLowerCase().includes('anna g') && (
-                      <span className="ml-2 flex items-center gap-2">
+                      <span className="ml-2 flex items-center gap-3">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Bike className="h-3.5 w-3.5 text-muted-foreground" aria-label="Kører ud" />
+                            <span className="inline-flex items-center gap-1">
+                              <Bike className="h-3.5 w-3.5 text-muted-foreground" aria-label="Kører ud" />
+                              <span className="text-xs">udkørende</span>
+                            </span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Kører ud</p>
@@ -223,7 +226,10 @@ const Stylists = () => {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Store className="h-3.5 w-3.5 text-muted-foreground" aria-label="Salon tilgængelig" />
+                            <span className="inline-flex items-center gap-1">
+                              <Store className="h-3.5 w-3.5 text-muted-foreground" aria-label="Salon tilgængelig" />
+                              <span className="text-xs">salon</span>
+                            </span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Salon tilgængelig</p>
