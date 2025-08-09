@@ -90,6 +90,21 @@ const Hero = () => {
 
 
   const handleSearch = () => {
+    // Persist booking context (location + date/time) for later steps
+    const loc = searchData.location.trim();
+    const match = loc.match(/(\d{4})\s+([^,]+)$/);
+    const postalCode = match ? match[1] : "";
+    const city = match ? match[2].trim() : "";
+    const address = match ? loc.replace(/,?\s*\d{4}\s+[^,]+$/, "").replace(/,\s*$/, "").trim() : loc;
+
+    const bookingDetails = {
+      serviceId: "",
+      location: { address, postalCode, city },
+      date: searchData.date, // yyyy-mm-dd
+      time: searchData.time, // HH:MM
+    };
+    sessionStorage.setItem("bookingDetails", JSON.stringify(bookingDetails));
+
     const params = new URLSearchParams();
     if (searchData.service && searchData.service !== "all") {
       params.set('category', searchData.service);

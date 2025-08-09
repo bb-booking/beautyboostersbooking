@@ -377,7 +377,16 @@ const Services = () => {
       // Navigate to inquiry form for inquiry-based services
       navigate(`/inquiry?service=${serviceId}`);
     } else {
-      // Navigate to address page with selected service
+      // If we already have booking context (address/date/time), skip address step
+      try {
+        const stored = sessionStorage.getItem('bookingDetails');
+        const details = stored ? JSON.parse(stored) : null;
+        if (details?.location?.address) {
+          navigate(`/booking?service=${serviceId}`);
+          return;
+        }
+      } catch {}
+      // Otherwise, go to address page
       navigate(`/address?service=${serviceId}`);
     }
   };

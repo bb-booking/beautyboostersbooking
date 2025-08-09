@@ -116,7 +116,15 @@ const Booking = () => {
     // Get booking details from sessionStorage or create default
     const savedDetails = sessionStorage.getItem('bookingDetails');
     if (savedDetails) {
-      setBookingDetails(JSON.parse(savedDetails));
+      try {
+        const parsed = JSON.parse(savedDetails);
+        setBookingDetails(parsed);
+        if (parsed.date) {
+          const d = new Date(parsed.date);
+          if (!isNaN(d.getTime())) setSelectedDate(d);
+        }
+        if (parsed.time) setSelectedTime(parsed.time);
+      } catch {}
     } else if (boosterId) {
       // Create default booking details for direct booster booking
       setBookingDetails({
