@@ -215,7 +215,7 @@ const Stylists = () => {
                 {booster.bio}
               </p>
               <div className="flex gap-2">
-                <Link to={booster.name.toLowerCase().includes('anna g') ? '/stylist/anna-g' : `/stylist/${booster.id}`} className="flex-1">
+                <Link to={(() => { const n = booster.name.toLowerCase(); return n.includes('anna g') ? '/stylist/anna-g' : (n.includes('angelica') || n.includes('angelika')) ? '/stylist/angelica' : `/stylist/${booster.id}`; })()} className="flex-1">
                   <Button size="sm" variant="outline" className="w-full">
                     Se profil
                   </Button>

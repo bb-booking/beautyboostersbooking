@@ -12,6 +12,7 @@ import InquiryForm from "./pages/InquiryForm";
 import Stylists from "./pages/Stylists";
 import StylistDetail from "./pages/StylistDetail";
 import AnnaG from "./pages/stylists/AnnaG";
+import Angelica from "./pages/stylists/Angelica";
 import Booking from "./pages/Booking";
 import Checkout from "./pages/Checkout";
 import Confirmation from "./pages/Confirmation";
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/inquiry" element={<InquiryForm />} />
                 <Route path="/stylists" element={<Stylists />} />
                 <Route path="/stylist/anna-g" element={<AnnaG />} />
+                <Route path="/stylist/angelica" element={<Angelica />} />
                 <Route path="/stylist/:id" element={<StylistDetail />} />
                 <Route path="/book/:boosterId" element={<Booking />} />
                 <Route path="/booking" element={<Booking />} />
