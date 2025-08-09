@@ -168,8 +168,16 @@ const Stylists = () => {
           <Card key={booster.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative">
               <img
-                src={booster.portfolio_image_url}
-                alt={booster.name}
+                src={(() => {
+                  const n = booster.name.toLowerCase();
+                  const overrides: Record<string, string> = {
+                    'anna g': '/lovable-uploads/0af9a841-777c-4b12-b3af-7203257907e4.png',
+                    'angelica': '/lovable-uploads/angelica-profile.png',
+                    'angelika': '/lovable-uploads/angelica-profile.png',
+                  };
+                  return overrides[n] ?? booster.portfolio_image_url;
+                })()}
+                alt={`Booster ${booster.name} – profilbillede`}
                 className="w-full h-48 object-cover"
                 onError={(e) => {
                   e.currentTarget.src = '/placeholder.svg';
