@@ -217,7 +217,7 @@ const Stylists = () => {
                           <TooltipTrigger asChild>
                             <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
                               <Bike className="h-3 w-3 text-muted-foreground" aria-label="Kører ud" />
-                              <span className="text-[10px] sm:text-xs">Udkørende</span>
+                              <span className="leading-none">Udkørende</span>
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -228,7 +228,7 @@ const Stylists = () => {
                           <TooltipTrigger asChild>
                             <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
                               <Store className="h-3 w-3 text-muted-foreground" aria-label="Salon tilgængelig" />
-                              <span className="text-[10px] sm:text-xs">Salon</span>
+                              <span className="leading-none">Salon</span>
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
