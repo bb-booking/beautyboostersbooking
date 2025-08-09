@@ -56,13 +56,13 @@ const AuthModal = ({ trigger }: AuthModalProps) => {
               <Link to="/booster/login">
                 <Button variant="outline" className="w-full justify-start gap-3">
                   <Briefcase className="h-4 w-4" />
-                  Log ind som Booster
+                  Log ind Booster / Salon
                 </Button>
               </Link>
               <Link to="/booster-signup">
                 <Button className="w-full justify-start gap-3">
                   <User className="h-4 w-4" />
-                  Bliv Booster
+                  Opret Booster / Salon
                 </Button>
               </Link>
             </div>
