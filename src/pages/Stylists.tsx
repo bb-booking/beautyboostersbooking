@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, MapPin, Clock } from "lucide-react";
+import { boosterImageOverrides } from "@/data/boosterImages";
 
 interface Booster {
   id: string;
@@ -167,7 +168,7 @@ const Stylists = () => {
         {filteredBoosters.map((booster) => (
           <Card key={booster.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative">
-              <img
+              <img loading="lazy"
                 src={(() => {
                   const n = booster.name.toLowerCase();
                   const overrides: Record<string, string> = {
