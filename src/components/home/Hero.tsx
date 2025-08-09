@@ -13,24 +13,39 @@ const Hero = () => {
   const navigate = useNavigate();
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
-  const locationOptions = [
-    "København, 1000",
-    "København N, 2200",
-    "København S, 2300",
-    "Frederiksberg, 2000",
-    "Aarhus, 8000",
-    "Aalborg, 9000",
-    "Odense, 5000",
-    "Esbjerg, 6700",
-    "Randers, 8900",
-    "Kolding, 6000",
-  ];
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
   const [searchData, setSearchData] = useState({
     service: "",
     location: "",
     date: "",
     time: ""
   });
+
+  // Fetch real DK addresses after 3+ chars (Dataforsyningen API)
+  useEffect(() => {
+    const q = searchData.location.trim();
+    if (q.length < 3) {
+      setLocationOptions([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://api.dataforsyningen.dk/autocomplete?q=${encodeURIComponent(q)}&type=adresse&fuzzy=true&per_side=8`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        const data = await res.json();
+        const opts = (Array.isArray(data) ? data : []).map((d: any) => d.tekst || d.forslagstekst || d.adressebetegnelse).filter(Boolean);
+        setLocationOptions(opts);
+        setShowLocationSuggestions(true);
+      } catch (err) {
+        // ignore abort/network errors
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [searchData.location]);
 
   // Prefill with tomorrow's date and next whole hour
   useEffect(() => {
