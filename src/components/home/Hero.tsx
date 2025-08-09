@@ -27,7 +27,7 @@ const Hero = () => {
   // Hero video config (trim loop)
   const VIDEO_START = 0;
   const VIDEO_END = 12; // seconds – adjust if needed
-  const HERO_VIDEO = "https://drive.google.com/uc?export=download&id=19IQTmUI4U-2X_w5Q6wLUeX_zoZ299L99";
+  const HERO_VIDEO = "/videos/hero.mp4";
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Fetch real DK addresses after 3+ chars (Dataforsyningen API)
