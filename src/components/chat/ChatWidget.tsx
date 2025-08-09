@@ -23,13 +23,12 @@ const ChatWidget = () => {
 
       let convId = conversationId;
       if (!convId) {
-        const { data: conv, error: convErr } = await supabase
+        const newId = crypto.randomUUID();
+        const { error: convErr } = await supabase
           .from("conversations")
-          .insert([{ name: name || null, email: email || null, status: "open" }])
-          .select("id")
-          .single();
+          .insert([{ id: newId, name: name || null, email: email || null, status: "open" }]);
         if (convErr) throw convErr;
-        convId = conv.id;
+        convId = newId;
         setConversationId(convId);
       }
 
