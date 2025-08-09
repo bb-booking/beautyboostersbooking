@@ -203,42 +203,42 @@ const Stylists = () => {
                     </Badge>
                   ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
                     {booster.location}
                   </div>
-                  <div className="flex flex-wrap items-center gap-1">
+                  <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {booster.years_experience} år
-                    {booster.name.toLowerCase().includes('anna g') && (
-                      <span className="ml-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
-                              <Bike className="h-3 w-3 text-muted-foreground" aria-label="Kører ud" />
-                              <span className="leading-none">Udkørende</span>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Kører ud</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
-                              <Store className="h-3 w-3 text-muted-foreground" aria-label="Salon tilgængelig" />
-                              <span className="leading-none">Salon</span>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Salon tilgængelig</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </span>
-                    )}
                   </div>
                 </div>
+                {booster.name.toLowerCase().includes('anna g') && (
+                  <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
+                          <Bike className="h-3 w-3 text-muted-foreground" aria-label="Kører ud" />
+                          <span className="leading-none">Udkørende</span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Kører ud</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
+                          <Store className="h-3 w-3 text-muted-foreground" aria-label="Salon tilgængelig" />
+                          <span className="leading-none">Salon</span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Salon tilgængelig</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
