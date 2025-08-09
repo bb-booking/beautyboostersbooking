@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_reminders: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          payload: Json | null
+          scheduled_at: string
+          sent_at: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          payload?: Json | null
+          scheduled_at: string
+          sent_at?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          payload?: Json | null
+          scheduled_at?: string
+          sent_at?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           amount: number
