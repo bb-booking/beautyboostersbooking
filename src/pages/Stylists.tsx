@@ -44,7 +44,7 @@ const Stylists = () => {
       const { data, error } = await supabase
         .from('booster_profiles')
         .select('*')
-        .order('rating', { ascending: false });
+        .order('name', { ascending: true });
 
       if (error) throw error;
       setBoosters(data || []);
@@ -80,6 +80,9 @@ const Stylists = () => {
         booster.location.toLowerCase().includes(locationFilter.toLowerCase())
       );
     }
+
+    const collator = new Intl.Collator('da', { sensitivity: 'base' });
+    filtered = [...filtered].sort((a, b) => collator.compare(a.name, b.name));
 
     setFilteredBoosters(filtered);
   };
@@ -212,7 +215,7 @@ const Stylists = () => {
                 {booster.bio}
               </p>
               <div className="flex gap-2">
-                <Link to={`/stylist/${booster.id}`} className="flex-1">
+                <Link to={booster.name.toLowerCase().includes('anna g') ? '/stylist/anna-g' : `/stylist/${booster.id}`} className="flex-1">
                   <Button size="sm" variant="outline" className="w-full">
                     Se profil
                   </Button>

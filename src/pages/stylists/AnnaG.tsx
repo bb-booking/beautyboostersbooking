@@ -103,6 +103,7 @@ const AnnaG = () => {
               alt="Booster Anna G – profilbillede, makeup artist og hårstylist"
               className="w-full h-[480px] object-cover object-right rounded-lg shadow"
               loading="eager"
+              onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
             />
           </div>
         </div>
@@ -116,6 +117,7 @@ const AnnaG = () => {
               alt="Anna G portfolio collage – beauty looks"
               className="w-full h-full object-cover rounded-lg"
               loading="lazy"
+              onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
             />
           </div>
         </section>
