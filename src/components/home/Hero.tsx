@@ -179,12 +179,12 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl md:text-5xl leading-tight tracking-tight animate-fade-in">
+            <h1 className="text-2xl md:text-4xl leading-tight tracking-tight animate-fade-in font-inter">
               <span className="font-bold">Beauty services direkte til døren</span>
               <span className="font-light italic"> – eller i en salon nær dig</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in">
-              Vælg mobil service til døren eller besøg en salon i nærheden – hurtigt og fleksibelt.
+              Få din beauty service til døren eller besøg en salon i nærheden. Hurtigt og fleksibelt.
             </p>
           </div>
 
