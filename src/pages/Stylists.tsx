@@ -203,21 +203,21 @@ const Stylists = () => {
                     </Badge>
                   ))}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
                     {booster.location}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {booster.years_experience} år
                     {booster.name.toLowerCase().includes('anna g') && (
-                      <span className="ml-2 flex items-center gap-3">
+                      <span className="ml-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1">
-                              <Bike className="h-3.5 w-3.5 text-muted-foreground" aria-label="Kører ud" />
-                              <span className="text-xs">udkørende</span>
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
+                              <Bike className="h-3 w-3 text-muted-foreground" aria-label="Kører ud" />
+                              <span className="text-[10px] sm:text-xs">Udkørende</span>
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -226,9 +226,9 @@ const Stylists = () => {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1">
-                              <Store className="h-3.5 w-3.5 text-muted-foreground" aria-label="Salon tilgængelig" />
-                              <span className="text-xs">salon</span>
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap leading-none">
+                              <Store className="h-3 w-3 text-muted-foreground" aria-label="Salon tilgængelig" />
+                              <span className="text-[10px] sm:text-xs">Salon</span>
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
