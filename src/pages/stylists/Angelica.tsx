@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -59,6 +59,31 @@ const Angelica = () => {
     };
   }, []);
 
+  // Slice collage image into 3x3 tiles at runtime
+  const [tiles, setTiles] = useState<string[]>([]);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const cols = 3, rows = 3;
+      const tileW = Math.floor(img.naturalWidth / cols);
+      const tileH = Math.floor(img.naturalHeight / rows);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = tileW; canvas.height = tileH;
+      const urls: string[] = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          ctx.clearRect(0, 0, tileW, tileH);
+          ctx.drawImage(img, c * tileW, r * tileH, tileW, tileH, 0, 0, tileW, tileH);
+          urls.push(canvas.toDataURL('image/jpeg', 0.9));
+        }
+      }
+      setTiles(urls);
+    };
+    img.src = collageImg; // same-origin asset -> canvas-safe
+  }, []);
+
   return (
     <main>
       <section className="container mx-auto px-4 py-10">
@@ -109,22 +134,26 @@ const Angelica = () => {
         <section className="mt-12" aria-labelledby="portfolio-heading">
           <h2 id="portfolio-heading" className="text-2xl font-bold mb-4">Portfolio</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              'left top', 'center top', 'right top',
-              'left center', 'center center', 'right center',
-              'left bottom', 'center bottom', 'right bottom'
-            ].map((pos, idx) => (
-              <div key={pos} className="aspect-square overflow-hidden rounded-lg">
+            {tiles.length === 9 ? (
+              tiles.map((src, idx) => (
                 <img
-                  src={collageImg}
+                  key={idx}
+                  src={src}
                   alt={`Angelika portfolio ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: pos }}
+                  className="w-full h-full rounded-lg object-cover"
                   loading="lazy"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
                 />
-              </div>
-            ))}
+              ))
+            ) : (
+              <img
+                src={collageImg}
+                alt="Angelika portfolio collage – beauty looks"
+                className="w-full h-full object-cover rounded-lg"
+                loading="lazy"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+              />
+            )}
           </div>
         </section>
       </section>
