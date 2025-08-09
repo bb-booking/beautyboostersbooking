@@ -183,8 +183,8 @@ const Hero = () => {
               <span className="font-semibold block">Professionelle beauty services.</span>
               <span className="font-extralight block">Hvor som helst, når som helst.</span>
             </h1>
-            <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in max-w-[28ch] mx-auto tracking-wide">
-              Få din beauty service til døren eller besøg en salon i nærheden. Hurtigt og fleksibelt.
+            <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto whitespace-nowrap tracking-tight">
+              Få din artist direkte til døren eller find en salon i nærheden.
             </p>
           </div>
 
