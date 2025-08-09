@@ -1,7 +1,8 @@
 // Centralized mapping of booster names (normalized to lowercase, spaces) to local profile images
 export const boosterImageOverrides: Record<string, string> = {
   // Existing custom images
-  'anna g': '/lovable-uploads/0af9a841-777c-4b12-b3af-7203257907e4.png',
+'anna g': '/lovable-uploads/9f3e9a28-fd85-46b8-97b7-c5c0156f24e8.png',
+  'anna g.': '/lovable-uploads/9f3e9a28-fd85-46b8-97b7-c5c0156f24e8.png',
   'angelica': '/lovable-uploads/angelica-profile.png',
   'angelika': '/lovable-uploads/angelica-profile.png',
 

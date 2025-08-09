@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
-const profileImg = "/lovable-uploads/0af9a841-777c-4b12-b3af-7203257907e4.png";
+const profileImg = "/lovable-uploads/9f3e9a28-fd85-46b8-97b7-c5c0156f24e8.png";
 const collageImg = "/lovable-uploads/4c3ba182-2244-4915-9847-fa861cb7f917.png";
 
 const AnnaG = () => {

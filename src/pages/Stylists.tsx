@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MapPin, Clock } from "lucide-react";
+import { Star, MapPin, Clock, Bike, Store } from "lucide-react";
 import { boosterImageOverrides } from "@/data/boosterImages";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Booster {
   id: string;
@@ -171,18 +172,7 @@ const Stylists = () => {
               <img loading="lazy"
                 src={(() => {
                   const n = booster.name.toLowerCase();
-                  const overrides: Record<string, string> = {
-                    'anna g': '/lovable-uploads/0af9a841-777c-4b12-b3af-7203257907e4.png',
-                    'angelica': '/lovable-uploads/angelica-profile.png',
-                    'angelika': '/lovable-uploads/angelica-profile.png',
-                    'ann-katrine': '/lovable-uploads/profiles/ann-katrine.png',
-                    'ann katrine': '/lovable-uploads/profiles/ann-katrine.png',
-                    'bela': '/lovable-uploads/profiles/bela.png',
-                    'carla sofie f': '/lovable-uploads/profiles/carla-sofie-f.png',
-                    'clara alma': '/lovable-uploads/profiles/clara-alma.png',
-                    'darun': '/lovable-uploads/profiles/darun.png',
-                  };
-                  return overrides[n] ?? booster.portfolio_image_url;
+                  return boosterImageOverrides[n] ?? booster.portfolio_image_url;
                 })()}
                 alt={`Booster ${booster.name} – profilbillede`}
                 className="w-full h-48 object-cover"
@@ -221,6 +211,26 @@ const Stylists = () => {
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {booster.years_experience} år
+                    {booster.name.toLowerCase().includes('anna g') && (
+                      <span className="ml-2 flex items-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Bike className="h-3.5 w-3.5 text-muted-foreground" aria-label="Kører ud" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Kører ud</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Store className="h-3.5 w-3.5 text-muted-foreground" aria-label="Salon tilgængelig" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Salon tilgængelig</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardDescription>
