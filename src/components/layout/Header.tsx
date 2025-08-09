@@ -60,8 +60,12 @@ const Header = () => {
               <Link to="/for-salons"><DropdownMenuItem><Store className="mr-2 h-4 w-4" /> Opret Salon</DropdownMenuItem></Link>
               <DropdownMenuSeparator />
               <Link to="/for-salons#abonnementer"><DropdownMenuItem><BadgePercent className="mr-2 h-4 w-4" /> Abonnementer</DropdownMenuItem></Link>
-              <DropdownMenuItem disabled><Info className="mr-2 h-4 w-4" /> Om os</DropdownMenuItem>
+              <Link to="/#kontakt"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> Kontakt</DropdownMenuItem></Link>
               <Link to="/#download-app"><DropdownMenuItem><Download className="mr-2 h-4 w-4" /> Download app</DropdownMenuItem></Link>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Sprog</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => { localStorage.setItem('lang','da'); window.location.reload(); }}>Dansk</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { localStorage.setItem('lang','en'); window.location.reload(); }}>English</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
@@ -94,8 +98,15 @@ const Header = () => {
                   <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                   <Link to="/for-salons#abonnementer" className="text-foreground hover:underline">Abonnementer</Link>
+                  <Link to="/#kontakt" className="text-foreground hover:underline">Kontakt</Link>
                   <Link to="/#download-app" className="text-foreground hover:underline">Download app</Link>
-                  <span className="text-muted-foreground">Om os (kommer snart)</span>
+                  <div className="pt-2">
+                    <div className="text-xs text-muted-foreground">Sprog</div>
+                    <div className="flex gap-3 mt-1">
+                      <button onClick={() => { localStorage.setItem('lang','da'); window.location.reload(); }} className="underline underline-offset-4">Dansk</button>
+                      <button onClick={() => { localStorage.setItem('lang','en'); window.location.reload(); }} className="underline underline-offset-4">English</button>
+                    </div>
+                  </div>
                 </nav>
 
                 <div className="grid gap-3">

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import Header from "@/components/layout/Header";
+import ChatWidget from "@/components/chat/ChatWidget";
+import SiteFooter from "@/components/layout/SiteFooter";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Address from "./pages/Address";
@@ -101,6 +103,8 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
+            <SiteFooter />
+            <ChatWidget />
           </div>
         </BrowserRouter>
       </TooltipProvider>
