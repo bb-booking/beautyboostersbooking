@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Service {
   id: string;
@@ -36,6 +37,7 @@ const Services = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [clientType, setClientType] = useState("privat");
+  const [sortBy, setSortBy] = useState<"rating" | "soonest" | "nearest" | "price">("rating");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -367,6 +369,10 @@ const Services = () => {
     if (categoryFilter !== "all") {
       filtered = filtered.filter(service => service.category === categoryFilter);
     }
+    // Apply sorting
+    if (sortBy === "price") {
+      filtered.sort((a, b) => a.price - b.price);
+    }
 
     setFilteredServices(filtered);
   };
@@ -413,7 +419,7 @@ const Services = () => {
           </p>
           
           <div className="mb-6">
-            <RadioGroup value={clientType} onValueChange={setClientType} className="flex gap-6">
+            <RadioGroup value={clientType} onValueChange={setClientType} className="flex flex-wrap gap-6">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="privat" id="privat" />
                 <Label htmlFor="privat" className="text-sm font-medium">Privat</Label>
@@ -429,14 +435,29 @@ const Services = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Søg efter services..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Søg efter services..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger aria-label="Sorter efter">
+                    <SelectValue placeholder="Sorter efter" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <SelectItem value="rating">Bedst bedømte</SelectItem>
+                    <SelectItem value="soonest">Første ledige tid</SelectItem>
+                    <SelectItem value="nearest">Nærmeste</SelectItem>
+                    <SelectItem value="price">Pris</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">

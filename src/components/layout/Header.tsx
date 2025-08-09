@@ -45,19 +45,13 @@ const Header = () => {
         </form>
         
         <nav className="hidden md:flex items-center space-x-6">
-          <Link to="/services" className="text-primary-foreground hover:text-background transition-colors whitespace-nowrap">
-            Se alle services
-          </Link>
-          <Link to="/stylists" className="text-primary-foreground hover:text-background transition-colors whitespace-nowrap">
-            Vores Boosters
-          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-background">
                 <Menu className="h-4 w-4 mr-2" /> Menu
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-50">
               <DropdownMenuLabel>Navigation</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> Se services</DropdownMenuItem></Link>
@@ -130,17 +124,6 @@ const Header = () => {
 
         {/* Desktop actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/booster-signup">
-            <Button variant="secondary" size="sm">
-              Bliv Booster
-            </Button>
-          </Link>
-          <Link to="/for-salons">
-            <Button variant="secondary" size="sm">
-              <Store className="h-4 w-4 mr-2" />
-              Opret Salon
-            </Button>
-          </Link>
           <AuthModal 
             trigger={
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">

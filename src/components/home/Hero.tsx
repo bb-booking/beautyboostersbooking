@@ -180,10 +180,10 @@ const Hero = () => {
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight animate-fade-in">
-              Book professionelle beauty‑stylister – direkte til din dør
+              Book beauty‑services – udkørende eller i salon tæt på dig
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in">
-              Fra brudestyling til events. Find en certificeret stylist tæt på dig.
+              Vælg mobil service til døren eller besøg en salon i nærheden – hurtigt og fleksibelt.
             </p>
           </div>
 
