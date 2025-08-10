@@ -4,15 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
 const serviceTags = [
-  "Makeupstyling", "Hårstyling", "Bryllup", "Konfirmation",
-  "Film/TV", "SFX", "Paryk", "Teater", "Frisør", "Negle",
-  "Events", "Makeup Kursus", "Spraytan"
+  "Frisør",
+  "Makeup Artist",
+  "Hårstyling",
+  "Barber",
+  "Negle",
+  "Vipper/Bryn",
+  "Kosmetiske behandlinger",
+  "Events",
+  "Massage",
+  "Ansigtsbehandlinger",
+  "Hårfjerning",
+  "Spraytan",
 ];
 
 const days = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
@@ -59,6 +69,7 @@ export default function SalonSignup() {
         address: data?.address || prev.address,
         city: data?.city || prev.city,
         zip: data?.zipcode?.toString?.() || prev.zip,
+        employees_count: typeof data?.employees === "number" ? data.employees : prev.employees_count,
         email: prev.email,
         phone: prev.phone,
         industry: data?.industrydesc || prev.industry,
@@ -117,14 +128,23 @@ export default function SalonSignup() {
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>Firmaoplysninger</CardTitle>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Firmaoplysninger</CardTitle>
+              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
+            </div>
+            <Progress value={(step / total) * 100} className="w-full" />
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>CVR</Label>
                 <div className="flex gap-2">
-                  <Input value={company.cvr} onChange={(e) => setCompany({ ...company, cvr: e.target.value })} placeholder="12345678" />
+                  <Input
+                    value={company.cvr}
+                    onChange={(e) => setCompany({ ...company, cvr: e.target.value })}
+                    onBlur={() => { if (company.cvr && company.cvr.replace(/\D/g, '').length >= 8) lookupCvr(); }}
+                    placeholder="12345678"
+                  />
                   <Button type="button" variant="outline" onClick={lookupCvr}>Slå op</Button>
                 </div>
               </div>
@@ -161,7 +181,10 @@ export default function SalonSignup() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <Button variant="ghost" type="button" onClick={() => setStep(2)}>
+                Jeg har ikke et CVR nummer
+              </Button>
               <Button onClick={() => setStep(2)}>Fortsæt</Button>
             </div>
           </CardContent>
@@ -172,10 +195,14 @@ export default function SalonSignup() {
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle>Services</CardTitle>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Hvad tilbyder din salon?</CardTitle>
+              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
+            </div>
+            <Progress value={(step / total) * 100} className="w-full" />
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">Vælg de services jeres salon tilbyder. Du kan udfylde senere.</p>
+            <p className="text-sm text-muted-foreground">Vælg hvad din salon tilbyder - du kan godt vælge flere kategorier. Du kan også vælge at udfylde senere.</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {serviceTags.map(tag => (
                 <Badge key={tag} variant={services.includes(tag) ? "default" : "outline"} className="cursor-pointer p-3 justify-center" onClick={() => toggleService(tag)}>
@@ -198,10 +225,14 @@ export default function SalonSignup() {
       {step === 3 && (
         <Card>
           <CardHeader>
-            <CardTitle>Åbningstider</CardTitle>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Åbningstider</CardTitle>
+              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
+            </div>
+            <Progress value={(step / total) * 100} className="w-full" />
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">Angiv jeres åbningstider. Du kan udfylde senere.</p>
+            <p className="text-sm text-muted-foreground">Angiv jeres åbningstider her eller udfyld dem senere.</p>
             <div className="space-y-3">
               {days.map((d) => (
                 <div key={d} className="flex items-center gap-3">
@@ -228,7 +259,11 @@ export default function SalonSignup() {
       {step === 4 && (
         <Card>
           <CardHeader>
-            <CardTitle>Opret konto</CardTitle>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Opret konto</CardTitle>
+              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
+            </div>
+            <Progress value={(step / total) * 100} className="w-full" />
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
