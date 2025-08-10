@@ -46,6 +46,17 @@ const Address = () => {
     }
   }, []);
 
+  // If address already exists from the homepage, skip this step
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("bookingDetails");
+      const details = stored ? JSON.parse(stored) : null;
+      if (details?.location?.address && serviceId) {
+        navigate(`/booking?service=${serviceId}`);
+      }
+    } catch {}
+  }, [navigate, serviceId]);
+
   // Parse "Husumgade 1, 2200 København N" -> fields
   const parseAddressFromText = (text: string) => {
     const m = text.match(/^(.*?),\s*(\d{4})\s+(.+)$/);

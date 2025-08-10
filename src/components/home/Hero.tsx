@@ -69,6 +69,20 @@ const Hero = () => {
     } catch {}
   }, []);
 
+  // Persist location into bookingDetails whenever a valid address is present
+  useEffect(() => {
+    const loc = searchData.location.trim();
+    if (!loc) return;
+    const parsed = parseAddressFromText(loc);
+    if (!parsed.address || !parsed.postalCode || !parsed.city) return;
+    try {
+      const stored = sessionStorage.getItem("bookingDetails");
+      const details = stored ? JSON.parse(stored) : {};
+      details.location = { address: parsed.address, postalCode: parsed.postalCode, city: parsed.city };
+      sessionStorage.setItem("bookingDetails", JSON.stringify(details));
+    } catch {}
+  }, [searchData.location]);
+
 
   const serviceCategories = [
     { value: "all", label: "Alle services" },
