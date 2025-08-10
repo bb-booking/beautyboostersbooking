@@ -278,6 +278,17 @@ const BoosterSignup = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Dit telefonnummer"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="password">Adgangskode</Label>
                 <Input
                   id="password"
