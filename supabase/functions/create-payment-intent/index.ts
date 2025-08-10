@@ -51,7 +51,7 @@ serve(async (req) => {
         booking_date: bookingData.date || '',
         booking_time: bookingData.time || '',
       },
-      description: `BeautyBoosters - ${bookingData.serviceName} med ${bookingData.boosterName}`,
+      description: `BeautyBoosters - ${bookingData.serviceName} ${bookingData.discountCode ? `(rabat: ${bookingData.discountCode})` : ''} med ${bookingData.boosterName}`,
     });
 
     // Store booking in Supabase with payment intent ID

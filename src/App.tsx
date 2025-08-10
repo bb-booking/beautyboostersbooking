@@ -60,6 +60,8 @@ import SalonServices from "./pages/salon/SalonServices";
 import SalonHours from "./pages/salon/SalonHours";
 import SalonFinance from "./pages/salon/SalonFinance";
 import SalonSettings from "./pages/salon/SalonSettings";
+import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
+import SalonDiscountCodes from "./pages/salon/SalonDiscountCodes";
 const queryClient = new QueryClient();
  
 const App = () => (
@@ -105,6 +107,7 @@ const App = () => (
                     <Route path="finance" element={<AdminFinance />} />
                     <Route path="boosters" element={<AdminBoosters />} />
                     <Route path="messages" element={<AdminMessages />} />
+                    <Route path="discount-codes" element={<AdminDiscountCodes />} />
                     <Route path="settings" element={<AdminSettings />} />
                   </Route>
                   {/* Booster routes */}
@@ -131,6 +134,7 @@ const App = () => (
                     <Route path="finance" element={<SalonFinance />} />
                     <Route path="settings" element={<SalonSettings />} />
                     <Route path="payouts" element={<SalonPayouts />} />
+                    <Route path="discount-codes" element={<SalonDiscountCodes />} />
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

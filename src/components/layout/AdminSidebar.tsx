@@ -8,7 +8,8 @@ import {
   Settings,
   UserCheck,
   DollarSign,
-  CalendarDays
+  CalendarDays,
+  Tag
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const adminItems = [
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
   { title: "Beskeder", url: "/admin/messages", icon: MessageSquare },
   { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
+  { title: "Rabatkoder", url: "/admin/discount-codes", icon: Tag },
 ];
 
 export function AdminSidebar() {

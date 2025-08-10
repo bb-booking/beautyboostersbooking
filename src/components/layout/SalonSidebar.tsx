@@ -20,6 +20,7 @@ const menuItems = [
   { title: "Services", url: "/salon/services", icon: Tag },
   { title: "Åbningstider", url: "/salon/hours", icon: Clock },
   { title: "Økonomi", url: "/salon/finance", icon: DollarSign },
+  { title: "Rabatkoder", url: "/salon/discount-codes", icon: Tag },
   { title: "Indstillinger", url: "/salon/settings", icon: Settings },
 ]
 
