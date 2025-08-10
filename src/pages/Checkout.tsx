@@ -322,7 +322,7 @@ export default function Checkout() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Service:</span>
-                  <span>{service.name}</span>
+                  <span className="truncate max-w-[60%] text-right">{service.name}</span>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => navigate('/services')}>Tilføj service</Button>

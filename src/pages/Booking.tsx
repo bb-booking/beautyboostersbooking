@@ -410,7 +410,7 @@ const Booking = () => {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2 leading-tight break-words">
             {boosterId && specificBooster ? `Book ${specificBooster.name}` : `Book ${service.name}`}
           </h1>
           <p className="text-muted-foreground">
@@ -471,7 +471,7 @@ const Booking = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Vælg tidspunkt" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border z-50 max-h-72">
                     {timeSlots.map((time) => (
                       <SelectItem key={time} value={time}>
                         {time}
@@ -568,7 +568,7 @@ const Booking = () => {
                               className="w-16 h-16 rounded-lg object-cover"
                             />
                             <div className="flex-1">
-                              <h4 className="font-semibold">{booster.name}</h4>
+                              <h4 className="font-semibold line-clamp-1">{booster.name}</h4>
                               <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                                 <MapPin className="h-3 w-3" />
                                 {booster.location}
@@ -617,7 +617,7 @@ const Booking = () => {
                             className="w-16 h-16 rounded-lg object-cover"
                           />
                           <div className="flex-1">
-                            <h4 className="font-semibold">{booster.name}</h4>
+                            <h4 className="font-semibold line-clamp-1">{booster.name}</h4>
                             <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
                               <MapPin className="h-3 w-3" />
                               {booster.location}
