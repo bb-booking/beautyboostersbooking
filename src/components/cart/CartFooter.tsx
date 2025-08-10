@@ -54,7 +54,7 @@ const CartFooter = () => {
             <div className="text-sm text-primary-foreground space-y-1">
               {items.map((item) => (
                 <div key={item.id} className="flex justify-between items-center">
-                  <span>{item.name} ({item.people} person{item.people > 1 ? 'er' : ''}, {item.boosters} booster{item.boosters > 1 ? 's' : ''})</span>
+                  <span className="flex-1 truncate pr-2">{item.name} ({item.people} person{item.people > 1 ? 'er' : ''}, {item.boosters} booster{item.boosters > 1 ? 's' : ''})</span>
                   <div className="flex items-center space-x-2">
                     <span>{item.finalPrice} DKK</span>
                     <Button

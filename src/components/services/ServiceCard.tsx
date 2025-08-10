@@ -79,8 +79,9 @@ const ServiceCard = ({
   };
 
   const calculateDuration = () => {
+    // Virksomhed: flere boosters arbejder parallelt, varigheden er pr. session
     if (clientType === "virksomhed") {
-      return (duration + extraHours) * boosters;
+      return duration + extraHours;
     } else {
       return duration + extraHours;
     }
@@ -127,7 +128,7 @@ const ServiceCard = ({
     <Card className="hover:shadow-lg transition-all duration-300">
       <CardHeader>
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{name}</CardTitle>
+          <CardTitle className="text-lg line-clamp-1">{name}</CardTitle>
           <Badge variant="secondary">{category}</Badge>
         </div>
       </CardHeader>
