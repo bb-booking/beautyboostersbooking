@@ -193,10 +193,16 @@ const PopularServices = () => {
         </div>
 
         {/* Call to action */}
-        <div className="text-center mt-12">
+        <div className="text-center mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button size="lg" asChild variant="outline">
             <Link to="/services">
               Se alle services
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+          <Button size="lg" asChild variant="secondary">
+            <Link to="/giftcards">
+              Køb gavekort
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>

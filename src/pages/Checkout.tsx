@@ -159,16 +159,49 @@ export default function Checkout() {
         return;
       }
       const now = new Date();
-      const vf = data.valid_from ? new Date(data.valid_from) : null;
       const vt = data.valid_to ? new Date(data.valid_to) : null;
-      if ((vf && vf > now) || (vt && vt < now)) {
-        toast.error('Koden er ikke gyldig lige nu');
+      if (vt && vt < now) {
+        toast.error('Koden er udløbet');
         return;
       }
       if (service.price < (data.min_amount ?? 0)) {
         toast.error('Ordren opfylder ikke minimumsbeløbet for denne kode');
         return;
       }
+
+      // Validate usage limits
+      if (data.max_redemptions) {
+        const { count: totalUsed, error: countErr } = await supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('discount_code', data.code)
+          .not('payment_captured_at', 'is', null);
+        if (countErr) throw countErr;
+        if ((totalUsed || 0) >= data.max_redemptions) {
+          toast.error('Koden er allerede brugt det maksimale antal gange');
+          return;
+        }
+      }
+
+      if (data.per_user_limit) {
+        if (!customerInfo.email) {
+          toast.error('Angiv din e-mail før du anvender denne kode');
+          return;
+        }
+        const { count: userUsed, error: userErr } = await supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('discount_code', data.code)
+          .eq('customer_email', customerInfo.email)
+          .not('payment_captured_at', 'is', null);
+        if (userErr) throw userErr;
+        if ((userUsed || 0) >= data.per_user_limit) {
+          toast.error('Du har allerede brugt denne kode det maksimale antal gange');
+          return;
+        }
+      }
+
+      // Calculate discount
       let d = 0;
       const amt = Number(data.amount) || 0;
       if (data.type === 'percent') {

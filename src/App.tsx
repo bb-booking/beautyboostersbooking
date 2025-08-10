@@ -62,6 +62,7 @@ import SalonFinance from "./pages/salon/SalonFinance";
 import SalonSettings from "./pages/salon/SalonSettings";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import SalonDiscountCodes from "./pages/salon/SalonDiscountCodes";
+import GiftCards from "./pages/GiftCards";
 const queryClient = new QueryClient();
  
 const App = () => (
@@ -93,6 +94,7 @@ const App = () => (
                   <Route path="/booster-signup" element={<BoosterSignup />} />
                   <Route path="/for-salons" element={<ForSalons />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/giftcards" element={<GiftCards />} />
                   <Route path="/booster/login" element={<BoosterLogin />} />
                   <Route path="/salon-signup" element={<SalonSignup />} />
                   <Route path="/salon/login" element={<SalonLogin />} />

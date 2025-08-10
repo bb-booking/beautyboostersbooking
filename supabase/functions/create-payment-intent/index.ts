@@ -16,6 +16,52 @@ serve(async (req) => {
   try {
     const { amount, bookingData, customerEmail } = await req.json();
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Validate discount code limits and validity before creating intent
+    if (bookingData?.discountCode) {
+      const { data: code, error: codeErr } = await supabase
+        .from('discount_codes')
+        .select('*')
+        .ilike('code', bookingData.discountCode)
+        .eq('active', true)
+        .maybeSingle();
+      if (codeErr) throw codeErr;
+      if (!code) {
+        return new Response(JSON.stringify({ error: 'Ugyldig rabatkode' }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+      }
+      if (code.valid_to && new Date(code.valid_to) < new Date()) {
+        return new Response(JSON.stringify({ error: 'Rabatkoden er udløbet' }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+      }
+      if ((code.min_amount ?? 0) > (bookingData?.amountBeforeDiscount || amount + (bookingData?.discountAmount || 0))) {
+        return new Response(JSON.stringify({ error: 'Ordren opfylder ikke minimumsbeløbet' }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+      }
+      if (code.max_redemptions) {
+        const { count } = await supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('discount_code', code.code)
+          .not('payment_captured_at', 'is', null);
+        if ((count || 0) >= code.max_redemptions) {
+          return new Response(JSON.stringify({ error: 'Rabatkoden er brugt op' }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+        }
+      }
+      if (code.per_user_limit) {
+        const { count } = await supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('discount_code', code.code)
+          .eq('customer_email', customerEmail)
+          .not('payment_captured_at', 'is', null);
+        if ((count || 0) >= code.per_user_limit) {
+          return new Response(JSON.stringify({ error: 'Du har allerede brugt denne rabatkode' }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+        }
+      }
+    }
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",

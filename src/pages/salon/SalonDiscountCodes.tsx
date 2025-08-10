@@ -21,6 +21,8 @@ interface DiscountCode {
   currency: string;
   salon_id: string | null;
   created_at: string;
+  max_redemptions: number | null;
+  per_user_limit: number | null;
 }
 
 export default function SalonDiscountCodes() {
@@ -35,9 +37,12 @@ export default function SalonDiscountCodes() {
     amount: 10,
     min_amount: 0,
     active: true,
-    valid_from: "",
     valid_to: "",
     currency: "DKK",
+    limit_total: false,
+    max_redemptions: 0,
+    limit_per_user: false,
+    per_user_limit: 1,
   });
 
   const init = async () => {
@@ -85,13 +90,24 @@ export default function SalonDiscountCodes() {
         currency: form.currency,
         salon_id: salonId,
       };
-      if (form.valid_from) payload.valid_from = new Date(form.valid_from).toISOString();
       if (form.valid_to) payload.valid_to = new Date(form.valid_to).toISOString();
+      if (form.limit_total) {
+        if (!form.max_redemptions || form.max_redemptions < 1) { toast.error('Angiv max antal anvendelser'); return; }
+        payload.max_redemptions = Number(form.max_redemptions);
+      } else {
+        payload.max_redemptions = null;
+      }
+      if (form.limit_per_user) {
+        if (!form.per_user_limit || form.per_user_limit < 1) { toast.error('Angiv max pr. kunde'); return; }
+        payload.per_user_limit = Number(form.per_user_limit);
+      } else {
+        payload.per_user_limit = null;
+      }
 
       const { error } = await supabase.from('discount_codes').insert(payload);
       if (error) throw error;
       toast.success('Rabatkode oprettet');
-      setForm({ code: "", type: "percent", amount: 10, min_amount: 0, active: true, valid_from: "", valid_to: "", currency: "DKK" });
+      setForm({ code: "", type: "percent", amount: 10, min_amount: 0, active: true, valid_to: "", currency: "DKK", limit_total: false, max_redemptions: 0, limit_per_user: false, per_user_limit: 1 });
       fetchCodes(salonId);
     } catch (e: any) {
       toast.error(e.message || 'Fejl ved oprettelse');
@@ -152,15 +168,33 @@ export default function SalonDiscountCodes() {
                 <Label>Minimumsbeløb</Label>
                 <Input type="number" value={form.min_amount} onChange={(e) => setForm({ ...form, min_amount: Number(e.target.value) })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Gyldig fra</Label>
-                  <Input type="date" value={form.valid_from} onChange={(e) => setForm({ ...form, valid_from: e.target.value })} />
+              <div className="space-y-2">
+                <Label>Gyldig til</Label>
+                <Input type="date" value={form.valid_to} onChange={(e) => setForm({ ...form, valid_to: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Begræns total antal anvendelser</Label>
+                  <Switch checked={form.limit_total} onCheckedChange={(v) => setForm({ ...form, limit_total: v as boolean })} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Gyldig til</Label>
-                  <Input type="date" value={form.valid_to} onChange={(e) => setForm({ ...form, valid_to: e.target.value })} />
+                {form.limit_total && (
+                  <div className="space-y-2">
+                    <Label>Maks antal anvendelser</Label>
+                    <Input type="number" min={1} value={form.max_redemptions} onChange={(e) => setForm({ ...form, max_redemptions: Number(e.target.value) })} />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Begræns pr. kunde</Label>
+                  <Switch checked={form.limit_per_user} onCheckedChange={(v) => setForm({ ...form, limit_per_user: v as boolean })} />
                 </div>
+                {form.limit_per_user && (
+                  <div className="space-y-2">
+                    <Label>Maks pr. kunde</Label>
+                    <Input type="number" min={1} value={form.per_user_limit} onChange={(e) => setForm({ ...form, per_user_limit: Number(e.target.value) })} />
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <Label>Aktiv</Label>
@@ -185,7 +219,7 @@ export default function SalonDiscountCodes() {
                     <div key={c.id} className="flex items-center gap-3 p-3 rounded-md border">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{c.code}</div>
-                        <div className="text-sm text-muted-foreground truncate">{c.type === 'percent' ? `${c.amount}%` : `${c.amount} ${c.currency}`} • min {c.min_amount} DKK {c.valid_from ? `• fra ${new Date(c.valid_from).toLocaleDateString('da-DK')}` : ''} {c.valid_to ? `• til ${new Date(c.valid_to).toLocaleDateString('da-DK')}` : ''}</div>
+                        <div className="text-sm text-muted-foreground truncate">{c.type === 'percent' ? `${c.amount}%` : `${c.amount} ${c.currency}`} • min {c.min_amount} DKK {c.valid_to ? `• til ${new Date(c.valid_to).toLocaleDateString('da-DK')}` : ''} {c.max_redemptions ? `• max ${c.max_redemptions} brug` : ''} {c.per_user_limit ? `• max ${c.per_user_limit} pr. kunde` : ''}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Switch checked={c.active} onCheckedChange={(v) => toggleActive(c.id, v as boolean)} />
