@@ -67,6 +67,7 @@ const Booking = () => {
   const [loadingBoosters, setLoadingBoosters] = useState(false);
   const [loadingSpecificBooster, setLoadingSpecificBooster] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
   // Generate time slots in 30-minute intervals from 06:00-23:00
   const generateTimeSlots = () => {
@@ -437,7 +438,7 @@ const Booking = () => {
               {/* Date Picker - Compact */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Dato</Label>
-                <Popover>
+                <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -454,7 +455,7 @@ const Booking = () => {
                     <Calendar
                       mode="single"
                       selected={selectedDate}
-                      onSelect={setSelectedDate}
+                      onSelect={(date) => { setSelectedDate(date); setDatePopoverOpen(false); }}
                       disabled={(date) => isBefore(date, startOfDay(new Date()))}
                       className={cn("rounded-md border pointer-events-auto")}
                       locale={da}

@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { User, Briefcase, Mail, Facebook, Apple, Store } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -31,12 +32,14 @@ const AuthModal = ({ trigger }: AuthModalProps) => {
           <div className="space-y-3">
             <h3 className="font-medium text-sm">Som Kunde</h3>
             <div className="space-y-2">
-              <Link to="/auth">
-                <Button variant="outline" className="w-full justify-start gap-3">
-                  <Mail className="h-4 w-4" />
-                  Log ind / Opret med email
-                </Button>
-              </Link>
+              <DialogClose asChild>
+                <Link to="/auth">
+                  <Button variant="outline" className="w-full justify-start gap-3">
+                    <Mail className="h-4 w-4" />
+                    Log ind / Opret med email
+                  </Button>
+                </Link>
+              </DialogClose>
               <Button variant="outline" className="w-full justify-start gap-3" disabled>
                 <Facebook className="h-4 w-4" />
                 Fortsæt med Facebook (snart)
@@ -53,35 +56,43 @@ const AuthModal = ({ trigger }: AuthModalProps) => {
           <div className="space-y-3">
             <h3 className="font-medium text-sm">Som Booster</h3>
             <div className="space-y-2">
-              <Link to="/booster/login">
-                <Button variant="outline" className="w-full justify-start gap-3">
-                  <Briefcase className="h-4 w-4" />
-                  Log ind Booster
-                </Button>
-              </Link>
-              <Link to="/booster-signup">
-                <Button className="w-full justify-start gap-3">
-                  <User className="h-4 w-4" />
-                  Opret Booster
-                </Button>
-              </Link>
+              <DialogClose asChild>
+                <Link to="/booster/login">
+                  <Button variant="outline" className="w-full justify-start gap-3">
+                    <Briefcase className="h-4 w-4" />
+                    Log ind Booster
+                  </Button>
+                </Link>
+              </DialogClose>
+              <DialogClose asChild>
+                <Link to="/booster-signup">
+                  <Button className="w-full justify-start gap-3">
+                    <User className="h-4 w-4" />
+                    Opret Booster
+                  </Button>
+                </Link>
+              </DialogClose>
             </div>
           </div>
           <div className="space-y-3">
             <h3 className="font-medium text-sm">Som Salon</h3>
             <div className="space-y-2">
-              <Link to="/salon/login">
-                <Button variant="outline" className="w-full justify-start gap-3">
-                  <Store className="h-4 w-4" />
-                  Log ind Salon
-                </Button>
-              </Link>
-              <Link to="/salon-signup">
-                <Button className="w-full justify-start gap-3">
-                  <User className="h-4 w-4" />
-                  Opret Salon
-                </Button>
-              </Link>
+              <DialogClose asChild>
+                <Link to="/salon/login">
+                  <Button variant="outline" className="w-full justify-start gap-3">
+                    <Store className="h-4 w-4" />
+                    Log ind Salon
+                  </Button>
+                </Link>
+              </DialogClose>
+              <DialogClose asChild>
+                <Link to="/salon-signup">
+                  <Button className="w-full justify-start gap-3">
+                    <User className="h-4 w-4" />
+                    Opret Salon
+                  </Button>
+                </Link>
+              </DialogClose>
             </div>
           </div>
         </div>
