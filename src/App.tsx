@@ -49,9 +49,14 @@ import BoosterSettings from "./pages/booster/BoosterSettings";
 import BoosterReviews from "./pages/booster/BoosterReviews";
 import Auth from "./pages/Auth";
 import BoosterLogin from "./pages/booster/BoosterLogin";
-
+import { SalonLayout } from "@/components/layout/SalonLayout";
+import SalonDashboard from "./pages/salon/SalonDashboard";
+import SalonSignup from "./pages/salon/SalonSignup";
+import SalonLogin from "./pages/salon/SalonLogin";
+import SalonPayouts from "./pages/salon/SalonPayouts";
+ 
 const queryClient = new QueryClient();
-
+ 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <CartProvider>
@@ -82,6 +87,8 @@ const App = () => (
                   <Route path="/for-salons" element={<ForSalons />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/booster/login" element={<BoosterLogin />} />
+                  <Route path="/salon-signup" element={<SalonSignup />} />
+                  <Route path="/salon/login" element={<SalonLogin />} />
                   {/* Admin routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin" element={<AdminLayout />}>
@@ -109,6 +116,11 @@ const App = () => (
                     <Route path="settings" element={<BoosterSettings />} />
                     <Route path="reviews" element={<BoosterReviews />} />
                   </Route>
+                  {/* Salon routes */}
+                  <Route path="/salon" element={<SalonLayout />}>
+                    <Route path="dashboard" element={<SalonDashboard />} />
+                    <Route path="payouts" element={<SalonPayouts />} />
+                  </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
@@ -122,5 +134,5 @@ const App = () => (
     </CartProvider>
   </QueryClientProvider>
 );
-
+ 
 export default App;

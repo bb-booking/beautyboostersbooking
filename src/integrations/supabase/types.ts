@@ -714,6 +714,66 @@ export type Database = {
           },
         ]
       }
+      salon_profiles: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_name: string
+          created_at: string
+          cvr: string | null
+          email: string | null
+          employees_count: number | null
+          id: string
+          industry: string | null
+          onboarding_complete: boolean
+          opening_hours: Json | null
+          owner_user_id: string
+          phone: string | null
+          services: string[]
+          updated_at: string
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_name: string
+          created_at?: string
+          cvr?: string | null
+          email?: string | null
+          employees_count?: number | null
+          id?: string
+          industry?: string | null
+          onboarding_complete?: boolean
+          opening_hours?: Json | null
+          owner_user_id: string
+          phone?: string | null
+          services?: string[]
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_name?: string
+          created_at?: string
+          cvr?: string | null
+          email?: string | null
+          employees_count?: number | null
+          id?: string
+          industry?: string | null
+          onboarding_complete?: boolean
+          opening_hours?: Json | null
+          owner_user_id?: string
+          phone?: string | null
+          services?: string[]
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -746,7 +806,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "booster"
+      app_role: "admin" | "booster" | "salon"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -874,7 +934,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "booster"],
+      app_role: ["admin", "booster", "salon"],
     },
   },
 } as const
