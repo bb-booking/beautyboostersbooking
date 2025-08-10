@@ -30,6 +30,12 @@ export default function Checkout() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Promo code
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [applyingPromo, setApplyingPromo] = useState(false);
+
   // Editable booking state
   const [localBooking, setLocalBooking] = useState(booking);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -137,6 +143,57 @@ export default function Checkout() {
     );
   }
 
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    try {
+      setApplyingPromo(true);
+      const { data, error } = await supabase
+        .from('discount_codes')
+        .select('*')
+        .ilike('code', promoCode.trim())
+        .eq('active', true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        toast.error('Ugyldig rabatkode');
+        return;
+      }
+      const now = new Date();
+      const vf = data.valid_from ? new Date(data.valid_from) : null;
+      const vt = data.valid_to ? new Date(data.valid_to) : null;
+      if ((vf && vf > now) || (vt && vt < now)) {
+        toast.error('Koden er ikke gyldig lige nu');
+        return;
+      }
+      if (service.price < (data.min_amount ?? 0)) {
+        toast.error('Ordren opfylder ikke minimumsbeløbet for denne kode');
+        return;
+      }
+      let d = 0;
+      const amt = Number(data.amount) || 0;
+      if (data.type === 'percent') {
+        d = Math.floor((service.price * amt) / 100);
+      } else {
+        d = amt;
+      }
+      d = Math.min(d, service.price);
+      setDiscount(d);
+      setAppliedCode(data.code);
+      toast.success('Rabatkode anvendt');
+    } catch (e: any) {
+      console.error('Promo apply error', e);
+      toast.error('Kunne ikke anvende rabatkoden');
+    } finally {
+      setApplyingPromo(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setDiscount(0);
+    setAppliedCode(null);
+    setPromoCode('');
+  };
+
   const handlePayment = async () => {
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       toast.error('Udfyld venligst alle påkrævede felter');
@@ -151,9 +208,10 @@ export default function Checkout() {
     setIsProcessing(true);
     
     try {
+      const amountToCharge = Math.max(0, service.price - discount);
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: {
-          amount: service.price,
+          amount: amountToCharge,
           customerEmail: customerInfo.email,
           bookingData: {
             customerName: customerInfo.name,
@@ -164,7 +222,9 @@ export default function Checkout() {
             date: selectedDate || booking.date,
             time: selectedTime,
             location: addressQuery,
-            specialRequests: customerInfo.specialRequests
+            specialRequests: customerInfo.specialRequests,
+            discountCode: appliedCode,
+            discountAmount: discount
           }
         }
       });
@@ -330,9 +390,42 @@ export default function Checkout() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total:</span>
-                <span>{service.price} DKK</span>
+              {/* Rabatkode */}
+              <div className="space-y-2">
+                <Label>Rabatkode</Label>
+                {appliedCode ? (
+                  <div className="flex items-center justify-between p-2 rounded-md bg-muted">
+                    <span className="text-sm">Anvendt: {appliedCode} (-{discount} DKK)</span>
+                    <Button variant="ghost" size="sm" onClick={handleRemovePromo}>
+                      Fjern
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Indtast rabatkode"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                    />
+                    <Button onClick={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()}>
+                      Anvend
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div className="space-y-1">
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Rabat</span>
+                    <span>-{discount} DKK</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-lg font-bold">
+                  <span>Total:</span>
+                  <span>{Math.max(0, service.price - discount)} DKK</span>
+                </div>
               </div>
 
               <div className="mt-2 p-4 bg-muted/50 rounded-lg">

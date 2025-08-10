@@ -74,6 +74,8 @@ serve(async (req) => {
         payment_intent_id: paymentIntent.id,
         status: 'pending_payment',
         location: bookingData.location,
+        discount_code: bookingData.discountCode,
+        discount_amount: bookingData.discountAmount
       });
 
     if (insertError) {

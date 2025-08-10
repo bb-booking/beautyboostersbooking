@@ -56,6 +56,8 @@ export type Database = {
           customer_email: string
           customer_name: string | null
           customer_phone: string | null
+          discount_amount: number
+          discount_code: string | null
           duration_hours: number | null
           id: string
           location: string | null
@@ -77,6 +79,8 @@ export type Database = {
           customer_email: string
           customer_name?: string | null
           customer_phone?: string | null
+          discount_amount?: number
+          discount_code?: string | null
           duration_hours?: number | null
           id?: string
           location?: string | null
@@ -98,6 +102,8 @@ export type Database = {
           customer_email?: string
           customer_name?: string | null
           customer_phone?: string | null
+          discount_amount?: number
+          discount_code?: string | null
           duration_hours?: number | null
           id?: string
           location?: string | null
@@ -304,6 +310,60 @@ export type Database = {
           status?: string
           unread_admin_count?: number
           unread_user_count?: number
+        }
+        Relationships: []
+      }
+      discount_codes: {
+        Row: {
+          active: boolean
+          amount: number
+          code: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          max_redemptions: number | null
+          min_amount: number
+          per_user_limit: number | null
+          salon_id: string | null
+          type: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          code: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          max_redemptions?: number | null
+          min_amount?: number
+          per_user_limit?: number | null
+          salon_id?: string | null
+          type: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          max_redemptions?: number | null
+          min_amount?: number
+          per_user_limit?: number | null
+          salon_id?: string | null
+          type?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
         }
         Relationships: []
       }
