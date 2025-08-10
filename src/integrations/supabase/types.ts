@@ -714,6 +714,156 @@ export type Database = {
           },
         ]
       }
+      salon_bookings: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          employee_id: string | null
+          end_time: string
+          id: string
+          notes: string | null
+          salon_id: string
+          service_id: string | null
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          employee_id?: string | null
+          end_time: string
+          id?: string
+          notes?: string | null
+          salon_id: string
+          service_id?: string | null
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          employee_id?: string | null
+          end_time?: string
+          id?: string
+          notes?: string | null
+          salon_id?: string
+          service_id?: string | null
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_bookings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "salon_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salon_bookings_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salon_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salon_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "salon_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salon_employee_services: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          service_id: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          service_id: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_employee_services_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "salon_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salon_employee_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "salon_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salon_employees: {
+        Row: {
+          active: boolean
+          avatar_url: string | null
+          created_at: string
+          id: string
+          name: string
+          role: string
+          salon_id: string
+          updated_at: string
+          working_hours: Json | null
+        }
+        Insert: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          role?: string
+          salon_id: string
+          updated_at?: string
+          working_hours?: Json | null
+        }
+        Update: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          role?: string
+          salon_id?: string
+          updated_at?: string
+          working_hours?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_employees_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salon_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salon_profiles: {
         Row: {
           address: string | null
@@ -777,6 +927,50 @@ export type Database = {
         }
         Relationships: []
       }
+      salon_services: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          name: string
+          price: number
+          salon_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          name: string
+          price: number
+          salon_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          name?: string
+          price?: number
+          salon_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_services_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salon_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -805,6 +999,10 @@ export type Database = {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      has_salon_access: {
+        Args: { _salon_id: string }
         Returns: boolean
       }
     }

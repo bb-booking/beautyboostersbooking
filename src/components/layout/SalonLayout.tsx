@@ -55,6 +55,14 @@ export function SalonLayout() {
           <header className="h-14 flex items-center border-b bg-background px-4">
             <SidebarTrigger className="mr-4" />
             <h1 className="text-lg font-semibold">Salon</h1>
+            <div className="ml-auto">
+              <button
+                className="text-sm underline"
+                onClick={async () => { await supabase.auth.signOut(); navigate("/salon/login"); }}
+              >
+                Log ud
+              </button>
+            </div>
           </header>
           <main className="flex-1 p-6">
             {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : authorized ? <Outlet /> : <div className="text-sm text-muted-foreground">Ingen adgang</div>}

@@ -54,7 +54,12 @@ import SalonDashboard from "./pages/salon/SalonDashboard";
 import SalonSignup from "./pages/salon/SalonSignup";
 import SalonLogin from "./pages/salon/SalonLogin";
 import SalonPayouts from "./pages/salon/SalonPayouts";
- 
+import SalonCalendar from "./pages/salon/SalonCalendar";
+import SalonTeam from "./pages/salon/SalonTeam";
+import SalonServices from "./pages/salon/SalonServices";
+import SalonHours from "./pages/salon/SalonHours";
+import SalonFinance from "./pages/salon/SalonFinance";
+import SalonSettings from "./pages/salon/SalonSettings";
 const queryClient = new QueryClient();
  
 const App = () => (
@@ -116,9 +121,15 @@ const App = () => (
                     <Route path="settings" element={<BoosterSettings />} />
                     <Route path="reviews" element={<BoosterReviews />} />
                   </Route>
-                  {/* Salon routes */}
                   <Route path="/salon" element={<SalonLayout />}>
+                    <Route index element={<SalonCalendar />} />
                     <Route path="dashboard" element={<SalonDashboard />} />
+                    <Route path="calendar" element={<SalonCalendar />} />
+                    <Route path="team" element={<SalonTeam />} />
+                    <Route path="services" element={<SalonServices />} />
+                    <Route path="hours" element={<SalonHours />} />
+                    <Route path="finance" element={<SalonFinance />} />
+                    <Route path="settings" element={<SalonSettings />} />
                     <Route path="payouts" element={<SalonPayouts />} />
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

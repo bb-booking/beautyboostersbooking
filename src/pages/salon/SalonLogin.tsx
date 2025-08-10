@@ -17,10 +17,10 @@ export default function SalonLogin() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate("/salon/dashboard");
+      if (session) navigate("/salon/calendar");
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/salon/dashboard");
+      if (session) navigate("/salon/calendar");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -78,7 +78,7 @@ export default function SalonLogin() {
         if (error) throw error;
         await ensureSalonRoleAndProfile();
         toast({ title: "Logget ind" });
-        navigate("/salon/dashboard");
+        navigate("/salon/calendar");
       } else {
         const redirectUrl = `${window.location.origin}/salon/login`;
         const { error } = await supabase.auth.signUp({

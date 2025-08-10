@@ -2,14 +2,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar, User, LogOut, Search, Menu, Store, Download, Info, BadgePercent, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
+import { supabase } from "@/integrations/supabase/client";
 const Header = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  // Track auth state to toggle Login/Logout
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setLoggedIn(!!session);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => setLoggedIn(!!session));
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,14 +145,29 @@ const Header = () => {
 
         {/* Desktop actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <AuthModal 
-            trigger={
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
-                <User className="h-4 w-4 mr-2" />
-                Log Ind
-              </Button>
-            }
-          />
+          {loggedIn ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary-foreground hover:text-background hover:bg-background/10"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/");
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Log ud
+            </Button>
+          ) : (
+            <AuthModal 
+              trigger={
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
+                  <User className="h-4 w-4 mr-2" />
+                  Log Ind
+                </Button>
+              }
+            />
+          )}
         </div>
       </div>
     </header>
