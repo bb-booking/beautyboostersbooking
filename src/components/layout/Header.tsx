@@ -57,7 +57,7 @@ const Header = () => {
               <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> Se services</DropdownMenuItem></Link>
               <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Vores Boosters</DropdownMenuItem></Link>
               <Link to="/booster-signup"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Bliv Booster</DropdownMenuItem></Link>
-              <Link to="/for-salons"><DropdownMenuItem><Store className="mr-2 h-4 w-4" /> Opret Salon</DropdownMenuItem></Link>
+              <Link to="/salon-signup"><DropdownMenuItem><Store className="mr-2 h-4 w-4" /> Opret Salon</DropdownMenuItem></Link>
               <DropdownMenuSeparator />
               <Link to="/for-salons#abonnementer"><DropdownMenuItem><BadgePercent className="mr-2 h-4 w-4" /> Abonnementer</DropdownMenuItem></Link>
               <Link to="/#kontakt"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> Kontakt</DropdownMenuItem></Link>
@@ -113,7 +113,7 @@ const Header = () => {
                   <Link to="/booster-signup">
                     <Button className="w-full" variant="secondary">Bliv Booster</Button>
                   </Link>
-                  <Link to="/for-salons">
+                  <Link to="/salon-signup">
                     <Button className="w-full" variant="secondary">
                       <Store className="h-4 w-4 mr-2" />
                       Opret salon

@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { User, Briefcase, Mail, Facebook, Apple } from "lucide-react";
+import { User, Briefcase, Mail, Facebook, Apple, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface AuthModalProps {
@@ -56,13 +56,30 @@ const AuthModal = ({ trigger }: AuthModalProps) => {
               <Link to="/booster/login">
                 <Button variant="outline" className="w-full justify-start gap-3">
                   <Briefcase className="h-4 w-4" />
-                  Log ind Booster / Salon
+                  Log ind Booster
                 </Button>
               </Link>
               <Link to="/booster-signup">
                 <Button className="w-full justify-start gap-3">
                   <User className="h-4 w-4" />
-                  Opret Booster / Salon
+                  Opret Booster
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <h3 className="font-medium text-sm">Som Salon</h3>
+            <div className="space-y-2">
+              <Link to="/salon/login">
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Store className="h-4 w-4" />
+                  Log ind Salon
+                </Button>
+              </Link>
+              <Link to="/salon-signup">
+                <Button className="w-full justify-start gap-3">
+                  <User className="h-4 w-4" />
+                  Opret Salon
                 </Button>
               </Link>
             </div>
