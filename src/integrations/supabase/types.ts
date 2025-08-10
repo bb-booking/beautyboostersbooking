@@ -722,6 +722,7 @@ export type Database = {
           created_at: string
           cvr: string | null
           email: string | null
+          employee_names: string[]
           employees_count: number | null
           id: string
           industry: string | null
@@ -741,6 +742,7 @@ export type Database = {
           created_at?: string
           cvr?: string | null
           email?: string | null
+          employee_names?: string[]
           employees_count?: number | null
           id?: string
           industry?: string | null
@@ -760,6 +762,7 @@ export type Database = {
           created_at?: string
           cvr?: string | null
           email?: string | null
+          employee_names?: string[]
           employees_count?: number | null
           id?: string
           industry?: string | null

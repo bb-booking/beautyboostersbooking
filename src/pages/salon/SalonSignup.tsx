@@ -33,7 +33,7 @@ export default function SalonSignup() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const total = 4;
+  const total = 5;
 
   const [company, setCompany] = useState({
     company_name: "",
@@ -52,6 +52,7 @@ export default function SalonSignup() {
   const [hours, setHours] = useState<Record<string, OpeningHour>>(
     Object.fromEntries(days.map(d => [d, { enabled: d !== "Søn", from: "10:00", to: "18:00" }]))
   );
+  const [employees, setEmployees] = useState<string[]>([""]);
   const [account, setAccount] = useState({ email: "", password: "" });
 
   const lookupCvr = async () => {
@@ -102,8 +103,11 @@ export default function SalonSignup() {
       });
       if (error) throw error;
       localStorage.setItem('pending_role', 'salon');
+      const cleanedEmployees = employees.map(e => e.trim()).filter(Boolean);
       localStorage.setItem('pending_salon_profile', JSON.stringify({
         ...company,
+        employees_count: cleanedEmployees.length || 1,
+        employee_names: cleanedEmployees,
         services,
         opening_hours: toOpeningHoursJson(),
         onboarding_complete: true,
@@ -119,13 +123,82 @@ export default function SalonSignup() {
     <div className="container max-w-3xl mx-auto py-10 space-y-6">
       <Helmet>
         <title>Opret Salon – Beauty Boosters</title>
-        <meta name="description" content="Opret din salon på Beauty Boosters. Firmaoplysninger, services og åbningstider – færdiggør senere hvis ønsket." />
+        <meta name="description" content="Opret din salon på Beauty Boosters. Kategorier, medarbejdere, firmaoplysninger og åbningstider – du kan altid udfylde senere." />
         <link rel="canonical" href={`${window.location.origin}/salon-signup`} />
       </Helmet>
       <h1 className="text-3xl font-bold">Opret Salon</h1>
 
-      {/* Step 1: Firmaoplysninger */}
+      {/* Step 1: Services */}
       {step === 1 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Hvad tilbyder din salon?</CardTitle>
+              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
+            </div>
+            <Progress value={(step / total) * 100} className="w-full" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">Vælg hvad din salon tilbyder - du kan godt vælge flere kategorier. Du kan også vælge at udfylde senere.</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {serviceTags.map(tag => (
+                <Badge key={tag} variant={services.includes(tag) ? "default" : "outline"} className="cursor-pointer p-3 justify-center" onClick={() => toggleService(tag)}>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => { setServices([]); setStep(2); }}>Udfyld senere</Button>
+              <Button onClick={() => setStep(2)}>Fortsæt</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 2: Medarbejdere */}
+      {step === 2 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Medarbejdere</CardTitle>
+              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
+            </div>
+            <Progress value={(step / total) * 100} className="w-full" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">Angiv medarbejdernes navne – du kan også vælge at udfylde senere.</p>
+            <div className="space-y-3">
+              {employees.map((name, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Input
+                    placeholder={`Medarbejder ${idx + 1}`}
+                    value={name}
+                    onChange={(e) => {
+                      const next = [...employees];
+                      next[idx] = e.target.value;
+                      setEmployees(next);
+                    }}
+                  />
+                  {employees.length > 1 && (
+                    <Button type="button" variant="outline" onClick={() => setEmployees(employees.filter((_, i) => i !== idx))}>Fjern</Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={() => setEmployees([...employees, ""])}>Tilføj medarbejder</Button>
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(1)}>Tilbage</Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => { setEmployees([]); setStep(3); }}>Udfyld senere</Button>
+                <Button onClick={() => setStep(3)}>Fortsæt</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 3: Firmaoplysninger (CVR) */}
+      {step === 3 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between mb-4">
@@ -157,10 +230,6 @@ export default function SalonSignup() {
                 <Input value={company.industry} onChange={(e) => setCompany({ ...company, industry: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Antal medarbejdere</Label>
-                <Input type="number" min={1} value={company.employees_count} onChange={(e) => setCompany({ ...company, employees_count: parseInt(e.target.value) || 1 })} />
-              </div>
-              <div className="space-y-2">
                 <Label>Telefon</Label>
                 <Input value={company.phone} onChange={(e) => setCompany({ ...company, phone: e.target.value })} />
               </div>
@@ -182,47 +251,17 @@ export default function SalonSignup() {
               </div>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <Button variant="ghost" type="button" onClick={() => setStep(2)}>
+              <Button variant="ghost" type="button" onClick={() => setStep(4)}>
                 Jeg har ikke et CVR nummer
               </Button>
-              <Button onClick={() => setStep(2)}>Fortsæt</Button>
+              <Button onClick={() => setStep(4)}>Fortsæt</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 2: Services */}
-      {step === 2 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between mb-4">
-              <CardTitle>Hvad tilbyder din salon?</CardTitle>
-              <span className="text-sm text-muted-foreground">Trin {step} af {total}</span>
-            </div>
-            <Progress value={(step / total) * 100} className="w-full" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">Vælg hvad din salon tilbyder - du kan godt vælge flere kategorier. Du kan også vælge at udfylde senere.</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {serviceTags.map(tag => (
-                <Badge key={tag} variant={services.includes(tag) ? "default" : "outline"} className="cursor-pointer p-3 justify-center" onClick={() => toggleService(tag)}>
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)}>Tilbage</Button>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => { setServices([]); setStep(3); }}>Udfyld senere</Button>
-                <Button onClick={() => setStep(3)}>Fortsæt</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: Åbningstider */}
-      {step === 3 && (
+      {/* Step 4: Åbningstider */}
+      {step === 4 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between mb-4">
@@ -245,18 +284,18 @@ export default function SalonSignup() {
               ))}
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)}>Tilbage</Button>
+              <Button variant="outline" onClick={() => setStep(3)}>Tilbage</Button>
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setStep(4)}>Udfyld senere</Button>
-                <Button onClick={() => setStep(4)}>Fortsæt</Button>
+                <Button variant="secondary" onClick={() => setStep(5)}>Udfyld senere</Button>
+                <Button onClick={() => setStep(5)}>Fortsæt</Button>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 4: Konto */}
-      {step === 4 && (
+      {/* Step 5: Konto */}
+      {step === 5 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between mb-4">
@@ -277,7 +316,7 @@ export default function SalonSignup() {
               </div>
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(3)}>Tilbage</Button>
+              <Button variant="outline" onClick={() => setStep(4)}>Tilbage</Button>
               <Button onClick={submit}>Opret Salon</Button>
             </div>
           </CardContent>
