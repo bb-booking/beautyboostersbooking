@@ -59,6 +59,7 @@ const Booking = () => {
   const [service, setService] = useState<Service | null>(null);
   const [specificBooster, setSpecificBooster] = useState<Booster | null>(null);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [selectedCounts, setSelectedCounts] = useState<{people: number; boosters: number; extraHours?: number} | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableBoosters, setAvailableBoosters] = useState<Booster[]>([]);
@@ -137,6 +138,13 @@ const Booking = () => {
         }
       });
     }
+
+    // Load selected counts from service selection
+    try {
+      const storedCounts = sessionStorage.getItem('selectedCounts');
+      if (storedCounts) setSelectedCounts(JSON.parse(storedCounts));
+    } catch {}
+
   }, [boosterId, determinedServiceId]);
 
   // Update service ID when booster data is loaded
@@ -350,7 +358,7 @@ const Booking = () => {
     };
 
     navigate('/checkout', { 
-      state: { booking, booster, service, bookingDetails } 
+      state: { booking, booster, service, bookingDetails, counts: selectedCounts } 
     });
   };
 

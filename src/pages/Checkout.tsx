@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { booking, booster, service, bookingDetails } = location.state || {};
+  const { booking, booster, service, bookingDetails, counts } = location.state || {};
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -77,6 +77,13 @@ export default function Checkout() {
       }
     } catch {}
   }, []);
+
+  // Åbn dialog automatisk hvis der er valgt flere boosters end 1
+  useEffect(() => {
+    if ((counts?.boosters ?? 1) > 1 && extraBoosters.length === 0) {
+      setAssignOpen(true);
+    }
+  }, [counts, extraBoosters.length]);
 
   // Autocomplete
   useEffect(() => {
@@ -282,21 +289,23 @@ export default function Checkout() {
         body: {
           amount: amountToCharge,
           customerEmail: customerInfo.email,
-          bookingData: {
-            customerName: customerInfo.name,
-            customerPhone: customerInfo.phone,
-            serviceName: service.name,
-            boosterId: booster.id,
-            boosterName: booster.name,
-            date: selectedDate || booking.date,
-            time: selectedTime,
-            location: addressQuery,
-            specialRequests: customerInfo.specialRequests,
-            discountCode: appliedCode,
-            discountAmount: discount,
-            extraBoosterIds: extraBoosters.map(b => b.id),
-            extraBoosterNames: extraBoosters.map(b => b.name)
-          }
+            bookingData: {
+              customerName: customerInfo.name,
+              customerPhone: customerInfo.phone,
+              serviceName: service.name,
+              boosterId: booster.id,
+              boosterName: booster.name,
+              date: selectedDate || booking.date,
+              time: selectedTime,
+              location: addressQuery,
+              specialRequests: customerInfo.specialRequests,
+              discountCode: appliedCode,
+              discountAmount: discount,
+              peopleCount: counts?.people,
+              boostersCount: counts?.boosters,
+              extraBoosterIds: extraBoosters.map(b => b.id),
+              extraBoosterNames: extraBoosters.map(b => b.name)
+            }
         }
       });
 
@@ -343,6 +352,8 @@ export default function Checkout() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">Service: {service.name}</Badge>
                   <Badge variant="outline">Varighed: {service.duration} t</Badge>
+                  {counts?.people ? (<Badge variant="outline">Personer: {counts.people}</Badge>) : null}
+                  {counts?.boosters ? (<Badge variant="outline">Boosters: {counts.boosters}</Badge>) : null}
                   <Badge variant="outline">
                     Dato: {(selectedDate || booking.date)
                       ? (selectedDate
@@ -624,6 +635,7 @@ export default function Checkout() {
           date={selectedDate || booking.date}
           time={selectedTime}
           serviceCategory={service.category}
+          desiredCount={Math.max(0, (counts?.boosters ?? 1) - 1)}
           onAutoAssign={(sel) => setExtraBoosters(sel)}
           onConfirm={(sel) => setExtraBoosters(sel)}
         />

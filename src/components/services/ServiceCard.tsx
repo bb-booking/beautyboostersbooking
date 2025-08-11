@@ -106,6 +106,9 @@ const ServiceCard = ({
 
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
+    try {
+      sessionStorage.setItem('selectedCounts', JSON.stringify({ people, boosters, extraHours }));
+    } catch {}
     onClick();
   };
 
