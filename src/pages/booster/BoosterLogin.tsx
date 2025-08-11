@@ -33,11 +33,8 @@ export default function BoosterLogin() {
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
     const hasBooster = roles?.some(r => r.role === 'booster');
     if (!hasBooster) {
-      const pending = localStorage.getItem('pending_role');
-      if (pending === 'booster') {
-        await supabase.from('user_roles').insert({ user_id: userId, role: 'booster' });
-        localStorage.removeItem('pending_role');
-      }
+      await supabase.from('user_roles').insert({ user_id: userId, role: 'booster' });
+      localStorage.removeItem('pending_role');
     }
   };
 
@@ -73,11 +70,11 @@ export default function BoosterLogin() {
     <div className="container max-w-md mx-auto py-10">
       <Helmet>
         <title>Booster login – Beauty Boosters</title>
-        <meta name="description" content="Log ind eller opret som Booster / Salon hos Beauty Boosters." />
+        <meta name="description" content="Log ind eller opret som Booster hos Beauty Boosters." />
         <link rel="canonical" href={`${window.location.origin}/booster/login`} />
       </Helmet>
       <Card className="p-6">
-        <h1 className="text-xl font-semibold mb-4">Booster / Salon {mode === "login" ? "login" : "signup"}</h1>
+        <h1 className="text-xl font-semibold mb-4">Booster {mode === "login" ? "login" : "signup"}</h1>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />

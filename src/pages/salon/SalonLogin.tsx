@@ -34,11 +34,8 @@ export default function SalonLogin() {
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
     const hasSalon = roles?.some(r => r.role === 'salon');
     if (!hasSalon) {
-      const pending = localStorage.getItem('pending_role');
-      if (pending === 'salon') {
-        await supabase.from('user_roles').insert({ user_id: userId, role: 'salon' });
-        localStorage.removeItem('pending_role');
-      }
+      await supabase.from('user_roles').insert({ user_id: userId, role: 'salon' });
+      localStorage.removeItem('pending_role');
     }
 
     // Create profile if pending data exists
