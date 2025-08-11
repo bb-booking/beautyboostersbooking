@@ -129,8 +129,9 @@ serve(async (req) => {
       </div>
     `;
 
-    const { error: emailErr } = await resend.emails.send({
-      from: 'BeautyBoosters <noreply@beautyboosters.dk>',
+    const primaryFrom = Deno.env.get('RESEND_FROM') || 'BeautyBoosters <noreply@beautyboosters.dk>';
+    let { error: emailErr } = await resend.emails.send({
+      from: primaryFrom,
       to: [payload.toEmail],
       subject: `${title} fra ${payload.fromName}`,
       html,
@@ -138,7 +139,23 @@ serve(async (req) => {
 
     if (emailErr) {
       console.error('Resend error', emailErr);
-      return new Response(JSON.stringify({ error: 'Kunne ikke sende email' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+      const msg = String((emailErr as any)?.error || (emailErr as any)?.message || emailErr);
+      if (msg.includes('domain is not verified') || (emailErr as any)?.statusCode === 403) {
+        // Retry with Resend's onboarding domain as a fallback (dev-safe)
+        const fallbackFrom = 'BeautyBoosters <onboarding@resend.dev>';
+        const { error: retryErr } = await resend.emails.send({
+          from: fallbackFrom,
+          to: [payload.toEmail],
+          subject: `${title} fra ${payload.fromName}`,
+          html,
+        });
+        if (retryErr) {
+          console.error('Resend retry error', retryErr);
+          return new Response(JSON.stringify({ error: 'Kunne ikke sende email' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+        }
+      } else {
+        return new Response(JSON.stringify({ error: 'Kunne ikke sende email' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+      }
     }
 
     return new Response(JSON.stringify({ ok: true, code }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
