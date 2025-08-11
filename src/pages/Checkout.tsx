@@ -227,6 +227,36 @@ export default function Checkout() {
     setPromoCode('');
   };
 
+  // Append-mode helpers: compute next start time and persist context
+  const addHoursToTime = (timeStr: string, hours: number) => {
+    if (!timeStr) return timeStr;
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h || 0, m || 0, 0, 0);
+    const minutesToAdd = Math.round((hours || 0) * 60);
+    date.setMinutes(date.getMinutes() + minutesToAdd);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
+  const handleAppendService = () => {
+    try {
+      const nextTime = addHoursToTime(selectedTime, service.duration);
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : {};
+      const newDetails = {
+        ...details,
+        date: (selectedDate || booking.date),
+        time: nextTime,
+      };
+      sessionStorage.setItem('bookingDetails', JSON.stringify(newDetails));
+      sessionStorage.setItem('appendBoosterId', booster.id);
+      sessionStorage.setItem('appendMode', '1');
+    } catch {}
+    navigate('/services');
+  };
+
   const handlePayment = async () => {
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       toast.error('Udfyld venligst alle påkrævede felter');
@@ -418,7 +448,7 @@ export default function Checkout() {
                   <span className="truncate max-w-[60%] text-right">{service.name}</span>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/services')}>Tilføj service</Button>
+                  <Button variant="outline" size="sm" onClick={handleAppendService}>Tilføj service</Button>
                   <Button variant="destructive" size="sm" onClick={() => navigate('/services')}>Fjern service</Button>
                 </div>
               </div>

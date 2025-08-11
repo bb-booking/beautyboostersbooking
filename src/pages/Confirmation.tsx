@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, Link, useSearchParams } from 'react-router-dom';
+import { useLocation, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Calendar, Clock, MapPin, User, CreditCard, AlertCircle } from "lucide-react";
@@ -88,6 +88,44 @@ export default function Confirmation() {
     name: bookingDetails.customer_name,
     email: bookingDetails.customer_email 
   } : customerInfo;
+
+  // Append-mode helpers
+  const addHoursToTime = (timeStr: string, hours: number) => {
+    if (!timeStr) return timeStr as any;
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h || 0, m || 0, 0, 0);
+    const minutesToAdd = Math.round((hours || 0) * 60);
+    date.setMinutes(date.getMinutes() + minutesToAdd);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+  const parseAddressFromText = (text: string) => {
+    const m = text?.match(/^(.*?),\s*(\d{4})\s+(.+)$/);
+    if (m) return { street: m[1], postalCode: m[2], city: m[3] };
+    return null;
+  };
+  const handleAppendService = () => {
+    try {
+      const start = (displayBooking as any)?.booking_time || (displayBooking as any)?.time;
+      const duration = Number((displayBooking as any)?.duration_hours ?? (displayBooking as any)?.duration ?? 0);
+      const nextTime = addHoursToTime(start, duration);
+      const dateVal = (displayBooking as any)?.booking_date || (displayBooking as any)?.date;
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : {};
+      let loc = details.location;
+      if (!loc) {
+        const parsed = parseAddressFromText((displayBooking as any)?.location || '');
+        if (parsed) loc = { address: parsed.street, postalCode: parsed.postalCode, city: parsed.city };
+      }
+      const newDetails = { ...details, date: dateVal, time: nextTime, ...(loc ? { location: loc } : {}) };
+      sessionStorage.setItem('bookingDetails', JSON.stringify(newDetails));
+      const boosterId = (bookingDetails as any)?.booster_id || (booster as any)?.id;
+      if (boosterId) sessionStorage.setItem('appendBoosterId', boosterId);
+      sessionStorage.setItem('appendMode', '1');
+    } catch {}
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">

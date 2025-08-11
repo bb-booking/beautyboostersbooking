@@ -383,6 +383,12 @@ const Services = () => {
       // Navigate to inquiry form for inquiry-based services
       navigate(`/inquiry?service=${serviceId}`);
     } else {
+      // If we are in append-mode, force same booster and go straight to booking
+      const appendBoosterId = sessionStorage.getItem('appendBoosterId');
+      if (appendBoosterId) {
+        navigate(`/book/${appendBoosterId}?service=${serviceId}`);
+        return;
+      }
       // If we already have booking context (address/date/time), skip address step
       try {
         const stored = sessionStorage.getItem('bookingDetails');
