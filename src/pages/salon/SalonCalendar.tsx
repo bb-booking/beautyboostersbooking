@@ -10,12 +10,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { addDays, format, startOfDay } from "date-fns";
 import { Plus } from "lucide-react";
 
+interface SalonBooking {
+  id: string;
+  salon_id: string;
+  employee_id: string | null;
+  service_id: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  start_time: string; // ISO
+  end_time: string;   // ISO
+}
+
 export default function SalonCalendar() {
   const [view, setView] = useState<"day" | "week" | "month">("day");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [salonId, setSalonId] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Array<{ id: string; name: string; avatar_url: string | null }>>([]);
   const [services, setServices] = useState<Array<{ id: string; name: string; duration_minutes: number }>>([]);
+  const [bookings, setBookings] = useState<SalonBooking[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -40,11 +53,29 @@ export default function SalonCalendar() {
     init();
   }, []);
 
+  // Load bookings for current day
+  useEffect(() => {
+    const loadBookings = async () => {
+      if (!salonId) return;
+      const start = startOfDay(date);
+      const end = addDays(start, 1);
+      const { data } = await supabase
+        .from("salon_bookings")
+        .select("id,salon_id,employee_id,service_id,customer_name,customer_email,customer_phone,start_time,end_time")
+        .eq("salon_id", salonId)
+        .gte("start_time", start.toISOString())
+        .lt("start_time", end.toISOString())
+        .order("start_time");
+      setBookings(data || []);
+    };
+    loadBookings();
+  }, [salonId, date]);
+
   const times = useMemo(() => {
     const arr: string[] = [];
-    for (let h = 8; h <= 18; h++) {
+    for (let h = 7; h <= 21; h++) {
       arr.push(`${String(h).padStart(2, "0")}:00`);
-      if (h !== 18) arr.push(`${String(h).padStart(2, "0")}:30`);
+      if (h !== 21) arr.push(`${String(h).padStart(2, "0")}:30`);
     }
     return arr;
   }, []);
@@ -54,9 +85,39 @@ export default function SalonCalendar() {
     { serviceId: null, customer_name: "", customer_phone: "", customer_email: "" }
   );
 
+  const timeToMinutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const isoToMinutes = (iso: string) => {
+    const d = new Date(iso);
+    return d.getHours() * 60 + d.getMinutes();
+    // Note: relies on local time display which is fine for UI day grid
+  };
+
+  const isSlotBooked = (employeeId: string, t: string) => {
+    const mins = timeToMinutes(t);
+    return bookings.some((b) => b.employee_id === employeeId && mins >= isoToMinutes(b.start_time) && mins < isoToMinutes(b.end_time));
+  };
+
+  const startingHere = (employeeId: string, t: string) => {
+    return bookings.filter((b) => b.employee_id === employeeId && t === `${String(new Date(b.start_time).getHours()).padStart(2, "0")}:${String(new Date(b.start_time).getMinutes()).padStart(2, "0")}`);
+  };
+
   const createBooking = async () => {
     if (!salonId || !openSlot || !bookingForm.serviceId) return;
     const service = services.find(s => s.id === bookingForm.serviceId)!;
+
+    // Overlap check
+    const startMins = timeToMinutes(openSlot.time);
+    const endMins = startMins + service.duration_minutes;
+    const overlap = bookings.some((b) => b.employee_id === openSlot.employeeId && startMins < isoToMinutes(b.end_time) && endMins > isoToMinutes(b.start_time));
+    if (overlap) {
+      alert("Tiden overlapper en eksisterende booking.");
+      return;
+    }
+
     const [hour, minute] = openSlot.time.split(":").map(Number);
     const start = new Date(date);
     start.setHours(hour, minute, 0, 0);
@@ -73,9 +134,22 @@ export default function SalonCalendar() {
     });
     setOpenSlot(null);
     setBookingForm({ serviceId: null, customer_name: "", customer_phone: "", customer_email: "" });
+    // reload
+    const startDay = startOfDay(date);
+    const endDay = addDays(startDay, 1);
+    const { data } = await supabase
+      .from("salon_bookings")
+      .select("id,salon_id,employee_id,service_id,customer_name,customer_email,customer_phone,start_time,end_time")
+      .eq("salon_id", salonId)
+      .gte("start_time", startDay.toISOString())
+      .lt("start_time", endDay.toISOString())
+      .order("start_time");
+    setBookings(data || []);
   };
 
   const headerTitle = view === "day" ? format(date, "PPP") : view === "week" ? `${format(date, "P")} – ${format(addDays(date, 6), "P")}` : format(date, "LLLL yyyy");
+
+  const serviceName = (id: string | null) => services.find((s) => s.id === id)?.name || "Service";
 
   return (
     <div className="space-y-6">
@@ -104,7 +178,7 @@ export default function SalonCalendar() {
       <Card className="p-4">
         <div className="text-sm text-muted-foreground mb-2">{headerTitle}</div>
         {view !== "month" ? (
-          <div className="grid" style={{ gridTemplateColumns: `120px repeat(${Math.max(employees.length, 1)}, minmax(200px, 1fr))` }}>
+          <div className="grid" style={{ gridTemplateColumns: `120px repeat(${Math.max(employees.length, 1)}, minmax(220px, 1fr))` }}>
             {/* time column header */}
             <div />
             {employees.length > 0 ? employees.map((e) => (
@@ -113,51 +187,72 @@ export default function SalonCalendar() {
             {times.map((t) => (
               <>
                 <div key={`time-${t}`} className="border-t px-2 text-xs text-muted-foreground h-12 flex items-start pt-2">{t}</div>
-                {employees.length > 0 ? employees.map((e) => (
-                  <div key={`${e.id}-${t}`} className="border-t border-l h-12 group relative">
-                    <Dialog open={!!(openSlot && openSlot.employeeId===e.id && openSlot.time===t)} onOpenChange={(o) => { if(!o) setOpenSlot(null) }}>
-                      <DialogTrigger asChild>
-                        <button className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Plus className="h-4 w-4" onClick={() => setOpenSlot({ time: t, employeeId: e.id })} />
-                        </button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Ny booking – {e.name} kl. {t}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3">
-                          <div>
-                            <Label>Service</Label>
-                            <Select value={bookingForm.serviceId ?? undefined} onValueChange={(v) => setBookingForm(b => ({ ...b, serviceId: v }))}>
-                              <SelectTrigger><SelectValue placeholder="Vælg service" /></SelectTrigger>
-                              <SelectContent>
-                                {services.map(s => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
-                              <Label>Kunde</Label>
-                              <Input value={bookingForm.customer_name} onChange={(e) => setBookingForm(b => ({ ...b, customer_name: e.target.value }))} placeholder="Navn" />
+                {employees.length > 0 ? employees.map((e) => {
+                  const booked = isSlotBooked(e.id, t);
+                  const starts = startingHere(e.id, t);
+                  return (
+                    <div key={`${e.id}-${t}`} className={`border-t border-l h-12 group relative ${booked ? "bg-muted/40" : ""}`}>
+                      {!booked && (
+                        <Dialog open={!!(openSlot && openSlot.employeeId===e.id && openSlot.time===t)} onOpenChange={(o) => { if(!o) setOpenSlot(null) }}>
+                          <DialogTrigger asChild>
+                            <button className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={() => setOpenSlot({ time: t, employeeId: e.id })}>
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Ny booking – {e.name} kl. {t}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-3">
+                              <div>
+                                <Label>Service</Label>
+                                <Select value={bookingForm.serviceId ?? undefined} onValueChange={(v) => setBookingForm(b => ({ ...b, serviceId: v }))}>
+                                  <SelectTrigger><SelectValue placeholder="Vælg service" /></SelectTrigger>
+                                  <SelectContent>
+                                    {services.map(s => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <Label>Kunde</Label>
+                                  <Input value={bookingForm.customer_name} onChange={(e) => setBookingForm(b => ({ ...b, customer_name: e.target.value }))} placeholder="Navn" />
+                                </div>
+                                <div>
+                                  <Label>Telefon</Label>
+                                  <Input value={bookingForm.customer_phone} onChange={(e) => setBookingForm(b => ({ ...b, customer_phone: e.target.value }))} placeholder="Telefon" />
+                                </div>
+                                <div>
+                                  <Label>Email</Label>
+                                  <Input type="email" value={bookingForm.customer_email} onChange={(e) => setBookingForm(b => ({ ...b, customer_email: e.target.value }))} placeholder="Email" />
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-2">
+                                <Button variant="outline" onClick={() => setOpenSlot(null)}>Annuller</Button>
+                                <Button onClick={createBooking} disabled={!bookingForm.serviceId}>Opret booking</Button>
+                              </div>
                             </div>
-                            <div>
-                              <Label>Telefon</Label>
-                              <Input value={bookingForm.customer_phone} onChange={(e) => setBookingForm(b => ({ ...b, customer_phone: e.target.value }))} placeholder="Telefon" />
+                          </DialogContent>
+                        </Dialog>
+                      )}
+
+                      {/* bookings starting here */}
+                      {starts.map((b) => (
+                        <div key={b.id} className="absolute inset-0 px-2 py-1">
+                          <div className="h-full w-full rounded-md bg-primary/10 border border-primary/20 text-xs p-2 flex flex-col">
+                            <div className="font-medium truncate">{serviceName(b.service_id)}</div>
+                            <div className="text-muted-foreground truncate">
+                              {new Date(b.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              –
+                              {new Date(b.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              {b.customer_name ? ` · ${b.customer_name}` : ""}
                             </div>
-                            <div>
-                              <Label>Email</Label>
-                              <Input type="email" value={bookingForm.customer_email} onChange={(e) => setBookingForm(b => ({ ...b, customer_email: e.target.value }))} placeholder="Email" />
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2 pt-2">
-                            <Button variant="outline" onClick={() => setOpenSlot(null)}>Annuller</Button>
-                            <Button onClick={createBooking} disabled={!bookingForm.serviceId}>Opret booking</Button>
                           </div>
                         </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                )) : <div className="border-t border-l h-12 flex items-center px-3 text-sm text-muted-foreground">Tilføj medarbejdere under Team</div>}
+                      ))}
+                    </div>
+                  );
+                }) : <div className="border-t border-l h-12 flex items-center px-3 text-sm text-muted-foreground">Tilføj medarbejdere under Team</div>}
               </>
             ))}
           </div>

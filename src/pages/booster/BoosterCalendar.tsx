@@ -1,357 +1,299 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
-  MessageSquare,
-  MapPin,
-  Clock,
-  Star,
-  User,
-  Camera
-} from "lucide-react";
-import { format, startOfWeek, endOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
-import { da } from "date-fns/locale";
+import { addDays, addMinutes, format, isEqual, startOfDay, startOfWeek } from "date-fns";
+import { Plus } from "lucide-react";
 
-interface Booking {
+interface BoosterEvent {
   id: string;
-  title: string;
-  client_name: string;
-  client_phone: string;
-  date_needed: string;
-  time_needed: string;
-  location: string;
-  service_type: string;
-  hourly_rate: number;
-  duration_hours: number;
-  status: string;
-  description?: string;
+  date: string; // yyyy-mm-dd
+  start_time: string; // HH:mm:ss
+  end_time: string;   // HH:mm:ss
+  status: string | null;
+  notes: string | null; // JSON string with details {service, customer_name, customer_phone, duration_minutes}
 }
 
-type ViewMode = 'day' | 'week' | 'month';
+type View = "day" | "week";
 
-const BoosterCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+type CreateForm = {
+  service: string;
+  duration: number; // minutes
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+};
 
+const DEFAULT_FORM: CreateForm = {
+  service: "",
+  duration: 60,
+  customer_name: "",
+  customer_phone: "",
+  customer_email: "",
+};
+
+export default function BoosterCalendar() {
+  const [view, setView] = useState<View>("week");
+  const [date, setDate] = useState<Date>(startOfDay(new Date()));
+  const [events, setEvents] = useState<BoosterEvent[]>([]);
+  const [openSlot, setOpenSlot] = useState<{ day: Date; time: string } | null>(null);
+  const [form, setForm] = useState<CreateForm>(DEFAULT_FORM);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Init user and load events
   useEffect(() => {
-    fetchBookings();
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      setUserId(session.user.id);
+      await fetchEvents(session.user.id, date, view);
+    };
+    init();
   }, []);
 
-  const fetchBookings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .in("status", ["confirmed", "in_progress", "completed"]);
-        
-      if (error) throw error;
-      
-      setBookings(data || []);
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-    } finally {
-      setLoading(false);
+  // Reload when date/view changes
+  useEffect(() => {
+    if (!userId) return;
+    fetchEvents(userId, date, view);
+  }, [userId, date, view]);
+
+  const fetchEvents = async (uid: string, baseDate: Date, v: View) => {
+    const start = v === "day" ? startOfDay(baseDate) : startOfWeek(baseDate, { weekStartsOn: 1 });
+    const end = v === "day" ? addDays(start, 1) : addDays(start, 7);
+
+    const { data, error } = await supabase
+      .from("booster_availability")
+      .select("id,date,start_time,end_time,status,notes")
+      .eq("booster_id", uid)
+      .gte("date", format(start, "yyyy-MM-dd"))
+      .lt("date", format(end, "yyyy-MM-dd"))
+      .order("date")
+      .order("start_time");
+
+    if (!error) setEvents(data as BoosterEvent[]);
+  };
+
+  // Time grid: 07:00 – 21:00 in 30-minute steps
+  const times = useMemo(() => {
+    const arr: string[] = [];
+    const startH = 7;
+    const endH = 21;
+    for (let h = startH; h <= endH; h++) {
+      arr.push(`${String(h).padStart(2, "0")}:00`);
+      if (h !== endH) arr.push(`${String(h).padStart(2, "0")}:30`);
+    }
+    return arr;
+  }, []);
+
+  const days = useMemo(() => {
+    if (view === "day") return [date];
+    const monday = startOfWeek(date, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
+  }, [date, view]);
+
+  const getDayEvents = (d: Date) => {
+    const key = format(d, "yyyy-MM-dd");
+    return events.filter((e) => e.date === key);
+  };
+
+  // Helpers
+  const timeToMinutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const minutesToTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+  };
+
+  const slotIsBooked = (d: Date, time: string) => {
+    const key = format(d, "yyyy-MM-dd");
+    const minutes = timeToMinutes(time + ":00");
+    return events.some((e) => {
+      if (e.date !== key) return false;
+      const s = timeToMinutes(e.start_time);
+      const en = timeToMinutes(e.end_time);
+      return minutes >= s && minutes < en; // inside event window
+    });
+  };
+
+  const hasOverlap = (d: Date, startTime: string, durationMin: number) => {
+    const key = format(d, "yyyy-MM-dd");
+    const sNew = timeToMinutes(startTime + ":00");
+    const eNew = sNew + durationMin;
+    return getDayEvents(d).some((e) => {
+      const s = timeToMinutes(e.start_time);
+      const en = timeToMinutes(e.end_time);
+      return s < eNew && sNew < en; // overlap
+    });
+  };
+
+  const createEvent = async () => {
+    if (!userId || !openSlot) return;
+    if (!form.service.trim() || form.duration <= 0) return;
+
+    if (hasOverlap(openSlot.day, openSlot.time, form.duration)) {
+      alert("Tiden overlapper en eksisterende booking.");
+      return;
+    }
+
+    const startMins = timeToMinutes(openSlot.time + ":00");
+    const endMins = startMins + form.duration;
+
+    const payload = {
+      service: form.service,
+      duration_minutes: form.duration,
+      customer_name: form.customer_name,
+      customer_phone: form.customer_phone,
+      customer_email: form.customer_email,
+    };
+
+    const { error } = await supabase.from("booster_availability").insert({
+      booster_id: userId,
+      date: format(openSlot.day, "yyyy-MM-dd"),
+      start_time: minutesToTime(startMins),
+      end_time: minutesToTime(endMins),
+      status: "booked",
+      notes: JSON.stringify(payload),
+    });
+
+    if (!error) {
+      setOpenSlot(null);
+      setForm(DEFAULT_FORM);
+      await fetchEvents(userId, date, view);
     }
   };
 
-  const navigateDate = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    switch (viewMode) {
-      case 'day':
-        newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
-        break;
-      case 'week':
-        newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-        break;
-      case 'month':
-        newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
-        break;
-    }
-    setCurrentDate(newDate);
+  const deleteEvent = async (id: string) => {
+    await supabase.from("booster_availability").delete().eq("id", id);
+    if (userId) await fetchEvents(userId, date, view);
   };
 
-  const getDateRange = () => {
-    switch (viewMode) {
-      case 'day':
-        return [currentDate];
-      case 'week':
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-        return eachDayOfInterval({ start: weekStart, end: weekEnd });
-      case 'month':
-        const monthStart = startOfMonth(currentDate);
-        const monthEnd = endOfMonth(currentDate);
-        return eachDayOfInterval({ start: monthStart, end: monthEnd });
-    }
+  const parseNotes = (e: BoosterEvent) => {
+    try { return e.notes ? JSON.parse(e.notes) as any : {}; } catch { return {}; }
   };
 
-  const getBookingsForDate = (date: Date) => {
-    return bookings.filter(booking => 
-      isSameDay(new Date(booking.date_needed), date)
-    );
-  };
-
-  const formatDateHeader = () => {
-    switch (viewMode) {
-      case 'day':
-        return format(currentDate, 'EEEE d. MMMM yyyy', { locale: da });
-      case 'week':
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-        return `Uge ${format(weekStart, 'w')} • ${format(weekStart, 'd. MMM', { locale: da })} - ${format(weekEnd, 'd. MMM yyyy', { locale: da })}`;
-      case 'month':
-        return format(currentDate, 'MMMM yyyy', { locale: da });
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'bg-blue-500';
-      case 'in_progress': return 'bg-yellow-500';
-      case 'completed': return 'bg-green-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'Bekræftet';
-      case 'in_progress': return 'I gang';
-      case 'completed': return 'Afsluttet';
-      default: return status;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Min kalender</h2>
-          <div className="animate-pulse h-8 w-32 bg-muted rounded"></div>
-        </div>
-        <div className="animate-pulse h-64 bg-muted rounded-lg"></div>
-      </div>
-    );
-  }
-
-  const dateRange = getDateRange();
+  const headerTitle = view === "day"
+    ? format(date, "PPP")
+    : `${format(days[0], "P")} – ${format(days[6], "P")}`;
 
   return (
     <div className="space-y-6">
-      {/* Header with navigation */}
+      <Helmet>
+        <title>Min kalender – Beauty Boosters</title>
+        <meta name="description" content="Dag- og ugekalender for booster med 30-minutters tidsintervaller." />
+        <link rel="canonical" href={`${window.location.origin}/booster/calendar`} />
+      </Helmet>
+
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-2xl font-bold">Min kalender</h2>
-          <Badge variant="secondary" className="text-sm">
-            {bookings.length} bookinger denne måned
-          </Badge>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {/* View mode buttons */}
-          <div className="flex border rounded-lg p-1">
-            {(['day', 'week', 'month'] as const).map(mode => (
-              <Button
-                key={mode}
-                variant={viewMode === mode ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode(mode)}
-                className="text-xs"
-              >
-                {mode === 'day' ? 'Dag' : mode === 'week' ? 'Uge' : 'Måned'}
-              </Button>
-            ))}
-          </div>
-          
-          {/* Navigation arrows */}
-          <Button variant="outline" size="sm" onClick={() => navigateDate('prev')}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigateDate('next')}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          
-          {/* Today button */}
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-            I dag
-          </Button>
+        <h1 className="text-2xl font-bold">Min kalender</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? -1 : -7))}>Forrige</Button>
+          <Button variant="outline" onClick={() => setDate(startOfDay(new Date()))}>I dag</Button>
+          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? 1 : 7))}>Næste</Button>
+          <Select value={view} onValueChange={(v) => setView(v as View)}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="Visning" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Dag</SelectItem>
+              <SelectItem value="week">Uge</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* Date header */}
-      <div className="text-center">
-        <h3 className="text-xl font-semibold text-muted-foreground">
-          {formatDateHeader()}
-        </h3>
-      </div>
+      <Card className="p-4">
+        <div className="text-sm text-muted-foreground mb-2">{headerTitle}</div>
+        <div className="grid" style={{ gridTemplateColumns: `120px repeat(${view === "day" ? 1 : 7}, minmax(220px, 1fr))` }}>
+          {/* Header row */}
+          <div />
+          {days.map((d) => (
+            <div key={format(d, "yyyy-MM-dd")} className="px-3 py-2 border-b font-medium">
+              {format(d, "EEE d/M")}
+            </div>
+          ))}
 
-      {/* Calendar grid */}
-      <div className="grid gap-4">
-        {viewMode === 'month' && (
-          <div className="grid grid-cols-7 gap-2 mb-4">
-            {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'].map(day => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
-                {day}
-              </div>
-            ))}
-          </div>
-        )}
-        
-        <div className={`grid gap-4 ${
-          viewMode === 'day' ? 'grid-cols-1' : 
-          viewMode === 'week' ? 'grid-cols-7' : 
-          'grid-cols-7'
-        }`}>
-          {dateRange.map((date, index) => {
-            const dayBookings = getBookingsForDate(date);
-            const isToday = isSameDay(date, new Date());
-            
-            return (
-              <Card 
-                key={index} 
-                className={`min-h-[120px] ${isToday ? 'ring-2 ring-primary' : ''} hover:shadow-md transition-shadow`}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {viewMode === 'month' ? format(date, 'd', { locale: da }) : format(date, 'EEE d', { locale: da })}
-                    </span>
-                    {dayBookings.length > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        {dayBookings.length}
-                      </Badge>
+          {/* Rows */}
+          {times.map((t) => (
+            <>
+              <div key={`time-${t}`} className="border-t px-2 text-xs text-muted-foreground h-12 flex items-start pt-2">{t}</div>
+              {days.map((d) => {
+                const dayKey = format(d, "yyyy-MM-dd");
+                const booked = slotIsBooked(d, t);
+                // Event starting exactly at this slot
+                const startingHere = getDayEvents(d).filter((e) => e.start_time.startsWith(t));
+                return (
+                  <div key={`${dayKey}-${t}`} className={`border-t border-l h-12 group relative ${booked ? "bg-muted/40" : ""}`}>
+                    {/* Add button */}
+                    {!booked && (
+                      <Dialog open={!!(openSlot && isEqual(openSlot.day, d) && openSlot.time === t)} onOpenChange={(o) => { if (!o) setOpenSlot(null); }}>
+                        <DialogTrigger asChild>
+                          <button className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={() => setOpenSlot({ day: d, time: t })}>
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Ny booking – {format(d, "PPP")} kl. {t}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-3">
+                            <div>
+                              <Label>Service</Label>
+                              <Input value={form.service} onChange={(e) => setForm((f) => ({ ...f, service: e.target.value }))} placeholder="Service" />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div>
+                                <Label>Varighed (min)</Label>
+                                <Input type="number" min={5} step={5} value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value || 0) }))} />
+                              </div>
+                              <div>
+                                <Label>Kunde</Label>
+                                <Input value={form.customer_name} onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))} placeholder="Navn" />
+                              </div>
+                              <div>
+                                <Label>Telefon</Label>
+                                <Input value={form.customer_phone} onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))} placeholder="Telefon" />
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                              <Button variant="outline" onClick={() => setOpenSlot(null)}>Annuller</Button>
+                              <Button onClick={createEvent} disabled={!form.service.trim() || form.duration <= 0}>Opret booking</Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     )}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0 space-y-2">
-                  {dayBookings.slice(0, 3).map((booking, bookingIndex) => (
-                    <div
-                      key={bookingIndex}
-                      className="p-2 bg-muted/50 rounded-md cursor-pointer hover:bg-muted transition-colors group"
-                      onClick={() => console.log('Open booking details', booking.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1 mb-1">
-                            <div className={`w-2 h-2 rounded-full ${getStatusColor(booking.status)}`}></div>
-                            <span className="text-xs font-medium truncate">
-                              {booking.time_needed} - {booking.client_name}
-                            </span>
-                          </div>
-                          
-                          <div className="text-xs text-muted-foreground truncate mb-1">
-                            {booking.service_type}
-                          </div>
-                          
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate">{booking.location}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-xs font-medium">
-                            {booking.hourly_rate} kr/t
-                          </span>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MessageSquare className="h-3 w-3 text-muted-foreground hover:text-primary cursor-pointer" />
-                            <Camera className="h-3 w-3 text-muted-foreground hover:text-primary cursor-pointer" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {dayBookings.length > 3 && (
-                    <div className="text-xs text-muted-foreground text-center">
-                      +{dayBookings.length - 3} flere
-                    </div>
-                  )}
-                  
-                  {dayBookings.length === 0 && viewMode === 'day' && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Ingen bookinger denne dag</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Quick stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">I dag</p>
-                <p className="text-2xl font-bold">
-                  {getBookingsForDate(new Date()).length}
-                </p>
-              </div>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Denne uge</p>
-                <p className="text-2xl font-bold">
-                  {bookings.filter(b => {
-                    const bookingDate = new Date(b.date_needed);
-                    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-                    const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
-                    return bookingDate >= weekStart && bookingDate <= weekEnd;
-                  }).length}
-                </p>
-              </div>
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Indtjening (uge)</p>
-                <p className="text-2xl font-bold">4.200 kr</p>
-              </div>
-              <Star className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Rating</p>
-                <p className="text-2xl font-bold">4.8</p>
-              </div>
-              <User className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                    {/* Events that start at this exact time */}
+                    {startingHere.map((e) => {
+                      const meta = parseNotes(e);
+                      return (
+                        <div key={e.id} className="absolute inset-0 px-2 py-1">
+                          <div className="h-full w-full rounded-md bg-primary/10 border border-primary/20 text-xs p-2 flex flex-col">
+                            <div className="font-medium truncate">{meta.service || "Booking"}</div>
+                            <div className="text-muted-foreground truncate">
+                              {e.start_time.slice(0,5)}–{e.end_time.slice(0,5)} · {meta.customer_name || ""}
+                            </div>
+                            <div className="mt-auto flex justify-end">
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => deleteEvent(e.id)}>Slet</Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </>
+          ))}
+        </div>
+      </Card>
     </div>
   );
-};
-
-export default BoosterCalendar;
+}
