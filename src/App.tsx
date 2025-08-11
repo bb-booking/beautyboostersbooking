@@ -73,7 +73,7 @@ const App = () => (
         <Sonner />
         <HelmetProvider>
           <BrowserRouter>
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-background break-words">
               <Header />
               <main>
                 <Routes>

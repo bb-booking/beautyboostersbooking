@@ -64,7 +64,7 @@ export function SalonLayout() {
               </button>
             </div>
           </header>
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 break-words">
             {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : authorized ? <Outlet /> : <div className="text-sm text-muted-foreground">Ingen adgang</div>}
           </main>
         </div>
