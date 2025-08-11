@@ -27,6 +27,7 @@ type CreateForm = {
   customer_name: string;
   customer_phone: string;
   customer_email: string;
+  address: string;
 };
 
 const DEFAULT_FORM: CreateForm = {
@@ -35,6 +36,7 @@ const DEFAULT_FORM: CreateForm = {
   customer_name: "",
   customer_phone: "",
   customer_email: "",
+  address: "",
 };
 
 export default function BoosterCalendar() {
@@ -153,6 +155,7 @@ export default function BoosterCalendar() {
       customer_name: form.customer_name,
       customer_phone: form.customer_phone,
       customer_email: form.customer_email,
+      address: form.address,
     };
 
     const { error } = await supabase.from("booster_availability").insert({
@@ -247,6 +250,10 @@ export default function BoosterCalendar() {
                               <Label>Service</Label>
                               <Input value={form.service} onChange={(e) => setForm((f) => ({ ...f, service: e.target.value }))} placeholder="Service" />
                             </div>
+                            <div>
+                              <Label>Adresse</Label>
+                              <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Adresse" />
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                               <div>
                                 <Label>Varighed (min)</Label>
@@ -280,6 +287,17 @@ export default function BoosterCalendar() {
                             <div className="text-muted-foreground truncate">
                               {e.start_time.slice(0,5)}–{e.end_time.slice(0,5)} · {meta.customer_name || ""}
                             </div>
+                            {meta.address && (
+                              <a
+                                href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(meta.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary underline truncate"
+                                title={meta.address}
+                              >
+                                {meta.address}
+                              </a>
+                            )}
                             <div className="mt-auto flex justify-end">
                               <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => deleteEvent(e.id)}>Slet</Button>
                             </div>
