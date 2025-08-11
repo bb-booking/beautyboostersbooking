@@ -45,6 +45,10 @@ export default function Checkout() {
   );
   const [selectedTime, setSelectedTime] = useState<string>(booking.time);
 
+  // Ekstra boosters tildeling
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [extraBoosters, setExtraBoosters] = useState<BoosterOption[]>([]);
+
   // Address editing with autocomplete + current location
   const [addressQuery, setAddressQuery] = useState<string>(
     bookingDetails?.location
@@ -289,7 +293,9 @@ export default function Checkout() {
             location: addressQuery,
             specialRequests: customerInfo.specialRequests,
             discountCode: appliedCode,
-            discountAmount: discount
+            discountAmount: discount,
+            extraBoosterIds: extraBoosters.map(b => b.id),
+            extraBoosterNames: extraBoosters.map(b => b.name)
           }
         }
       });
@@ -332,6 +338,36 @@ export default function Checkout() {
               <CardDescription>Redigér dato/tid og adresse inden betaling</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              {/* Top-oversigt */}
+              <div className="p-3 rounded-md bg-muted/50">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">Service: {service.name}</Badge>
+                  <Badge variant="outline">Varighed: {service.duration} t</Badge>
+                  <Badge variant="outline">
+                    Dato: {(selectedDate || booking.date)
+                      ? (selectedDate
+                          ? selectedDate.toLocaleDateString('da-DK')
+                          : (typeof booking.date === 'string'
+                              ? new Date(booking.date).toLocaleDateString('da-DK')
+                              : (booking.date as Date).toLocaleDateString('da-DK')))
+                      : 'Ikke valgt'}
+                  </Badge>
+                  <Badge variant="outline">Tid: {selectedTime || booking.time}</Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">Boosters:</span>
+                  <Badge variant="secondary">{booster.name} (primær)</Badge>
+                  {extraBoosters.map((b) => (
+                    <Badge key={b.id} variant="outline">{b.name}</Badge>
+                  ))}
+                  <div className="ml-auto">
+                    <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
+                      Vælg/administrér ekstra booster(s)
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {/* Date */}
               <div className="space-y-2">
                 <Label>Dato</Label>
@@ -580,6 +616,18 @@ export default function Checkout() {
             </CardContent>
           </Card>
         </div>
+
+        <AssignBoostersDialog
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          primaryBoosterId={booster.id}
+          date={selectedDate || booking.date}
+          time={selectedTime}
+          serviceCategory={service.category}
+          onAutoAssign={(sel) => setExtraBoosters(sel)}
+          onConfirm={(sel) => setExtraBoosters(sel)}
+        />
+
       </div>
     </div>
   );
