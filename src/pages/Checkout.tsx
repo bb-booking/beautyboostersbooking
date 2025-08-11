@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import AssignBoostersDialog, { BoosterOption } from "@/components/boosters/AssignBoostersDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function Checkout() {
   const location = useLocation();

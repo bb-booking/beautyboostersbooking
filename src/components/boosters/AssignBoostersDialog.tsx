@@ -32,6 +32,7 @@ interface AssignBoostersDialogProps {
   date?: Date | string;
   time?: string;
   serviceCategory?: string;
+  desiredCount?: number;
   onAutoAssign: (selected: BoosterOption[]) => void;
   onConfirm: (selected: BoosterOption[]) => void;
 }
@@ -57,6 +58,7 @@ export default function AssignBoostersDialog({
   date,
   time,
   serviceCategory,
+  desiredCount,
   onAutoAssign,
   onConfirm,
 }: AssignBoostersDialogProps) {
@@ -118,13 +120,22 @@ export default function AssignBoostersDialog({
   const toggleSelect = (b: BoosterOption) => {
     setSelected((prev) => {
       const copy = { ...prev } as Record<string, BoosterOption>;
-      if (copy[b.id]) delete copy[b.id]; else copy[b.id] = b;
+      if (copy[b.id]) {
+        delete copy[b.id];
+      } else {
+        const currentCount = Object.keys(copy).length;
+        if (typeof desiredCount === "number" && desiredCount > 0 && currentCount >= desiredCount) {
+          return copy;
+        }
+        copy[b.id] = b;
+      }
       return copy;
     });
   };
 
   const handleAutoAssign = () => {
-    const pick = boosters.slice(0, 1); // simple: pick one extra by default
+    const count = Math.max(0, (desiredCount ?? 1));
+    const pick = boosters.slice(0, count);
     onAutoAssign(pick);
     onOpenChange(false);
   };
@@ -141,6 +152,7 @@ export default function AssignBoostersDialog({
           <DialogTitle>Ekstra boosters</DialogTitle>
           <DialogDescription>
             {date && time ? `Til ${typeof date === 'string' ? date : (date as Date).toLocaleDateString('da-DK')} kl. ${time}` : "Vælg hvordan du vil tildele ekstra boosters"}
+            {typeof desiredCount === 'number' && desiredCount > 0 ? ` – vælg ${desiredCount} ekstra` : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -198,10 +210,13 @@ export default function AssignBoostersDialog({
             </ScrollArea>
             <DialogFooter>
               <div className="flex-1 text-sm text-muted-foreground">
-                Valgt: {selectedList.length}
+                {typeof desiredCount === 'number' && desiredCount > 0
+                  ? `Valgt: ${selectedList.length} af ${desiredCount}`
+                  : `Valgt: ${selectedList.length}`
+                }
               </div>
               <Button variant="outline" onClick={() => setManualMode(false)}>Tilbage</Button>
-              <Button onClick={handleConfirm} disabled={selectedList.length === 0}>Bekræft valg</Button>
+              <Button onClick={handleConfirm} disabled={typeof desiredCount === 'number' && desiredCount > 0 ? selectedList.length !== desiredCount : selectedList.length === 0}>Bekræft valg</Button>
             </DialogFooter>
           </div>
         )}
