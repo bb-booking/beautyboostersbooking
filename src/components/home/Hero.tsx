@@ -217,7 +217,7 @@ const Hero = () => {
                   <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                   <div className="relative">
                     <Input
-                      placeholder="Hvor skal vi komme hen? (adresse)"
+                      placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
                       value={searchData.location}
                       onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
                       onFocus={() => setShowLocationSuggestions(true)}
@@ -226,60 +226,6 @@ const Hero = () => {
                     />
                     {showLocationSuggestions && (
                       <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
-                        <div className="p-3 border-b">
-                          <div className="flex flex-wrap gap-2">
-                            {serviceCategories
-                              .filter((c) => c.value !== "all")
-                              .map((cat) => (
-                                <Button
-                                  key={cat.value}
-                                  type="button"
-                                  variant="secondary"
-                                  size="sm"
-                                  className="rounded-full"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    try {
-                                      sessionStorage.setItem("selectedCategory", cat.value);
-                                    } catch {}
-                                    navigate('/services');
-                                  }}
-                                >
-                                  {cat.label}
-                                </Button>
-                              ))}
-                          </div>
-                        </div>
-                        {/* Service matches while typing */}
-                        {searchData.location.trim().length > 0 && (
-                          <div className="py-2">
-                            {serviceQuickLinks
-                              .filter((s) =>
-                                s.label.toLowerCase().includes(searchData.location.toLowerCase())
-                              )
-                              .slice(0, 5)
-                              .map((s) => (
-                                <div
-                                  key={s.label}
-                                  className="px-3 py-2 hover:bg-accent cursor-pointer"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    if ((s as any).category) {
-                                      try {
-                                        sessionStorage.setItem("selectedCategory", (s as any).category);
-                                      } catch {}
-                                      navigate('/services');
-                                    } else if ((s as any).search) {
-                                      navigate(`/services?search=${encodeURIComponent((s as any).search)}`);
-                                    }
-                                    setShowLocationSuggestions(false);
-                                  }}
-                                >
-                                  {s.label}
-                                </div>
-                              ))}
-                          </div>
-                        )}
                         {locationOptions
                           .filter((opt) =>
                             opt.toLowerCase().includes(searchData.location.toLowerCase())

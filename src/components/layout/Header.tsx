@@ -10,8 +10,29 @@ import { supabase } from "@/integrations/supabase/client";
 const Header = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
+  const serviceCategories = [
+    { value: "all", label: "Alle services" },
+    { value: "Makeup & Hår", label: "Makeup & Hår" },
+    { value: "Spraytan", label: "Spraytan" },
+    { value: "Konfirmation", label: "Konfirmation" },
+    { value: "Bryllup - Brudestyling", label: "Bryllup - Brudestyling" },
+    { value: "Makeup Kurser", label: "Makeup Kurser" },
+    { value: "Event", label: "Event" },
+    { value: "Børn", label: "Børn" }
+  ];
+
+  const serviceQuickLinks = [
+    { label: "Makeup Styling", search: "Makeup Styling" },
+    { label: "Spraytan", category: "Spraytan" },
+    { label: "Hårstyling / håropsætning", search: "Hårstyling" },
+    { label: "Brudestyling", category: "Bryllup - Brudestyling" },
+    { label: "Makeup Kursus", category: "Makeup Kurser" },
+    { label: "Event makeup", category: "Event" }
+  ];
+
+  const [loggedIn, setLoggedIn] = useState(false);
   // Track auth state to toggle Login/Logout
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -49,8 +70,62 @@ const Header = () => {
               placeholder="Søg efter services..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
               className="pl-10 bg-background/90 border-background/20 focus:bg-background"
             />
+            {showSuggestions && (
+              <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-80 overflow-auto">
+                <div className="p-3 border-b">
+                  <div className="flex flex-wrap gap-2">
+                    {serviceCategories.filter((c) => c.value !== "all").map((cat) => (
+                      <Button
+                        key={cat.value}
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-full"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          try {
+                            sessionStorage.setItem("selectedCategory", cat.value);
+                          } catch {}
+                          navigate('/services');
+                        }}
+                      >
+                        {cat.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {searchTerm.trim().length > 0 && (
+                  <div className="py-2">
+                    {serviceQuickLinks
+                      .filter((s) => s.label.toLowerCase().includes(searchTerm.toLowerCase()))
+                      .slice(0, 5)
+                      .map((s) => (
+                        <div
+                          key={s.label}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            if ((s as any).category) {
+                              try { sessionStorage.setItem("selectedCategory", (s as any).category); } catch {}
+                              navigate('/services');
+                            } else if ((s as any).search) {
+                              navigate(`/services?search=${encodeURIComponent((s as any).search)}`);
+                            }
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          {s.label}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </form>
         
