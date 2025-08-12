@@ -95,7 +95,14 @@ const Hero = () => {
     { value: "Børn", label: "Børn" }
   ];
 
-  const popularAreas = ["København", "Nordsjælland", "Aarhus", "Aalborg", "Odense", "Frederiksberg"];
+  const serviceQuickLinks = [
+    { label: "Makeup Styling", search: "Makeup Styling" },
+    { label: "Spraytan", category: "Spraytan" },
+    { label: "Hårstyling / håropsætning", search: "Hårstyling" },
+    { label: "Brudestyling", category: "Bryllup - Brudestyling" },
+    { label: "Makeup Kursus", category: "Makeup Kurser" },
+    { label: "Event makeup", category: "Event" }
+  ];
 
   // Parse a full address string into parts
   const parseAddressFromText = (text: string) => {
@@ -172,13 +179,13 @@ const Hero = () => {
           src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = heroFallback; }}
           alt="Makeup artist på arbejde – book beauty artist til døren"
-          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[15%]"
+          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[30%]"
           loading="eager"
         />
         {/* Background video (desktop) */}
         <video
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[15%] hidden md:block"
+          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[30%] hidden md:block"
           muted
           playsInline
           autoPlay
@@ -221,24 +228,58 @@ const Hero = () => {
                       <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
                         <div className="p-3 border-b">
                           <div className="flex flex-wrap gap-2">
-                            {popularAreas.map((area) => (
-                              <Button
-                                key={area}
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                className="rounded-full"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setSearchData((prev) => ({ ...prev, location: area }));
-                                  setShowLocationSuggestions(true);
-                                }}
-                              >
-                                {area}
-                              </Button>
-                            ))}
+                            {serviceCategories
+                              .filter((c) => c.value !== "all")
+                              .map((cat) => (
+                                <Button
+                                  key={cat.value}
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  className="rounded-full"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    try {
+                                      sessionStorage.setItem("selectedCategory", cat.value);
+                                    } catch {}
+                                    navigate('/services');
+                                  }}
+                                >
+                                  {cat.label}
+                                </Button>
+                              ))}
                           </div>
                         </div>
+                        {/* Service matches while typing */}
+                        {searchData.location.trim().length > 0 && (
+                          <div className="py-2">
+                            {serviceQuickLinks
+                              .filter((s) =>
+                                s.label.toLowerCase().includes(searchData.location.toLowerCase())
+                              )
+                              .slice(0, 5)
+                              .map((s) => (
+                                <div
+                                  key={s.label}
+                                  className="px-3 py-2 hover:bg-accent cursor-pointer"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    if ((s as any).category) {
+                                      try {
+                                        sessionStorage.setItem("selectedCategory", (s as any).category);
+                                      } catch {}
+                                      navigate('/services');
+                                    } else if ((s as any).search) {
+                                      navigate(`/services?search=${encodeURIComponent((s as any).search)}`);
+                                    }
+                                    setShowLocationSuggestions(false);
+                                  }}
+                                >
+                                  {s.label}
+                                </div>
+                              ))}
+                          </div>
+                        )}
                         {locationOptions
                           .filter((opt) =>
                             opt.toLowerCase().includes(searchData.location.toLowerCase())
