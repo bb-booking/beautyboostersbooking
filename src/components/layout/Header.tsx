@@ -85,13 +85,14 @@ const Header = () => {
                         variant="secondary"
                         size="sm"
                         className="rounded-full"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          try {
-                            sessionStorage.setItem("selectedCategory", cat.value);
-                          } catch {}
-                          navigate('/services');
-                        }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            try {
+                              sessionStorage.setItem("selectedCategory", cat.value);
+                            } catch {}
+                            setShowSuggestions(false);
+                            navigate('/services');
+                          }}
                       >
                         {cat.label}
                       </Button>
