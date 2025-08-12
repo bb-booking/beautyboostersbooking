@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, User, LogOut, Search, Menu, Store, Download, Info, BadgePercent, Users, Gift } from "lucide-react";
+import { Calendar, User, LogOut, Search, Menu, Download, Info, Users, Gift } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -68,9 +68,9 @@ const Header = () => {
               <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Vores Boosters</DropdownMenuItem></Link>
               <Link to="/giftcards"><DropdownMenuItem><Gift className="mr-2 h-4 w-4" /> Køb gavekort</DropdownMenuItem></Link>
               <Link to="/booster-signup"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Bliv Booster</DropdownMenuItem></Link>
-              <Link to="/salon-signup"><DropdownMenuItem><Store className="mr-2 h-4 w-4" /> Opret Salon</DropdownMenuItem></Link>
+              
               <DropdownMenuSeparator />
-              <Link to="/for-salons#abonnementer"><DropdownMenuItem><BadgePercent className="mr-2 h-4 w-4" /> Abonnementer</DropdownMenuItem></Link>
+              
               <Link to="/#kontakt"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> Kontakt</DropdownMenuItem></Link>
               <Link to="/#download-app"><DropdownMenuItem><Download className="mr-2 h-4 w-4" /> Download app</DropdownMenuItem></Link>
               <DropdownMenuSeparator />
@@ -109,7 +109,7 @@ const Header = () => {
                   <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                   <Link to="/giftcards" className="text-foreground hover:underline">Køb gavekort</Link>
-                  <Link to="/for-salons#abonnementer" className="text-foreground hover:underline">Abonnementer</Link>
+                  
                   <Link to="/#kontakt" className="text-foreground hover:underline">Kontakt</Link>
                   <Link to="/#download-app" className="text-foreground hover:underline">Download app</Link>
                   <div className="pt-2">
@@ -124,12 +124,6 @@ const Header = () => {
                 <div className="grid gap-3">
                   <Link to="/booster-signup">
                     <Button className="w-full" variant="secondary">Bliv Booster</Button>
-                  </Link>
-                  <Link to="/salon-signup">
-                    <Button className="w-full" variant="secondary">
-                      <Store className="h-4 w-4 mr-2" />
-                      Opret salon
-                    </Button>
                   </Link>
                 </div>
 

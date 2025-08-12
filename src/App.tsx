@@ -23,7 +23,7 @@ import BookingConfirmation from "./pages/BookingConfirmation";
 import Bookings from "./pages/Bookings";
 import NotFound from "./pages/NotFound";
 import BoosterSignup from "./pages/BoosterSignup";
-import ForSalons from "./pages/ForSalons";
+
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInquiries from "./pages/admin/AdminInquiries";
@@ -36,6 +36,7 @@ import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import { BoosterLayout } from "@/components/layout/BoosterLayout";
 import BoosterDashboard from "./pages/booster/BoosterDashboard";
 import BoosterCalendar from "./pages/booster/BoosterCalendar";
@@ -49,19 +50,6 @@ import BoosterSettings from "./pages/booster/BoosterSettings";
 import BoosterReviews from "./pages/booster/BoosterReviews";
 import Auth from "./pages/Auth";
 import BoosterLogin from "./pages/booster/BoosterLogin";
-import { SalonLayout } from "@/components/layout/SalonLayout";
-import SalonDashboard from "./pages/salon/SalonDashboard";
-import SalonSignup from "./pages/salon/SalonSignup";
-import SalonLogin from "./pages/salon/SalonLogin";
-import SalonPayouts from "./pages/salon/SalonPayouts";
-import SalonCalendar from "./pages/salon/SalonCalendar";
-import SalonTeam from "./pages/salon/SalonTeam";
-import SalonServices from "./pages/salon/SalonServices";
-import SalonHours from "./pages/salon/SalonHours";
-import SalonFinance from "./pages/salon/SalonFinance";
-import SalonSettings from "./pages/salon/SalonSettings";
-import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
-import SalonDiscountCodes from "./pages/salon/SalonDiscountCodes";
 import GiftCards from "./pages/GiftCards";
 const queryClient = new QueryClient();
  
@@ -92,12 +80,10 @@ const App = () => (
                   <Route path="/booking-confirmation" element={<BookingConfirmation />} />
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/booster-signup" element={<BoosterSignup />} />
-                  <Route path="/for-salons" element={<ForSalons />} />
+                  
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/giftcards" element={<GiftCards />} />
                   <Route path="/booster/login" element={<BoosterLogin />} />
-                  <Route path="/salon-signup" element={<SalonSignup />} />
-                  <Route path="/salon/login" element={<SalonLogin />} />
                   {/* Admin routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin" element={<AdminLayout />}>
@@ -125,18 +111,6 @@ const App = () => (
                     <Route path="messages" element={<BoosterMessages />} />
                     <Route path="settings" element={<BoosterSettings />} />
                     <Route path="reviews" element={<BoosterReviews />} />
-                  </Route>
-                  <Route path="/salon" element={<SalonLayout />}>
-                    <Route index element={<SalonCalendar />} />
-                    <Route path="dashboard" element={<SalonDashboard />} />
-                    <Route path="calendar" element={<SalonCalendar />} />
-                    <Route path="team" element={<SalonTeam />} />
-                    <Route path="services" element={<SalonServices />} />
-                    <Route path="hours" element={<SalonHours />} />
-                    <Route path="finance" element={<SalonFinance />} />
-                    <Route path="settings" element={<SalonSettings />} />
-                    <Route path="payouts" element={<SalonPayouts />} />
-                    <Route path="discount-codes" element={<SalonDiscountCodes />} />
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

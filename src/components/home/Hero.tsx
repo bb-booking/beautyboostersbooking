@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Zap, Users, Search, MapPin, Star, ShieldCheck, Store } from "lucide-react";
+import { Calendar as CalendarIcon, Zap, Users, Search, MapPin, Star, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -281,12 +281,6 @@ const Hero = () => {
               <Link to="/booster-signup">
                 <Users className="mr-2 h-5 w-5" />
                 Bliv Booster
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
-              <Link to="/salon-signup">
-                <Store className="mr-2 h-5 w-5" />
-                Opret Salon
               </Link>
             </Button>
           </div>
