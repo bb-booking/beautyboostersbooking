@@ -95,6 +95,7 @@ const Hero = () => {
     { value: "Børn", label: "Børn" }
   ];
 
+  const popularAreas = ["København", "Nordsjælland", "Aarhus", "Aalborg", "Odense", "Frederiksberg"];
 
   // Parse a full address string into parts
   const parseAddressFromText = (text: string) => {
@@ -165,7 +166,7 @@ const Hero = () => {
   };
 
   return (
-      <section className="relative isolate sticky top-0 min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24">
+      <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24">
         {/* Background image with gradient overlay */}
         <img
           src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
@@ -193,9 +194,8 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl md:text-5xl leading-tight tracking-tight animate-fade-in max-w-[28ch] mx-auto">
-              <span className="font-semibold block">Professionelle artister</span>
-              <span className="font-normal block">direkte til døren.</span>
+            <h1 className="text-4xl md:text-6xl leading-tight tracking-wide md:tracking-wider animate-fade-in mx-auto max-w-3xl">
+              <span className="font-semibold">Professionelle artister</span> <span className="font-normal">direkte til døren.</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
               Book udkørende artister i København, Nordsjælland, Aarhus, Aalborg og Odense.
@@ -217,8 +217,28 @@ const Hero = () => {
                       onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
                       className="h-10 text-foreground"
                     />
-                    {showLocationSuggestions && searchData.location.trim().length >= 3 && (
-                      <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-56 overflow-auto">
+                    {showLocationSuggestions && (
+                      <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
+                        <div className="p-3 border-b">
+                          <div className="flex flex-wrap gap-2">
+                            {popularAreas.map((area) => (
+                              <Button
+                                key={area}
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="rounded-full"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setSearchData((prev) => ({ ...prev, location: area }));
+                                  setShowLocationSuggestions(true);
+                                }}
+                              >
+                                {area}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
                         {locationOptions
                           .filter((opt) =>
                             opt.toLowerCase().includes(searchData.location.toLowerCase())
