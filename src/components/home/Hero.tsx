@@ -222,6 +222,7 @@ const Hero = () => {
                       onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
                       onFocus={() => setShowLocationSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
                       className="h-10 text-foreground"
                     />
                     {showLocationSuggestions && (
@@ -235,20 +236,11 @@ const Hero = () => {
                             <div
                               key={opt}
                               className="px-3 py-2 hover:bg-accent cursor-pointer"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    setSearchData((prev) => ({ ...prev, location: opt }));
-                    setShowLocationSuggestions(false);
-                    try {
-                      const parsed = parseAddressFromText(opt);
-                      const bookingDetails = {
-                        serviceId: "",
-                        location: { address: parsed.address, postalCode: parsed.postalCode, city: parsed.city },
-                      };
-                      sessionStorage.setItem("bookingDetails", JSON.stringify(bookingDetails));
-                    } catch {}
-                    navigate('/services');
-                  }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setSearchData((prev) => ({ ...prev, location: opt }));
+                                setShowLocationSuggestions(false);
+                              }}
                             >
                               {opt}
                             </div>
