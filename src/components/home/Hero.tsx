@@ -171,13 +171,13 @@ const Hero = () => {
           src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = heroFallback; }}
           alt="Makeup artist på arbejde – book beauty stylist til døren"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
           loading="eager"
         />
         {/* Background video (desktop) */}
         <video
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover hidden md:block"
+          className="absolute inset-0 h-full w-full object-cover object-[center_35%] hidden md:block"
           muted
           playsInline
           autoPlay
@@ -194,11 +194,11 @@ const Hero = () => {
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl leading-tight tracking-tight animate-fade-in max-w-[28ch] mx-auto">
-              <span className="font-semibold block">Professionelle beauty services.</span>
-              <span className="font-semibold block">Hvor som helst, når som helst.</span>
+              <span className="font-semibold">Professionelle beauty services</span>
+              <span className="font-normal">, direkte til døren</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
-              Få din artist direkte til døren eller find en salon i nærheden.
+              Book udkørende artister i hele landet.
             </p>
           </div>
 
