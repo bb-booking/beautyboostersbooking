@@ -71,6 +71,7 @@ const Header = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
+              onClick={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
               className="pl-10 bg-background/90 border-background/20 focus:bg-background"
             />
