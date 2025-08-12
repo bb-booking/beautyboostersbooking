@@ -171,13 +171,13 @@ const Hero = () => {
           src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = heroFallback; }}
           alt="Makeup artist på arbejde – book beauty artist til døren"
-          className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
+          className="absolute inset-0 h-full w-full object-cover object-[center_5%]"
           loading="eager"
         />
         {/* Background video (desktop) */}
         <video
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover object-[center_20%] hidden md:block"
+          className="absolute inset-0 h-full w-full object-cover object-[center_5%] hidden md:block"
           muted
           playsInline
           autoPlay
@@ -194,11 +194,11 @@ const Hero = () => {
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl leading-tight tracking-tight animate-fade-in max-w-[28ch] mx-auto">
-              <span className="font-semibold block">professionelle artister</span>
-              <span className="font-normal block">direkte til døren</span>
+              <span className="font-semibold block">Professionelle artister</span>
+              <span className="font-normal block">direkte til døren.</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
-              Book udkørende artister i hele landet.
+              Book udkørende artister i København, Nordsjælland, Aarhus, Aalborg og Odense.
             </p>
           </div>
 
