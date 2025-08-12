@@ -201,7 +201,7 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl leading-tight tracking-wide md:tracking-wider animate-fade-in mx-auto max-w-3xl">
+            <h1 className="text-4xl md:text-6xl leading-tight tracking-wide md:tracking-wider animate-fade-in mx-auto max-w-3xl whitespace-normal md:whitespace-nowrap">
               <span className="font-semibold">Professionelle artister</span> <span className="font-normal">direkte til døren.</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
@@ -214,12 +214,12 @@ const Hero = () => {
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-left block mb-2">Lokation</label>
+                  <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                   <div className="relative">
                     <Input
-                      placeholder="Søg adresse (f.eks. Husumgade 1, 2200 København N)"
+                      placeholder="Hvor skal vi komme hen? (adresse)"
                       value={searchData.location}
-                      onChange={(e) => setSearchData(prev => ({...prev, location: e.target.value}))}
+                      onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
                       onFocus={() => setShowLocationSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
                       className="h-10 text-foreground"
@@ -289,11 +289,20 @@ const Hero = () => {
                             <div
                               key={opt}
                               className="px-3 py-2 hover:bg-accent cursor-pointer"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setSearchData((prev) => ({ ...prev, location: opt }));
-                                setShowLocationSuggestions(false);
-                              }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setSearchData((prev) => ({ ...prev, location: opt }));
+                    setShowLocationSuggestions(false);
+                    try {
+                      const parsed = parseAddressFromText(opt);
+                      const bookingDetails = {
+                        serviceId: "",
+                        location: { address: parsed.address, postalCode: parsed.postalCode, city: parsed.city },
+                      };
+                      sessionStorage.setItem("bookingDetails", JSON.stringify(bookingDetails));
+                    } catch {}
+                    navigate('/services');
+                  }}
                             >
                               {opt}
                             </div>
