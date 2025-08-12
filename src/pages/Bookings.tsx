@@ -207,7 +207,7 @@ const Bookings = () => {
                   Du har ingen planlagte aftaler. Book din næste behandling nu!
                 </p>
                 <Link to="/stylists">
-                  <Button>Find Stylist</Button>
+                  <Button>Find Artist</Button>
                 </Link>
               </CardContent>
             </Card>

@@ -170,14 +170,14 @@ const Hero = () => {
         <img
           src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = heroFallback; }}
-          alt="Makeup artist på arbejde – book beauty stylist til døren"
-          className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+          alt="Makeup artist på arbejde – book beauty artist til døren"
+          className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
           loading="eager"
         />
         {/* Background video (desktop) */}
         <video
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover object-[center_35%] hidden md:block"
+          className="absolute inset-0 h-full w-full object-cover object-[center_20%] hidden md:block"
           muted
           playsInline
           autoPlay
@@ -194,8 +194,8 @@ const Hero = () => {
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl leading-tight tracking-tight animate-fade-in max-w-[28ch] mx-auto">
-              <span className="font-semibold">Professionelle beauty services</span>
-              <span className="font-normal">, direkte til døren</span>
+              <span className="font-semibold block">professionelle artister</span>
+              <span className="font-normal block">direkte til døren</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
               Book udkørende artister i hele landet.
@@ -285,34 +285,34 @@ const Hero = () => {
             </Button>
           </div>
 
-          {/* Popular Services */}
-          <div className="mt-12">
-            <PopularServices />
-          </div>
-
           {/* Feature highlights */}
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-10">
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8 text-primary" />
+                <Zap className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Hurtig Booking</h3>
               <p className="text-muted-foreground">Book din beauty‑specialist på få minutter</p>
             </div>
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-primary" />
+                <Users className="h-8 w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Professionelle Stylister</h3>
+              <h3 className="text-lg font-semibold mb-2">Professionelle Artister</h3>
               <p className="text-muted-foreground">Certificerede og erfarne beauty‑specialister</p>
             </div>
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <CalendarIcon className="h-8 w-8 text-primary" />
+                <CalendarIcon className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Fleksible Tider</h3>
-              <p className="text-muted-foreground">Find stylister der passer din tidsplan</p>
+              <p className="text-muted-foreground">Find artister der passer din tidsplan</p>
             </div>
+          </div>
+
+          {/* Popular Services */}
+          <div className="mt-12">
+            <PopularServices />
           </div>
         </div>
       </section>

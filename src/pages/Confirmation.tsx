@@ -48,7 +48,7 @@ export default function Confirmation() {
           <h1 className="text-2xl font-bold mb-4">Booking information mangler</h1>
           <p className="text-muted-foreground mb-6">Der opstod en fejl. Prøv igen.</p>
           <Button asChild>
-            <Link to="/stylists">Tilbage til stylists</Link>
+            <Link to="/stylists">Tilbage til artister</Link>
           </Button>
         </div>
       </div>
@@ -166,8 +166,8 @@ export default function Confirmation() {
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="font-medium">{displayBooster.name}</p>
-                <p className="text-sm text-muted-foreground">Din stylist</p>
+                 <p className="font-medium">{displayBooster.name}</p>
+                 <p className="text-sm text-muted-foreground">Din artist</p>
               </div>
             </div>
             
@@ -201,9 +201,9 @@ export default function Confirmation() {
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium mt-0.5">1</div>
                 <div>
-                  <p className="font-medium">Stylist bekræftelse</p>
+                  <p className="font-medium">Artist bekræftelse</p>
                   <p className="text-sm text-muted-foreground">
-                    Din stylist vil bekræfte bookingen inden for 2 timer
+                    Din artist vil bekræfte bookingen inden for 2 timer
                   </p>
                 </div>
               </div>

@@ -14,7 +14,7 @@ const BookingConfirmation = () => {
         <div className="text-center py-12">
           <h2 className="text-2xl font-semibold mb-2">Booking ikke fundet</h2>
           <Link to="/stylists">
-            <Button>Tilbage til stylister</Button>
+            <Button>Tilbage til artister</Button>
           </Link>
         </div>
       </div>
@@ -117,7 +117,7 @@ const BookingConfirmation = () => {
               1
             </div>
             <div>
-              <p className="font-medium">Bekræftelse fra stylist</p>
+              <p className="font-medium">Bekræftelse fra artist</p>
               <p className="text-sm text-muted-foreground">
                 {booster.name} vil bekræfte din booking inden for 24 timer
               </p>

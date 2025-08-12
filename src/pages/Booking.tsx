@@ -318,7 +318,7 @@ const Booking = () => {
             rating: 4.9,
             review_count: 89,
             years_experience: 7,
-            bio: 'Erfaren stylist med fokus på moderne trends og personlig stil'
+            bio: 'Erfaren artist med fokus på moderne trends og personlig stil'
           }
         ];
       }

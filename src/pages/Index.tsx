@@ -7,7 +7,7 @@ const Index = () => {
     <div className="min-h-screen">
       <Helmet>
         <title>Professionelle beauty services til døren | BeautyBoosters</title>
-        <meta name="description" content="Book udkørende artister i hele landet. Professionelle stylister direkte til døren." />
+        <meta name="description" content="Book udkørende artister i hele landet. Professionelle artister direkte til døren." />
         <link rel="canonical" href="/" />
       </Helmet>
       <Hero />

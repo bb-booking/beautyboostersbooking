@@ -150,7 +150,7 @@ export default function Checkout() {
         <div className="max-w-md mx-auto text-center">
           <h1 className="text-2xl font-bold mb-4">Booking information mangler</h1>
           <p className="text-muted-foreground mb-6">Der opstod en fejl. Prøv igen.</p>
-          <Button onClick={() => navigate('/stylists')}>Tilbage til stylists</Button>
+          <Button onClick={() => navigate('/stylists')}>Tilbage til artister</Button>
         </div>
       </div>
     );
