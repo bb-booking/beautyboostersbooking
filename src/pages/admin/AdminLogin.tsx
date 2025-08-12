@@ -33,8 +33,20 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        const userId = data.user?.id || (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) throw new Error("Kunne ikke hente bruger-ID");
+        const { data: roles, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
+        if (rolesError) throw rolesError;
+        const isAdmin = roles?.some(r => r.role === "admin");
+        if (!isAdmin) {
+          await supabase.auth.signOut();
+          throw new Error("Denne konto har ikke admin-adgang.");
+        }
         toast({ title: "Logget ind" });
         navigate("/admin/messages");
       } else {
