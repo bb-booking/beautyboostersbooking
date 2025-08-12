@@ -35,14 +35,33 @@ export default function AdminLogin() {
       if (mode === "login") {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        const userId = data.user?.id || (await supabase.auth.getUser()).data.user?.id;
-        if (!userId) throw new Error("Kunne ikke hente bruger-ID");
-        const { data: roles, error: rolesError } = await supabase
+        const user = data.user || (await supabase.auth.getUser()).data.user;
+        if (!user) throw new Error("Kunne ikke hente bruger-ID");
+        const userId = user.id;
+        const userEmail = (user.email || "").toLowerCase();
+
+        let { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", userId);
         if (rolesError) throw rolesError;
-        const isAdmin = roles?.some(r => r.role === "admin");
+
+        // Bootstrap: giv admin-rolle til den autoriserede e-mail, hvis mangler
+        const targetEmail = "hello@beautyboosters.dk";
+        const hasAdmin = roles?.some((r) => r.role === "admin");
+        if (!hasAdmin && userEmail === targetEmail) {
+          const { error: insertErr } = await supabase
+            .from("user_roles")
+            .insert({ user_id: userId, role: "admin" });
+          if (insertErr) throw insertErr;
+          const refetch = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userId);
+          roles = refetch.data || roles;
+        }
+
+        const isAdmin = roles?.some((r) => r.role === "admin");
         if (!isAdmin) {
           await supabase.auth.signOut();
           throw new Error("Denne konto har ikke admin-adgang.");
