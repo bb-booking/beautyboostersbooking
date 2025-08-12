@@ -92,7 +92,7 @@ const Header = () => {
                               sessionStorage.setItem("selectedCategory", cat.value);
                             } catch {}
                             setShowSuggestions(false);
-                            navigate('/services');
+                            navigate(`/services?category=${encodeURIComponent(cat.value)}`);
                           }}
                       >
                         {cat.label}
@@ -114,7 +114,7 @@ const Header = () => {
                             e.preventDefault();
                             if ((s as any).category) {
                               try { sessionStorage.setItem("selectedCategory", (s as any).category); } catch {}
-                              navigate('/services');
+                              navigate(`/services?category=${encodeURIComponent((s as any).category)}`);
                             } else if ((s as any).search) {
                               navigate(`/services?search=${encodeURIComponent((s as any).search)}`);
                             }
