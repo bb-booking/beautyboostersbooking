@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 export default function AdminLogin() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -13,6 +14,9 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("hello@beautyboosters.dk");
   const [password, setPassword] = useState("Skovlund42!");
   const [loading, setLoading] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -50,6 +54,27 @@ export default function AdminLogin() {
     }
   };
 
+  const handleSendReset = async () => {
+    const targetEmail = resetEmail || email;
+    if (!targetEmail) {
+      toast({ title: "Manglende email", description: "Indtast din e-mail for at nulstille adgangskoden.", variant: "destructive" });
+      return;
+    }
+    setSendingReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: `${window.location.origin}/admin/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: "Mail sendt", description: "Tjek din e-mail for link til nulstilling." });
+      setResetOpen(false);
+    } catch (err: any) {
+      toast({ title: "Fejl", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingReset(false);
+    }
+  };
+
   return (
     <div className="container max-w-md mx-auto py-10">
       <Card className="p-6">
@@ -59,6 +84,28 @@ export default function AdminLogin() {
           <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           <Button type="submit" disabled={loading} className="w-full">{loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}</Button>
         </form>
+
+        {mode === "login" && (
+          <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+            <div className="mt-3 text-right">
+              <button className="underline text-sm" onClick={() => setResetOpen(true)}>Glemt adgangskode?</button>
+            </div>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nulstil adgangskode</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 py-2">
+                <Label htmlFor="resetEmail">E-mail</Label>
+                <Input id="resetEmail" type="email" placeholder="din@email.dk" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Vi sender et link til at vælge en ny adgangskode.</p>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleSendReset} disabled={sendingReset} className="w-full">{sendingReset ? "Sender…" : "Send nulstillingsmail"}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
         <div className="text-sm text-muted-foreground mt-4">
           {mode === "login" ? (
             <button className="underline" onClick={() => setMode("signup")}>Har du ikke en konto? Opret</button>

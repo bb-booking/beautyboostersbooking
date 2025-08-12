@@ -51,6 +51,7 @@ import BoosterReviews from "./pages/booster/BoosterReviews";
 import Auth from "./pages/Auth";
 import BoosterLogin from "./pages/booster/BoosterLogin";
 import GiftCards from "./pages/GiftCards";
+import AdminResetPassword from "./pages/admin/AdminResetPassword";
 const queryClient = new QueryClient();
  
 const App = () => (
@@ -86,6 +87,7 @@ const App = () => (
                   <Route path="/booster/login" element={<BoosterLogin />} />
                   {/* Admin routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin/reset-password" element={<AdminResetPassword />} />
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="inquiries" element={<AdminInquiries />} />
