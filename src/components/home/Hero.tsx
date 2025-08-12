@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Zap, Users, Search, MapPin, Star, ShieldCheck } from "lucide-react";
+import { Calendar as CalendarIcon, Zap, Users, Search, MapPin, Star, ShieldCheck, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -165,19 +165,19 @@ const Hero = () => {
   };
 
   return (
-      <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24">
+      <section className="relative isolate sticky top-0 min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24">
         {/* Background image with gradient overlay */}
         <img
           src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = heroFallback; }}
           alt="Makeup artist på arbejde – book beauty artist til døren"
-          className="absolute inset-0 h-full w-full object-cover object-[center_5%]"
+          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[15%]"
           loading="eager"
         />
         {/* Background video (desktop) */}
         <video
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover object-[center_5%] hidden md:block"
+          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[15%] hidden md:block"
           muted
           playsInline
           autoPlay
@@ -283,29 +283,35 @@ const Hero = () => {
                 Bliv Booster
               </Link>
             </Button>
+            <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
+              <a href="tel:+4571786575">
+                <Phone className="mr-2 h-5 w-5" />
+                Ring til os
+              </a>
+            </Button>
           </div>
 
           {/* Feature highlights */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-10">
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-6">
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <Zap className="h-8 w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Hurtig Booking</h3>
+              <h3 className="text-lg font-normal mb-2">Hurtig Booking</h3>
               <p className="text-muted-foreground">Book din beauty‑specialist på få minutter</p>
             </div>
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Professionelle Artister</h3>
+              <h3 className="text-lg font-normal mb-2">Professionelle Artister</h3>
               <p className="text-muted-foreground">Certificerede og erfarne beauty‑specialister</p>
             </div>
             <div className="text-center">
               <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <CalendarIcon className="h-8 w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Fleksible Tider</h3>
+              <h3 className="text-lg font-normal mb-2">Fleksible Tider</h3>
               <p className="text-muted-foreground">Find artister der passer din tidsplan</p>
             </div>
           </div>
