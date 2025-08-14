@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Helmet } from "react-helmet-async";
 
 interface Service {
   id: string;
@@ -39,6 +40,50 @@ const Services = () => {
   const [clientType, setClientType] = useState("privat");
   const [sortBy, setSortBy] = useState<"rating" | "soonest" | "nearest" | "price">("rating");
   const [loading, setLoading] = useState(true);
+
+  // Availability-first: optional preselection of date/time to speed up flow
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : null;
+      return details?.date || "";
+    } catch { return ""; }
+  });
+  const [selectedTime, setSelectedTime] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : null;
+      return details?.time || "";
+    } catch { return ""; }
+  });
+
+  const times = [
+    "08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00"
+  ];
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : {};
+      if (selectedDate) details.date = selectedDate;
+      if (selectedTime) details.time = selectedTime;
+      sessionStorage.setItem('bookingDetails', JSON.stringify(details));
+    } catch {}
+  }, [selectedDate, selectedTime]);
+
+  const upcomingDays = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const setNextAvailable = () => {
+    const now = new Date();
+    const d = new Date();
+    if (now.getHours() >= 18) d.setDate(d.getDate() + 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedTime("10:00");
+  };
 
   useEffect(() => {
     fetchServices();
@@ -378,6 +423,16 @@ const Services = () => {
   };
 
   const handleServiceClick = (serviceId: string) => {
+    // Gem valgt service og evt. forvalg af dato/tid for hurtigere flow
+    try {
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : {};
+      details.serviceId = serviceId;
+      if (selectedDate) details.date = selectedDate;
+      if (selectedTime) details.time = selectedTime;
+      sessionStorage.setItem('bookingDetails', JSON.stringify(details));
+    } catch {}
+
     const service = services.find(s => s.id === serviceId);
     if (service?.isInquiry) {
       // Navigate to inquiry form for inquiry-based services
@@ -417,6 +472,11 @@ const Services = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Vælg beauty service – dato og tid | BeautyBoosters</title>
+        <meta name="description" content="Book en beauty service til døren. Vælg behandling, dato og tidspunkt – nemt og hurtigt." />
+        <link rel="canonical" href={`${window.location.origin}/services`} />
+      </Helmet>
       <div className="container mx-auto px-4 py-8 pb-32">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4">Vælg Service</h1>
@@ -482,6 +542,44 @@ const Services = () => {
                 </Button>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Vælg dato og tidspunkt (valgfrit)</span>
+            <Button variant="outline" size="sm" onClick={setNextAvailable}>Næste ledige</Button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto py-1">
+            {upcomingDays.map((d) => {
+              const iso = d.toISOString().split('T')[0];
+              const isSelected = selectedDate === iso;
+              const day = d.toLocaleDateString('da-DK', { weekday: 'short' });
+              const dateNum = d.getDate();
+              return (
+                <Button
+                  key={iso}
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedDate(iso)}
+                  className="shrink-0"
+                >
+                  {day} {dateNum}
+                </Button>
+              );
+            })}
+          </div>
+          <div className="max-w-xs">
+            <Select value={selectedTime} onValueChange={setSelectedTime}>
+              <SelectTrigger aria-label="Vælg tidspunkt">
+                <SelectValue placeholder="Vælg tidspunkt" />
+              </SelectTrigger>
+              <SelectContent className="z-50">
+                {times.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
