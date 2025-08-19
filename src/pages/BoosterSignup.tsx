@@ -478,7 +478,7 @@ const BoosterSignup = () => {
                 </div>
                 <Textarea
                   id="portfolioLinks"
-                  placeholder="Fx:&#10;Instagram: @ditbrugernavn&#10;Facebook: Dit Facebook Navn&#10;Hjemmeside: www.ditdomæne.dk&#10;Portfolio: link til dit portfolio"
+                  placeholder="Skriv din ig/fb/web/link til portfolio"
                   value={formData.portfolioLinks}
                   onChange={(e) => setFormData(prev => ({ ...prev, portfolioLinks: e.target.value }))}
                   rows={4}
