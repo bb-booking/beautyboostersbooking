@@ -33,6 +33,7 @@ interface FormData {
   primaryTransport: string;
   education: Education[];
   yearsExperience: number;
+  portfolioLinks: string;
   contractAccepted: boolean;
 }
 
@@ -66,6 +67,7 @@ const BoosterSignup = () => {
     primaryTransport: '',
     education: [],
     yearsExperience: 1,
+    portfolioLinks: '',
     contractAccepted: false
   });
 
@@ -464,6 +466,24 @@ const BoosterSignup = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Portfolio Links Section */}
+              <div className="space-y-3 pt-4 border-t">
+                <div>
+                  <Label htmlFor="portfolioLinks">Portfolio og sociale medier</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Tilføj links til dit arbejde så vi kan se dine færdigheder (Instagram, Facebook, hjemmeside, etc.)
+                  </p>
+                </div>
+                <Textarea
+                  id="portfolioLinks"
+                  placeholder="Fx:&#10;Instagram: @ditbrugernavn&#10;Facebook: Dit Facebook Navn&#10;Hjemmeside: www.ditdomæne.dk&#10;Portfolio: link til dit portfolio"
+                  value={formData.portfolioLinks}
+                  onChange={(e) => setFormData(prev => ({ ...prev, portfolioLinks: e.target.value }))}
+                  rows={4}
+                  className="resize-none"
+                />
               </div>
             </div>
           </div>
