@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, Users, DollarSign } from "lucide-react";
+import { MapPin, Clock, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Job {
@@ -165,8 +165,7 @@ export default function BoosterJobs() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span>{job.hourly_rate} DKK/time</span>
+                    <span className="font-medium">{job.hourly_rate} DKK</span>
                   </div>
                 </div>
 

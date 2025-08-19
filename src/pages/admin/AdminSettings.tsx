@@ -256,6 +256,71 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Services & Pricing */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Services og priser</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <Label>Makeup Styling</Label>
+                  <p className="text-sm text-muted-foreground">Standard makeup styling</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input type="number" defaultValue="1999" className="w-20" />
+                  <span className="text-sm">DKK</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <Label>Hårstyling</Label>
+                  <p className="text-sm text-muted-foreground">Professionel hårstyling</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input type="number" defaultValue="1999" className="w-20" />
+                  <span className="text-sm">DKK</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <Label>Makeup & Hårstyling</Label>
+                  <p className="text-sm text-muted-foreground">Kombination af makeup og hår</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input type="number" defaultValue="2999" className="w-20" />
+                  <span className="text-sm">DKK</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <Label>Spraytan</Label>
+                  <p className="text-sm text-muted-foreground">Professionel spraytan</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input type="number" defaultValue="499" className="w-20" />
+                  <span className="text-sm">DKK</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <Label>Brudestyling</Label>
+                  <p className="text-sm text-muted-foreground">Komplette bryllupsstylinger</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input type="number" defaultValue="4999" className="w-20" />
+                  <span className="text-sm">DKK</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Social Media */}
         <Card>
           <CardHeader>

@@ -8,7 +8,6 @@ import {
   Star, 
   MapPin, 
   Clock, 
-  DollarSign, 
   Plus,
   Search,
   Eye,
@@ -150,10 +149,6 @@ const AdminBookers = () => {
                         <span>{booster.years_experience || 1} års erfaring</span>
                       </div>
                       
-                      <div className="flex items-center space-x-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span>{booster.hourly_rate} DKK/time</span>
-                      </div>
                     </div>
                     
                     <div className="flex flex-wrap gap-1 mt-2">

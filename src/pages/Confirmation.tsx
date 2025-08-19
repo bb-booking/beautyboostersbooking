@@ -238,8 +238,8 @@ export default function Confirmation() {
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• <strong>24+ timer før:</strong> Gratis aflysning</li>
-              <li>• <strong>6-24 timer før:</strong> 50% af prisen opkræves</li>
-              <li>• <strong>Under 6 timer før:</strong> 100% af prisen opkræves</li>
+              <li>• <strong>6-24 timer før:</strong> 50% af beløbet opkræves</li>
+              <li>• <strong>Under 6 timer før:</strong> 100% af beløbet opkræves</li>
             </ul>
           </CardContent>
         </Card>

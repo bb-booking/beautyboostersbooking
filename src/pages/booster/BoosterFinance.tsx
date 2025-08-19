@@ -223,7 +223,7 @@ export default function BoosterFinance() {
                       </div>
                       <p className="text-sm text-muted-foreground">{job.client}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(job.date).toLocaleDateString('da-DK')} • {job.hours} timer • {job.hourlyRate} kr/time
+                        {new Date(job.date).toLocaleDateString('da-DK')} • {job.hours} timer • {job.hourlyRate} kr
                       </p>
                     </div>
                     <div className="text-right">

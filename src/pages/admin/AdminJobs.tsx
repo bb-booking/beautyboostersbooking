@@ -13,7 +13,6 @@ import {
   Plus, 
   MapPin, 
   Clock, 
-  DollarSign, 
   Calendar,
   Users,
   Filter,
@@ -728,7 +727,6 @@ Eksempel på notifikation som booster vil modtage.`;
                       <span>{job.location}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{job.hourly_rate} DKK</span>
                       <span className="text-xs text-muted-foreground">
                         ({job.client_type === 'privat' ? 'inkl. moms' : 'ex. moms'})

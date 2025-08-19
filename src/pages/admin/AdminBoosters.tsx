@@ -18,8 +18,7 @@ import {
   Filter,
   Send,
   CheckCircle,
-  Calendar,
-  DollarSign
+  Calendar
 } from "lucide-react";
 
 interface BoosterProfile {
@@ -570,10 +569,6 @@ const AdminBoosters = () => {
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span>{booster.location}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{booster.hourly_rate} DKK/time</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Star className="h-4 w-4 text-yellow-500" />
