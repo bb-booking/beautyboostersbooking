@@ -201,11 +201,11 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl leading-tight tracking-wide md:tracking-wide animate-fade-in mx-auto max-w-2xl">
+            <h1 className="text-3xl md:text-4xl leading-tight tracking-wide animate-fade-in mx-auto max-w-2xl whitespace-nowrap">
               <span className="font-semibold">Professionelle artister</span> <span className="font-normal">direkte til døren.</span>
             </h1>
             <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
-              Book udkørende artister i København, Nordsjælland, Aarhus, Aalborg og Odense.
+              Book udkørende artister i hele Danmark.
             </p>
           </div>
 
