@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Education {
   school: string;
@@ -50,6 +51,7 @@ const transportOptions = [
 const BoosterSignup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 7;
   
@@ -471,14 +473,14 @@ const BoosterSignup = () => {
               {/* Portfolio Links Section */}
               <div className="space-y-3 pt-4 border-t">
                 <div>
-                  <Label htmlFor="portfolioLinks">Portfolio og sociale medier</Label>
+                  <Label htmlFor="portfolioLinks">{t('booster.portfolio.title')}</Label>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Tilføj links til dit arbejde så vi kan se dine færdigheder (Instagram, Facebook, hjemmeside, etc.)
+                    {t('booster.portfolio.description')}
                   </p>
                 </div>
                 <Textarea
                   id="portfolioLinks"
-                  placeholder="Skriv din ig/fb/web/link til portfolio"
+                  placeholder={t('booster.portfolio.placeholder')}
                   value={formData.portfolioLinks}
                   onChange={(e) => setFormData(prev => ({ ...prev, portfolioLinks: e.target.value }))}
                   rows={4}
