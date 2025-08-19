@@ -19,7 +19,7 @@ interface BoosterEvent {
   notes: string | null; // JSON string with details {service, customer_name, customer_phone, duration_minutes}
 }
 
-type View = "day" | "week";
+type View = "day" | "week" | "month";
 
 type CreateForm = {
   service: string;
@@ -40,7 +40,7 @@ const DEFAULT_FORM: CreateForm = {
 };
 
 export default function BoosterCalendar() {
-  const [view, setView] = useState<View>("week");
+  const [view, setView] = useState<View>("day");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [events, setEvents] = useState<BoosterEvent[]>([]);
   const [openSlot, setOpenSlot] = useState<{ day: Date; time: string } | null>(null);
@@ -65,8 +65,8 @@ export default function BoosterCalendar() {
   }, [userId, date, view]);
 
   const fetchEvents = async (uid: string, baseDate: Date, v: View) => {
-    const start = v === "day" ? startOfDay(baseDate) : startOfWeek(baseDate, { weekStartsOn: 1 });
-    const end = v === "day" ? addDays(start, 1) : addDays(start, 7);
+    const start = v === "day" ? startOfDay(baseDate) : v === "week" ? startOfWeek(baseDate, { weekStartsOn: 1 }) : new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+    const end = v === "day" ? addDays(start, 1) : v === "week" ? addDays(start, 7) : new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
 
     const { data, error } = await supabase
       .from("booster_availability")
@@ -94,8 +94,15 @@ export default function BoosterCalendar() {
 
   const days = useMemo(() => {
     if (view === "day") return [date];
-    const monday = startOfWeek(date, { weekStartsOn: 1 });
-    return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
+    if (view === "week") {
+      const monday = startOfWeek(date, { weekStartsOn: 1 });
+      return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
+    }
+    // Month view - show full month
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const daysInMonth = endOfMonth.getDate();
+    return Array.from({ length: daysInMonth }).map((_, i) => addDays(startOfMonth, i));
   }, [date, view]);
 
   const getDayEvents = (d: Date) => {
@@ -198,14 +205,15 @@ export default function BoosterCalendar() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Min kalender</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? -1 : -7))}>Forrige</Button>
+          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? -1 : view === "week" ? -7 : -30))}>Forrige</Button>
           <Button variant="outline" onClick={() => setDate(startOfDay(new Date()))}>I dag</Button>
-          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? 1 : 7))}>Næste</Button>
+          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? 1 : view === "week" ? 7 : 30))}>Næste</Button>
           <Select value={view} onValueChange={(v) => setView(v as View)}>
             <SelectTrigger className="w-36"><SelectValue placeholder="Visning" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="day">Dag</SelectItem>
               <SelectItem value="week">Uge</SelectItem>
+              <SelectItem value="month">Måned</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -213,7 +221,7 @@ export default function BoosterCalendar() {
 
       <Card className="p-4">
         <div className="text-sm text-muted-foreground mb-2">{headerTitle}</div>
-        <div className="grid" style={{ gridTemplateColumns: `120px repeat(${view === "day" ? 1 : 7}, minmax(220px, 1fr))` }}>
+        <div className="grid" style={{ gridTemplateColumns: `120px repeat(${view === "month" ? Math.min(days.length, 7) : days.length}, minmax(220px, 1fr))` }}>
           {/* Header row */}
           <div />
           {days.map((d) => (

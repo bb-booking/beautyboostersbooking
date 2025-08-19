@@ -68,7 +68,7 @@ const AdminCalendar = () => {
   
   // View controls
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
   
   // Filters
@@ -115,7 +115,10 @@ const AdminCalendar = () => {
       let startDate = selectedDate;
       let endDate = selectedDate;
 
-      if (viewMode === 'week') {
+      if (viewMode === 'day') {
+        startDate = selectedDate;
+        endDate = addDays(selectedDate, 1);
+      } else if (viewMode === 'week') {
         startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
         endDate = endOfWeek(selectedDate, { weekStartsOn: 1 });
       } else {
@@ -223,12 +226,14 @@ const AdminCalendar = () => {
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    const days = viewMode === 'week' ? 7 : 30;
+    const days = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 30;
     setSelectedDate(prev => addDays(prev, direction === 'next' ? days : -days));
   };
 
   const getDaysToShow = () => {
-    if (viewMode === 'week') {
+    if (viewMode === 'day') {
+      return [selectedDate];
+    } else if (viewMode === 'week') {
       return eachDayOfInterval({
         start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
         end: endOfWeek(selectedDate, { weekStartsOn: 1 })
@@ -306,7 +311,9 @@ const AdminCalendar = () => {
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-56">
                 <CalendarIcon className="h-4 w-4 mr-2" />
-                {viewMode === 'week' 
+                {viewMode === 'day' 
+                  ? format(selectedDate, 'dd/MM/yyyy', { locale: da })
+                  : viewMode === 'week' 
                   ? `Uge ${format(selectedDate, 'w', { locale: da })} - ${format(selectedDate, 'yyyy')}`
                   : format(selectedDate, 'MMMM yyyy', { locale: da })
                 }
@@ -330,6 +337,13 @@ const AdminCalendar = () => {
 
         {/* View Mode Toggle */}
         <div className="flex items-center space-x-2">
+          <Button
+            variant={viewMode === 'day' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('day')}
+          >
+            Dag
+          </Button>
           <Button
             variant={viewMode === 'week' ? 'default' : 'outline'}
             size="sm"
