@@ -7,31 +7,29 @@ import AuthModal from "@/components/auth/AuthModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/contexts/LanguageContext";
 const Header = () => {
   const navigate = useNavigate();
-  const { t, setLanguage } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const serviceCategories = [
-    { value: "all", label: t('categories.all_services') },
-    { value: "Makeup & Hår", label: t('categories.makeup_hair') },
-    { value: "Spraytan", label: t('categories.spraytan') },
-    { value: "Konfirmation", label: t('categories.confirmation') },
-    { value: "Bryllup - Brudestyling", label: t('categories.bridal') },
-    { value: "Makeup Kurser", label: t('categories.makeup_courses') },
-    { value: "Event", label: t('categories.event') },
-    { value: "Børn", label: t('categories.children') }
+    { value: "all", label: "Alle services" },
+    { value: "Makeup & Hår", label: "Makeup & Hår" },
+    { value: "Spraytan", label: "Spraytan" },
+    { value: "Konfirmation", label: "Konfirmation" },
+    { value: "Bryllup - Brudestyling", label: "Bryllup - Brudestyling" },
+    { value: "Makeup Kurser", label: "Makeup Kurser" },
+    { value: "Event", label: "Event" },
+    { value: "Børn", label: "Børn" }
   ];
 
   const serviceQuickLinks = [
-    { label: t('hero.popular.makeup'), search: "Makeup Styling" },
-    { label: t('hero.popular.spray_tan'), category: "Spraytan" },
-    { label: t('hero.popular.hair'), search: "Hårstyling" },
-    { label: t('hero.popular.bridal'), category: "Bryllup - Brudestyling" },
-    { label: t('hero.popular.courses'), category: "Makeup Kurser" },
-    { label: t('hero.popular.event'), category: "Event" }
+    { label: "Makeup Styling", search: "Makeup Styling" },
+    { label: "Spraytan", category: "Spraytan" },
+    { label: "Hårstyling / håropsætning", search: "Hårstyling" },
+    { label: "Brudestyling", category: "Bryllup - Brudestyling" },
+    { label: "Makeup Kursus", category: "Makeup Kurser" },
+    { label: "Event makeup", category: "Event" }
   ];
 
   const [loggedIn, setLoggedIn] = useState(false);
@@ -69,7 +67,7 @@ const Header = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder={t('header.search.placeholder')}
+              placeholder="Søg efter services..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
@@ -137,26 +135,26 @@ const Header = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-background">
-                <Menu className="h-4 w-4 mr-2" /> {t('header.menu')}
+                <Menu className="h-4 w-4 mr-2" /> Menu
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-50">
-              <DropdownMenuLabel>{t('header.navigation')}</DropdownMenuLabel>
+              <DropdownMenuLabel>Navigation</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> {t('header.services')}</DropdownMenuItem></Link>
-              <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> {t('header.boosters')}</DropdownMenuItem></Link>
-              <Link to="/giftcards"><DropdownMenuItem><Gift className="mr-2 h-4 w-4" /> {t('header.giftcards')}</DropdownMenuItem></Link>
-              <Link to="/booster-signup"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> {t('header.become_booster')}</DropdownMenuItem></Link>
-              <Link to="/admin/login"><DropdownMenuItem><User className="mr-2 h-4 w-4" /> {t('header.admin_login')}</DropdownMenuItem></Link>
+              <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> Se services</DropdownMenuItem></Link>
+              <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Vores Boosters</DropdownMenuItem></Link>
+              <Link to="/giftcards"><DropdownMenuItem><Gift className="mr-2 h-4 w-4" /> Køb gavekort</DropdownMenuItem></Link>
+              <Link to="/booster-signup"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Bliv Booster</DropdownMenuItem></Link>
+              <Link to="/admin/login"><DropdownMenuItem><User className="mr-2 h-4 w-4" /> Log ind Admin</DropdownMenuItem></Link>
               
               <DropdownMenuSeparator />
               
-              <Link to="/#kontakt"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> {t('header.contact')}</DropdownMenuItem></Link>
-              <Link to="/#download-app"><DropdownMenuItem><Download className="mr-2 h-4 w-4" /> {t('header.download_app')}</DropdownMenuItem></Link>
+              <Link to="/#kontakt"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> Kontakt</DropdownMenuItem></Link>
+              <Link to="/#download-app"><DropdownMenuItem><Download className="mr-2 h-4 w-4" /> Download app</DropdownMenuItem></Link>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>{t('header.language')}</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => { setLanguage('da'); }}>{t('header.danish')}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setLanguage('en'); }}>{t('header.english')}</DropdownMenuItem>
+              <DropdownMenuLabel>Sprog</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => { localStorage.setItem('lang','da'); window.location.reload(); }}>Dansk</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { localStorage.setItem('lang','en'); window.location.reload(); }}>English</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
@@ -167,7 +165,7 @@ const Header = () => {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="text-primary-foreground">
                 <Menu className="h-6 w-6" />
-                <span className="sr-only">{t('header.open_menu')}</span>
+                <span className="sr-only">Åbn menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
@@ -177,7 +175,7 @@ const Header = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder={t('header.search.placeholder')}
+                      placeholder="Søg efter services..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -186,32 +184,32 @@ const Header = () => {
                 </form>
 
                 <nav className="grid gap-3">
-                  <Link to="/services" className="text-foreground hover:underline">{t('header.all_services')}</Link>
-                  <Link to="/stylists" className="text-foreground hover:underline">{t('header.boosters')}</Link>
-                  <Link to="/giftcards" className="text-foreground hover:underline">{t('header.giftcards')}</Link>
-                  <Link to="/admin/login" className="text-foreground hover:underline">{t('header.admin_login')}</Link>
+                  <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
+                  <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
+                  <Link to="/giftcards" className="text-foreground hover:underline">Køb gavekort</Link>
+                  <Link to="/admin/login" className="text-foreground hover:underline">Log ind Admin</Link>
                   
-                  <Link to="/#kontakt" className="text-foreground hover:underline">{t('header.contact')}</Link>
-                  <Link to="/#download-app" className="text-foreground hover:underline">{t('header.download_app')}</Link>
+                  <Link to="/#kontakt" className="text-foreground hover:underline">Kontakt</Link>
+                  <Link to="/#download-app" className="text-foreground hover:underline">Download app</Link>
                   <div className="pt-2">
-                    <div className="text-xs text-muted-foreground">{t('header.language')}</div>
+                    <div className="text-xs text-muted-foreground">Sprog</div>
                     <div className="flex gap-3 mt-1">
-                      <button onClick={() => { setLanguage('da'); }} className="underline underline-offset-4">{t('header.danish')}</button>
-                      <button onClick={() => { setLanguage('en'); }} className="underline underline-offset-4">{t('header.english')}</button>
+                      <button onClick={() => { localStorage.setItem('lang','da'); window.location.reload(); }} className="underline underline-offset-4">Dansk</button>
+                      <button onClick={() => { localStorage.setItem('lang','en'); window.location.reload(); }} className="underline underline-offset-4">English</button>
                     </div>
                   </div>
                 </nav>
 
                 <div className="grid gap-3">
                   <Link to="/booster-signup">
-                    <Button className="w-full" variant="secondary">{t('header.become_booster')}</Button>
+                    <Button className="w-full" variant="secondary">Bliv Booster</Button>
                   </Link>
                 </div>
 
                 <div>
                   <AuthModal 
                     trigger={
-                      <Button className="w-full">{t('header.login')}</Button>
+                      <Button className="w-full">Log Ind</Button>
                     }
                   />
                 </div>
@@ -233,14 +231,14 @@ const Header = () => {
               }}
             >
               <LogOut className="h-4 w-4 mr-2" />
-              {t('header.logout')}
+              Log ud
             </Button>
           ) : (
             <AuthModal 
               trigger={
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary hover:bg-background">
                   <User className="h-4 w-4 mr-2" />
-                  {t('header.login')}
+                  Log Ind
                 </Button>
               }
             />

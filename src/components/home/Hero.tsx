@@ -9,11 +9,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import PopularServices from "@/components/home/PopularServices";
 import heroFallback from "@/assets/makeup-hair-hero.jpg";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 const Hero = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
@@ -204,10 +202,10 @@ const Hero = () => {
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-2xl sm:text-3xl md:text-4xl leading-tight tracking-wide animate-fade-in mx-auto max-w-3xl sm:whitespace-nowrap font-semibold">
-              {t('hero.title')}
+              Professionelle artister direkte til døren.
             </h1>
             <p className="mt-3 md:mt-4 text-sm sm:text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
-              {t('hero.subtitle')}
+              Book udkørende artister i hele Danmark.
             </p>
           </div>
 
@@ -219,7 +217,7 @@ const Hero = () => {
                   <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                   <div className="relative">
                     <Input
-                      placeholder={t('hero.search.placeholder')}
+                      placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
                       value={searchData.location}
                       onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
                       onFocus={() => setShowLocationSuggestions(true)}
@@ -276,7 +274,7 @@ const Hero = () => {
 
                   <Button className="h-10 sm:h-12 text-sm sm:text-base w-full sm:flex-1" onClick={handleSearch}>
                     <Search className="mr-2 h-4 w-4" />
-                    {t('hero.search.button')}
+                    Vælg service
                   </Button>
                 </div>
 
@@ -290,7 +288,7 @@ const Hero = () => {
             <Button variant="outline" size="lg" className="h-12 text-base sm:text-lg px-6 sm:px-8 py-3" asChild>
               <Link to="/booster-signup">
                 <Users className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
-                {t('header.become_booster')}
+                Bliv Booster
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="h-12 text-base sm:text-lg px-6 sm:px-8 py-3" asChild>

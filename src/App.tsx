@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CartProvider } from "@/contexts/CartContext";
-import { LanguageProvider } from "@/contexts/LanguageContext";
 import Header from "@/components/layout/Header";
 import ChatWidget from "@/components/chat/ChatWidget";
 import SiteFooter from "@/components/layout/SiteFooter";
@@ -57,16 +56,15 @@ const queryClient = new QueryClient();
  
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <HelmetProvider>
-            <BrowserRouter>
-              <div className="min-h-screen bg-background break-words">
-                <Header />
-                <main>
+    <CartProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <HelmetProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background break-words">
+              <Header />
+              <main>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/services" element={<Services />} />
@@ -119,15 +117,14 @@ const App = () => (
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                </main>
-                <SiteFooter />
-                <ChatWidget />
-              </div>
-            </BrowserRouter>
-          </HelmetProvider>
-        </TooltipProvider>
-      </CartProvider>
-    </LanguageProvider>
+              </main>
+              <SiteFooter />
+              <ChatWidget />
+            </div>
+          </BrowserRouter>
+        </HelmetProvider>
+      </TooltipProvider>
+    </CartProvider>
   </QueryClientProvider>
 );
  
