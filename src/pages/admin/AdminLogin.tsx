@@ -59,10 +59,11 @@ export default function AdminLogin() {
         console.log("📋 Current roles:", roles);
 
         // Bootstrap: giv admin-rolle til den autoriserede e-mail, hvis mangler
-        const targetEmail = "hello@beautyboosters.dk";
+        const authorizedAdminEmails = ["hello@beautyboosters.dk", "louise@beautyboosters.dk"];
         const hasAdmin = roles?.some((r) => r.role === "admin");
-        console.log("🔐 Has admin role:", hasAdmin, "Target email match:", userEmail === targetEmail);
-        if (!hasAdmin && userEmail === targetEmail) {
+        const isAuthorizedEmail = authorizedAdminEmails.includes(userEmail);
+        console.log("🔐 Has admin role:", hasAdmin, "Authorized email match:", isAuthorizedEmail);
+        if (!hasAdmin && isAuthorizedEmail) {
           console.log("➕ Adding admin role for authorized email...");
           const { error: insertErr } = await supabase
             .from("user_roles")
