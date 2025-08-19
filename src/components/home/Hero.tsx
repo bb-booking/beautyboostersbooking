@@ -201,18 +201,18 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl md:text-4xl leading-tight tracking-wide animate-fade-in mx-auto max-w-3xl whitespace-nowrap font-semibold">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl leading-tight tracking-wide animate-fade-in mx-auto max-w-3xl sm:whitespace-nowrap font-semibold">
               Professionelle artister direkte til døren.
             </h1>
-            <p className="mt-4 text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
+            <p className="mt-3 md:mt-4 text-sm sm:text-base md:text-lg text-muted-foreground animate-fade-in w-fit mx-auto tracking-tight">
               Book udkørende artister i hele Danmark.
             </p>
           </div>
 
           {/* Search Widget */}
           <Card className="mt-6 md:mt-8 max-w-3xl mx-auto bg-card/80 backdrop-blur-md border-border/50 shadow-xl animate-enter">
-            <CardContent className="p-6">
-              <div className="space-y-4">
+            <CardContent className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
                   <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                   <div className="relative">
@@ -223,7 +223,7 @@ const Hero = () => {
                       onFocus={() => setShowLocationSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-                      className="h-10 text-foreground"
+                      className="h-10 sm:h-12 text-foreground text-sm sm:text-base"
                     />
                     {showLocationSuggestions && (
                       <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
@@ -235,7 +235,7 @@ const Hero = () => {
                           .map((opt) => (
                             <div
                               key={opt}
-                              className="px-3 py-2 hover:bg-accent cursor-pointer"
+                              className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 setSearchData((prev) => ({ ...prev, location: opt }));
@@ -251,13 +251,13 @@ const Hero = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     variant="outline"
                     type="button"
                     onClick={getCurrentLocation}
                     disabled={isLoadingLocation}
-                    className="sm:w-auto"
+                    className="h-10 sm:h-12 text-sm sm:text-base sm:w-auto"
                   >
                     {isLoadingLocation ? (
                       <>
@@ -272,7 +272,7 @@ const Hero = () => {
                     )}
                   </Button>
 
-                  <Button className="w-full sm:flex-1" onClick={handleSearch}>
+                  <Button className="h-10 sm:h-12 text-sm sm:text-base w-full sm:flex-1" onClick={handleSearch}>
                     <Search className="mr-2 h-4 w-4" />
                     Vælg service
                   </Button>
@@ -284,43 +284,43 @@ const Hero = () => {
 
 
           {/* Secondary CTA */}
-          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-            <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
+          <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center px-4 sm:px-0">
+            <Button variant="outline" size="lg" className="h-12 text-base sm:text-lg px-6 sm:px-8 py-3" asChild>
               <Link to="/booster-signup">
-                <Users className="mr-2 h-5 w-5" />
+                <Users className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
                 Bliv Booster
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-3" asChild>
+            <Button variant="outline" size="lg" className="h-12 text-base sm:text-lg px-6 sm:px-8 py-3" asChild>
               <a href="tel:+4571786575">
-                <Phone className="mr-2 h-5 w-5" />
+                <Phone className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
                 Ring til os
               </a>
             </Button>
           </div>
 
           {/* Feature highlights */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mt-8 sm:mt-6 px-4 sm:px-0">
             <div className="text-center">
-              <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8 text-foreground" />
+              <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-normal mb-2">Hurtig Booking</h3>
-              <p className="text-muted-foreground">Book din beauty‑specialist på få minutter</p>
+              <h3 className="text-base sm:text-lg font-normal mb-2">Hurtig Booking</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Book din beauty‑specialist på få minutter</p>
             </div>
             <div className="text-center">
-              <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-foreground" />
+              <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-normal mb-2">Professionelle Artister</h3>
-              <p className="text-muted-foreground">Certificerede og erfarne beauty‑specialister</p>
+              <h3 className="text-base sm:text-lg font-normal mb-2">Professionelle Artister</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Certificerede og erfarne beauty‑specialister</p>
             </div>
             <div className="text-center">
-              <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <CalendarIcon className="h-8 w-8 text-foreground" />
+              <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
               </div>
-              <h3 className="text-lg font-normal mb-2">Fleksible Tider</h3>
-              <p className="text-muted-foreground">Find artister der passer din tidsplan</p>
+              <h3 className="text-base sm:text-lg font-normal mb-2">Fleksible Tider</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Find artister der passer din tidsplan</p>
             </div>
           </div>
 
