@@ -1269,6 +1269,108 @@ export type Database = {
           },
         ]
       }
+      shopify_bookings: {
+        Row: {
+          assigned_booster_id: string | null
+          booking_date: string | null
+          booking_time: string | null
+          created_at: string
+          currency: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          financial_status: string
+          fulfillment_status: string | null
+          id: string
+          location: string | null
+          order_data: Json
+          service_details: Json | null
+          service_name: string
+          shopify_order_id: number
+          shopify_order_number: string
+          special_requests: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_booster_id?: string | null
+          booking_date?: string | null
+          booking_time?: string | null
+          created_at?: string
+          currency?: string
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          financial_status?: string
+          fulfillment_status?: string | null
+          id?: string
+          location?: string | null
+          order_data: Json
+          service_details?: Json | null
+          service_name: string
+          shopify_order_id: number
+          shopify_order_number: string
+          special_requests?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_booster_id?: string | null
+          booking_date?: string | null
+          booking_time?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          financial_status?: string
+          fulfillment_status?: string | null
+          id?: string
+          location?: string | null
+          order_data?: Json
+          service_details?: Json | null
+          service_name?: string
+          shopify_order_id?: number
+          shopify_order_number?: string
+          special_requests?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shopify_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_successfully: boolean
+          shopify_order_id: number | null
+          webhook_data: Json
+          webhook_topic: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_successfully?: boolean
+          shopify_order_id?: number | null
+          webhook_data: Json
+          webhook_topic: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_successfully?: boolean
+          shopify_order_id?: number | null
+          webhook_data?: Json
+          webhook_topic?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
