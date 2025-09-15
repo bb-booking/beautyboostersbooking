@@ -1,0 +1,687 @@
+{% comment %}
+BeautyBoosters Booking Product Form Snippet
+Can be included in existing product templates
+{% endcomment %}
+
+<div class="booking-widget-container" data-product-id="{{ product.id }}">
+  
+  <!-- Quick Booking CTA -->
+  <div class="quick-booking-cta">
+    <h3>Book {{ product.title }}</h3>
+    <p>Vælg dato, tid og din favorit booster</p>
+    <div class="price-display">
+      <span class="from-price">Fra {{ product.price | money }}</span>
+    </div>
+    <button id="start-booking" class="btn-start-booking">
+      Book Nu
+    </button>
+  </div>
+
+  <!-- Inline Booking Form (Hidden by default) -->
+  <div id="inline-booking-form" class="inline-booking-form" style="display: none;">
+    
+    <!-- Step 1: Date & Time -->
+    <div class="booking-step active" data-step="1">
+      <h4>Vælg Dato & Tid</h4>
+      <div class="step-content">
+        <div class="mini-calendar" id="mini-calendar"></div>
+        <div class="time-selector" id="time-selector"></div>
+      </div>
+      <button class="btn-next" data-next="2" disabled>Næste</button>
+    </div>
+
+    <!-- Step 2: Location -->
+    <div class="booking-step" data-step="2">
+      <h4>Hvor skal vi komme?</h4>
+      <div class="step-content">
+        <input type="text" id="quick-address" placeholder="Indtast din adresse" class="address-input">
+        <div id="quick-suggestions" class="address-suggestions"></div>
+      </div>
+      <div class="step-navigation">
+        <button class="btn-prev" data-prev="1">Tilbage</button>
+        <button class="btn-next" data-next="3" disabled>Næste</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Booster Selection -->
+    <div class="booking-step" data-step="3">
+      <h4>Vælg din Booster</h4>
+      <div class="step-content">
+        <div id="quick-boosters" class="quick-boosters-grid"></div>
+        <div id="quick-loading" class="quick-loading">
+          <div class="loading-spinner"></div>
+          <p>Finder ledige boosters...</p>
+        </div>
+      </div>
+      <div class="step-navigation">
+        <button class="btn-prev" data-prev="2">Tilbage</button>
+        <button class="btn-book" disabled>Book & Betal</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Booking Summary Sidebar -->
+  <div id="booking-summary-sidebar" class="booking-summary-sidebar" style="display: none;">
+    <div class="summary-header">
+      <h4>Din Booking</h4>
+      <button id="close-booking" class="close-btn">&times;</button>
+    </div>
+    <div class="summary-content">
+      <div class="summary-item">
+        <strong>{{ product.title }}</strong>
+      </div>
+      <div class="summary-item">
+        <span>Dato:</span>
+        <span id="summary-date">-</span>
+      </div>
+      <div class="summary-item">
+        <span>Tid:</span>
+        <span id="summary-time">-</span>
+      </div>
+      <div class="summary-item">
+        <span>Lokation:</span>
+        <span id="summary-location">-</span>
+      </div>
+      <div class="summary-item">
+        <span>Booster:</span>
+        <span id="summary-booster">-</span>
+      </div>
+      <div class="summary-total">
+        <span>Total:</span>
+        <span id="summary-total">{{ product.price | money }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+/* Quick Booking Widget Styles */
+.booking-widget-container {
+  margin: 20px 0;
+}
+
+.quick-booking-cta {
+  background: linear-gradient(135deg, #f8fafe 0%, #e8f2ff 100%);
+  border: 2px solid #2c5aa0;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.quick-booking-cta h3 {
+  margin: 0 0 8px 0;
+  color: #2c5aa0;
+  font-size: 1.5rem;
+}
+
+.quick-booking-cta p {
+  margin: 0 0 16px 0;
+  color: #666;
+}
+
+.price-display {
+  margin-bottom: 20px;
+}
+
+.from-price {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c5aa0;
+}
+
+.btn-start-booking {
+  background: #2c5aa0;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-start-booking:hover {
+  background: #1e3f73;
+  transform: translateY(-2px);
+}
+
+/* Inline Booking Form */
+.inline-booking-form {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.booking-step {
+  display: none;
+  padding: 24px;
+}
+
+.booking-step.active {
+  display: block;
+}
+
+.booking-step h4 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+/* Mini Calendar */
+.mini-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 20px;
+  max-width: 350px;
+}
+
+.mini-calendar .day-header {
+  padding: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.mini-calendar .calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.mini-calendar .calendar-day:hover {
+  background: #f0f7ff;
+  border-color: #2c5aa0;
+}
+
+.mini-calendar .calendar-day.selected {
+  background: #2c5aa0;
+  color: white;
+}
+
+/* Time Selector */
+.time-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+  max-width: 350px;
+}
+
+.time-selector .time-option {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.time-selector .time-option:hover {
+  background: #f0f7ff;
+  border-color: #2c5aa0;
+}
+
+.time-selector .time-option.selected {
+  background: #2c5aa0;
+  color: white;
+}
+
+/* Address Input */
+.address-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+.address-suggestions {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.address-suggestions .suggestion {
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.address-suggestions .suggestion:hover {
+  background: #f5f5f5;
+}
+
+/* Quick Boosters Grid */
+.quick-boosters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.quick-booster-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.quick-booster-card:hover {
+  border-color: #2c5aa0;
+}
+
+.quick-booster-card.selected {
+  border-color: #2c5aa0;
+  background: #f8fafe;
+}
+
+.quick-booster-card img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.quick-booster-card h5 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+}
+
+.quick-booster-card .rating {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.quick-booster-card .price {
+  font-weight: 600;
+  color: #2c5aa0;
+}
+
+/* Loading State */
+.quick-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f0f0f0;
+  border-top: 3px solid #2c5aa0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Navigation Buttons */
+.step-navigation {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-next, .btn-prev, .btn-book {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-next, .btn-book {
+  background: #2c5aa0;
+  color: white;
+}
+
+.btn-next:hover, .btn-book:hover {
+  background: #1e3f73;
+}
+
+.btn-prev {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.btn-prev:hover {
+  background: #e8e8e8;
+}
+
+.btn-next:disabled, .btn-book:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Booking Summary Sidebar */
+.booking-summary-sidebar {
+  position: fixed;
+  top: 0;
+  right: -350px;
+  width: 350px;
+  height: 100vh;
+  background: white;
+  border-left: 1px solid #e0e0e0;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+  transition: right 0.3s ease;
+  z-index: 1000;
+}
+
+.booking-summary-sidebar.open {
+  right: 0;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.summary-content {
+  padding: 20px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px solid #e0e0e0;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .booking-summary-sidebar {
+    width: 100%;
+    right: -100%;
+  }
+  
+  .mini-calendar,
+  .time-selector {
+    max-width: 100%;
+  }
+  
+  .quick-boosters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const bookingWidget = new QuickBookingWidget();
+});
+
+class QuickBookingWidget {
+  constructor() {
+    this.currentStep = 1;
+    this.selectedData = {
+      date: null,
+      time: null,
+      location: null,
+      booster: null
+    };
+    
+    this.init();
+  }
+  
+  init() {
+    this.setupEventListeners();
+    this.generateMiniCalendar();
+  }
+  
+  setupEventListeners() {
+    // Start booking
+    document.getElementById('start-booking').addEventListener('click', () => {
+      this.showBookingForm();
+    });
+    
+    // Step navigation
+    document.querySelectorAll('.btn-next').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const nextStep = parseInt(e.target.dataset.next);
+        this.goToStep(nextStep);
+      });
+    });
+    
+    document.querySelectorAll('.btn-prev').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const prevStep = parseInt(e.target.dataset.prev);
+        this.goToStep(prevStep);
+      });
+    });
+    
+    // Close booking
+    document.getElementById('close-booking').addEventListener('click', () => {
+      this.hideBookingForm();
+    });
+  }
+  
+  showBookingForm() {
+    document.getElementById('inline-booking-form').style.display = 'block';
+    document.getElementById('booking-summary-sidebar').classList.add('open');
+  }
+  
+  hideBookingForm() {
+    document.getElementById('inline-booking-form').style.display = 'none';
+    document.getElementById('booking-summary-sidebar').classList.remove('open');
+  }
+  
+  goToStep(stepNumber) {
+    // Hide all steps
+    document.querySelectorAll('.booking-step').forEach(step => {
+      step.classList.remove('active');
+    });
+    
+    // Show target step
+    document.querySelector(`[data-step="${stepNumber}"]`).classList.add('active');
+    this.currentStep = stepNumber;
+    
+    // Handle step-specific logic
+    if (stepNumber === 3) {
+      this.loadAvailableBoosters();
+    }
+  }
+  
+  generateMiniCalendar() {
+    const calendar = document.getElementById('mini-calendar');
+    const today = new Date();
+    
+    // Add day headers
+    const dayHeaders = ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø'];
+    dayHeaders.forEach(day => {
+      const header = document.createElement('div');
+      header.className = 'day-header';
+      header.textContent = day;
+      calendar.appendChild(header);
+    });
+    
+    // Add dates for next 14 days
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      const dayElement = document.createElement('div');
+      dayElement.className = 'calendar-day';
+      dayElement.textContent = date.getDate();
+      dayElement.dataset.date = date.toISOString().split('T')[0];
+      
+      dayElement.addEventListener('click', () => {
+        this.selectDate(date.toISOString().split('T')[0]);
+      });
+      
+      calendar.appendChild(dayElement);
+    }
+    
+    this.generateTimeSlots();
+  }
+  
+  generateTimeSlots() {
+    const timeSelector = document.getElementById('time-selector');
+    const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
+    
+    timeSlots.forEach(time => {
+      const timeElement = document.createElement('div');
+      timeElement.className = 'time-option';
+      timeElement.textContent = time;
+      timeElement.dataset.time = time;
+      
+      timeElement.addEventListener('click', () => {
+        this.selectTime(time);
+      });
+      
+      timeSelector.appendChild(timeElement);
+    });
+  }
+  
+  selectDate(date) {
+    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`[data-date="${date}"]`).classList.add('selected');
+    
+    this.selectedData.date = date;
+    this.updateSummary();
+    this.validateStep(1);
+  }
+  
+  selectTime(time) {
+    document.querySelectorAll('.time-option').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`[data-time="${time}"]`).classList.add('selected');
+    
+    this.selectedData.time = time;
+    this.updateSummary();
+    this.validateStep(1);
+  }
+  
+  validateStep(step) {
+    const nextBtn = document.querySelector(`[data-step="${step}"] .btn-next`);
+    
+    if (step === 1) {
+      nextBtn.disabled = !(this.selectedData.date && this.selectedData.time);
+    } else if (step === 2) {
+      nextBtn.disabled = !this.selectedData.location;
+    }
+  }
+  
+  updateSummary() {
+    if (this.selectedData.date) {
+      const date = new Date(this.selectedData.date);
+      document.getElementById('summary-date').textContent = date.toLocaleDateString('da-DK');
+    }
+    
+    if (this.selectedData.time) {
+      document.getElementById('summary-time').textContent = this.selectedData.time;
+    }
+    
+    if (this.selectedData.location) {
+      document.getElementById('summary-location').textContent = this.selectedData.location;
+    }
+    
+    if (this.selectedData.booster) {
+      document.getElementById('summary-booster').textContent = this.selectedData.booster.name;
+    }
+  }
+  
+  async loadAvailableBoosters() {
+    const loading = document.getElementById('quick-loading');
+    const boostersGrid = document.getElementById('quick-boosters');
+    
+    loading.style.display = 'block';
+    boostersGrid.style.display = 'none';
+    
+    // Simulate API call
+    setTimeout(() => {
+      const mockBoosters = [
+        { id: 1, name: 'Angelica', rating: '4.9', price: '{{ product.price | money }}', image: '/assets/profiles/angelica.png' },
+        { id: 2, name: 'Marie', rating: '4.8', price: '{{ product.price | money }}', image: '/assets/profiles/marie.png' }
+      ];
+      
+      this.renderBoosters(mockBoosters);
+      loading.style.display = 'none';
+      boostersGrid.style.display = 'grid';
+    }, 1500);
+  }
+  
+  renderBoosters(boosters) {
+    const grid = document.getElementById('quick-boosters');
+    
+    grid.innerHTML = boosters.map(booster => `
+      <div class="quick-booster-card" data-booster-id="${booster.id}">
+        <img src="${booster.image}" alt="${booster.name}">
+        <h5>${booster.name}</h5>
+        <div class="rating">★ ${booster.rating}</div>
+        <div class="price">${booster.price}</div>
+      </div>
+    `).join('');
+    
+    // Add click listeners
+    grid.querySelectorAll('.quick-booster-card').forEach(card => {
+      card.addEventListener('click', () => {
+        this.selectBooster(card.dataset.boosterId);
+      });
+    });
+  }
+  
+  selectBooster(boosterId) {
+    document.querySelectorAll('.quick-booster-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+    
+    const selectedCard = document.querySelector(`[data-booster-id="${boosterId}"]`);
+    selectedCard.classList.add('selected');
+    
+    this.selectedData.booster = {
+      id: boosterId,
+      name: selectedCard.querySelector('h5').textContent
+    };
+    
+    this.updateSummary();
+    
+    // Enable book button
+    document.querySelector('.btn-book').disabled = false;
+  }
+}
+</script>

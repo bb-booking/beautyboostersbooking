@@ -1,0 +1,758 @@
+{% comment %}
+BeautyBoosters Booking Section
+Can be added to any page via theme customizer
+{% endcomment %}
+
+{{ 'booking-widget.css' | asset_url | stylesheet_tag }}
+
+<div class="booking-section" id="booking-section-{{ section.id }}">
+  <div class="container">
+    
+    {% if section.settings.show_header %}
+    <div class="section-header">
+      <h2>{{ section.settings.heading | default: 'Book din BeautyBooster' }}</h2>
+      {% if section.settings.description != blank %}
+        <p class="section-description">{{ section.settings.description }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="booking-services-grid">
+      {% for block in section.blocks %}
+        {% case block.type %}
+          
+          {% when 'service_card' %}
+            <div class="booking-service-card" 
+                 data-service-id="{{ block.settings.product.id }}"
+                 data-service-name="{{ block.settings.product.title }}"
+                 data-service-price="{{ block.settings.product.price | divided_by: 100.0 }}">
+              
+              {% if block.settings.service_image %}
+                <div class="service-image">
+                  <img src="{{ block.settings.service_image | img_url: '400x300' }}" 
+                       alt="{{ block.settings.product.title }}"
+                       loading="lazy">
+                </div>
+              {% endif %}
+              
+              <div class="service-content">
+                <h3>{{ block.settings.product.title }}</h3>
+                
+                {% if block.settings.custom_description != blank %}
+                  <p class="service-description">{{ block.settings.custom_description }}</p>
+                {% else %}
+                  <p class="service-description">{{ block.settings.product.description | truncate: 120 }}</p>
+                {% endif %}
+                
+                <div class="service-details">
+                  <div class="service-price">
+                    {% if block.settings.show_from_price %}
+                      Fra {{ block.settings.product.price | money }}
+                    {% else %}
+                      {{ block.settings.product.price | money }}
+                    {% endif %}
+                  </div>
+                  
+                  {% if block.settings.duration %}
+                    <div class="service-duration">
+                      <svg class="duration-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      {{ block.settings.duration }}
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <button class="btn-book-service" data-product-handle="{{ block.settings.product.handle }}">
+                  {{ block.settings.cta_text | default: 'Book Nu' }}
+                </button>
+              </div>
+              
+              {% if block.settings.popular %}
+                <div class="popular-badge">Populær</div>
+              {% endif %}
+            </div>
+          
+          {% when 'feature_highlight' %}
+            <div class="booking-feature-highlight">
+              {% if block.settings.feature_icon %}
+                <div class="feature-icon">
+                  <img src="{{ block.settings.feature_icon | img_url: '60x60' }}" alt="">
+                </div>
+              {% endif %}
+              <div class="feature-content">
+                <h4>{{ block.settings.feature_title }}</h4>
+                <p>{{ block.settings.feature_description }}</p>
+              </div>
+            </div>
+            
+        {% endcase %}
+      {% endfor %}
+    </div>
+
+    {% if section.settings.show_inquiry_cta %}
+    <div class="inquiry-cta">
+      <div class="inquiry-content">
+        <h3>{{ section.settings.inquiry_heading | default: 'Kan du ikke finde det du leder efter?' }}</h3>
+        <p>{{ section.settings.inquiry_text | default: 'Send os en forespørgsel og vi finder den rette booster til dig' }}</p>
+        <button id="open-general-inquiry" class="btn-inquiry">
+          {{ section.settings.inquiry_cta | default: 'Send Forespørgsel' }}
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- General Inquiry Modal -->
+<div id="general-inquiry-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Send Generel Forespørgsel</h3>
+      <button id="close-general-inquiry" class="close-btn">&times;</button>
+    </div>
+    <form id="general-inquiry-form">
+      <div class="form-group">
+        <label for="general-name">Navn *</label>
+        <input type="text" id="general-name" required>
+      </div>
+      <div class="form-group">
+        <label for="general-email">Email *</label>
+        <input type="email" id="general-email" required>
+      </div>
+      <div class="form-group">
+        <label for="general-phone">Telefon</label>
+        <input type="tel" id="general-phone">
+      </div>
+      <div class="form-group">
+        <label for="general-service">Ønsket service</label>
+        <select id="general-service">
+          <option value="">Vælg service...</option>
+          {% for product in collections.beauty-services.products %}
+            <option value="{{ product.title }}">{{ product.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="general-date">Ønsket dato</label>
+        <input type="date" id="general-date">
+      </div>
+      <div class="form-group">
+        <label for="general-location">Lokation</label>
+        <input type="text" id="general-location" placeholder="Hvor skal vi komme?">
+      </div>
+      <div class="form-group">
+        <label for="general-message">Besked</label>
+        <textarea id="general-message" rows="4" placeholder="Beskriv dine ønsker..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="cancel-inquiry">Annuller</button>
+        <button type="submit" class="btn-primary">Send Forespørgsel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Booking Section Styles */
+.booking-section {
+  padding: {{ section.settings.padding_top }}px 0 {{ section.settings.padding_bottom }}px;
+  background: {{ section.settings.background_color | default: '#ffffff' }};
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: {{ section.settings.heading_color | default: '#333333' }};
+  margin-bottom: 16px;
+}
+
+.section-description {
+  font-size: 1.1rem;
+  color: {{ section.settings.text_color | default: '#666666' }};
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.booking-services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* Service Card */
+.booking-service-card {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.booking-service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  border-color: {{ section.settings.accent_color | default: '#2c5aa0' }};
+}
+
+.service-image {
+  height: 200px;
+  overflow: hidden;
+}
+
+.service-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.booking-service-card:hover .service-image img {
+  transform: scale(1.05);
+}
+
+.service-content {
+  padding: 20px;
+}
+
+.service-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.service-description {
+  color: #666;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.service-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.service-price {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: {{ section.settings.price_color | default: '#2c5aa0' }};
+}
+
+.service-duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.duration-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-book-service {
+  width: 100%;
+  padding: 12px;
+  background: {{ section.settings.button_color | default: '#2c5aa0' }};
+  color: {{ section.settings.button_text_color | default: '#ffffff' }};
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-book-service:hover {
+  background: {{ section.settings.button_hover_color | default: '#1e3f73' }};
+  transform: translateY(-1px);
+}
+
+.popular-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #ff6b6b;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Feature Highlight */
+.booking-feature-highlight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafe;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e8f2ff;
+}
+
+.feature-icon img {
+  width: 40px;
+  height: 40px;
+}
+
+.feature-content h4 {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  color: #333;
+}
+
+.feature-content p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Inquiry CTA */
+.inquiry-cta {
+  background: linear-gradient(135deg, {{ section.settings.cta_bg_color | default: '#f8fafe' }} 0%, {{ section.settings.cta_bg_color_end | default: '#e8f2ff' }} 100%);
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  border: 2px solid {{ section.settings.accent_color | default: '#2c5aa0' }};
+}
+
+.inquiry-cta h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.inquiry-cta p {
+  margin: 0 0 24px 0;
+  color: #666;
+}
+
+.btn-inquiry {
+  background: {{ section.settings.accent_color | default: '#2c5aa0' }};
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-inquiry:hover {
+  background: {{ section.settings.accent_hover_color | default: '#1e3f73' }};
+  transform: translateY(-2px);
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal form {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.form-actions button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.form-actions button[type="button"] {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.form-actions .btn-primary {
+  background: #2c5aa0;
+  color: white;
+  border: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .booking-services-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header h2 {
+    font-size: 2rem;
+  }
+  
+  .booking-feature-highlight {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .inquiry-cta {
+    padding: 24px;
+  }
+  
+  .modal-content {
+    margin: 20px;
+    width: calc(100% - 40px);
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Book service buttons
+  document.querySelectorAll('.btn-book-service').forEach(button => {
+    button.addEventListener('click', function() {
+      const serviceCard = this.closest('.booking-service-card');
+      const productHandle = this.dataset.productHandle;
+      
+      // Store service data
+      const serviceData = {
+        id: serviceCard.dataset.serviceId,
+        name: serviceCard.dataset.serviceName,
+        price: serviceCard.dataset.servicePrice,
+        handle: productHandle
+      };
+      
+      sessionStorage.setItem('selected_service', JSON.stringify(serviceData));
+      
+      // Navigate to booking page or product page
+      window.location.href = `/products/${productHandle}`;
+    });
+  });
+  
+  // General inquiry modal
+  const generalInquiryModal = document.getElementById('general-inquiry-modal');
+  
+  document.getElementById('open-general-inquiry').addEventListener('click', function() {
+    generalInquiryModal.style.display = 'flex';
+  });
+  
+  document.getElementById('close-general-inquiry').addEventListener('click', function() {
+    generalInquiryModal.style.display = 'none';
+  });
+  
+  document.getElementById('cancel-inquiry').addEventListener('click', function() {
+    generalInquiryModal.style.display = 'none';
+  });
+  
+  // General inquiry form
+  document.getElementById('general-inquiry-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+      name: document.getElementById('general-name').value,
+      email: document.getElementById('general-email').value,
+      phone: document.getElementById('general-phone').value,
+      service: document.getElementById('general-service').value,
+      date: document.getElementById('general-date').value,
+      location: document.getElementById('general-location').value,
+      message: document.getElementById('general-message').value,
+      type: 'general_inquiry'
+    };
+    
+    try {
+      // Send to Shopify form handler or external API
+      const response = await fetch('/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          'form_type': 'contact',
+          'contact[name]': formData.name,
+          'contact[email]': formData.email,
+          'contact[phone]': formData.phone,
+          'contact[body]': `Service: ${formData.service}\nDato: ${formData.date}\nLokation: ${formData.location}\nBesked: ${formData.message}`
+        })
+      });
+      
+      if (response.ok) {
+        alert('Din forespørgsel er sendt! Vi kontakter dig snarest.');
+        generalInquiryModal.style.display = 'none';
+        this.reset();
+      } else {
+        throw new Error('Failed to send inquiry');
+      }
+    } catch (error) {
+      console.error('Error sending inquiry:', error);
+      alert('Der skete en fejl. Prøv igen senere.');
+    }
+  });
+  
+  // Close modal on backdrop click
+  generalInquiryModal.addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.style.display = 'none';
+    }
+  });
+});
+</script>
+
+{% schema %}
+{
+  "name": "BeautyBoosters Booking",
+  "class": "booking-section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_header",
+      "label": "Vis sektion header",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Overskrift",
+      "default": "Book din BeautyBooster"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Beskrivelse"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Baggrungsfarve",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Overskrift farve",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Tekst farve",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent farve",
+      "default": "#2c5aa0"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Knap farve",
+      "default": "#2c5aa0"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Knap tekst farve",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bund padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "default": 60
+    },
+    {
+      "type": "checkbox",
+      "id": "show_inquiry_cta",
+      "label": "Vis forespørgsel CTA",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "inquiry_heading",
+      "label": "Forespørgsel overskrift",
+      "default": "Kan du ikke finde det du leder efter?"
+    },
+    {
+      "type": "text",
+      "id": "inquiry_text",
+      "label": "Forespørgsel tekst",
+      "default": "Send os en forespørgsel og vi finder den rette booster til dig"
+    },
+    {
+      "type": "text",
+      "id": "inquiry_cta",
+      "label": "Forespørgsel knap tekst",
+      "default": "Send Forespørgsel"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "service_card",
+      "name": "Service Kort",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Vælg produkt"
+        },
+        {
+          "type": "image_picker",
+          "id": "service_image",
+          "label": "Service billede"
+        },
+        {
+          "type": "textarea",
+          "id": "custom_description",
+          "label": "Brugerdefineret beskrivelse"
+        },
+        {
+          "type": "text",
+          "id": "duration",
+          "label": "Varighed",
+          "placeholder": "f.eks. 2 timer"
+        },
+        {
+          "type": "text",
+          "id": "cta_text",
+          "label": "Knap tekst",
+          "default": "Book Nu"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_from_price",
+          "label": "Vis 'Fra' pris",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "popular",
+          "label": "Marker som populær",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "feature_highlight",
+      "name": "Feature Highlight",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "feature_icon",
+          "label": "Feature ikon"
+        },
+        {
+          "type": "text",
+          "id": "feature_title",
+          "label": "Feature titel"
+        },
+        {
+          "type": "text",
+          "id": "feature_description",
+          "label": "Feature beskrivelse"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "BeautyBoosters Booking",
+      "blocks": [
+        {
+          "type": "service_card"
+        },
+        {
+          "type": "service_card"
+        },
+        {
+          "type": "feature_highlight"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

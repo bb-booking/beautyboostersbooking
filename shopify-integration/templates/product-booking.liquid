@@ -1,0 +1,146 @@
+{% comment %}
+BeautyBoosters Booking Product Template
+Integrates with existing Supabase booking system
+{% endcomment %}
+
+{{ 'booking-widget.css' | asset_url | stylesheet_tag }}
+
+<div class="booking-container">
+  <div class="product-hero">
+    <div class="container">
+      <div class="booking-header">
+        <h1 class="booking-title">{{ product.title }}</h1>
+        <p class="booking-description">{{ product.description }}</p>
+        <div class="booking-price">
+          <span class="price">Fra {{ product.price | money }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="booking-content">
+    <div class="container">
+      <div class="booking-grid">
+        <!-- Service Selection -->
+        <div class="booking-section">
+          <h3>Vælg Service</h3>
+          <div id="service-selector">
+            <div class="service-card active" data-service-id="{{ product.id }}" data-service-name="{{ product.title }}" data-service-price="{{ product.price | divided_by: 100.0 }}">
+              <h4>{{ product.title }}</h4>
+              <p>{{ product.price | money }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date & Time Selection -->
+        <div class="booking-section">
+          <h3>Vælg Dato & Tid</h3>
+          <div id="calendar-container">
+            <div id="booking-calendar"></div>
+            <div id="time-slots"></div>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="booking-section">
+          <h3>Lokation</h3>
+          <div id="location-input">
+            <input type="text" id="address" placeholder="Indtast din adresse" class="location-input">
+            <div id="address-suggestions"></div>
+          </div>
+        </div>
+
+        <!-- Booster Selection -->
+        <div class="booking-section">
+          <h3>Vælg Booster</h3>
+          <div id="booster-loading" class="loading-state">
+            <div class="skeleton-loader"></div>
+            <div class="skeleton-loader"></div>
+            <div class="skeleton-loader"></div>
+          </div>
+          <div id="booster-list" class="booster-grid"></div>
+          <div id="no-boosters" class="no-boosters" style="display: none;">
+            <p>Ingen ledige boosters fundet for den valgte dato og tid.</p>
+            <button id="send-inquiry" class="btn-secondary">Send Forespørgsel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking Summary -->
+      <div class="booking-summary">
+        <div class="summary-card">
+          <h3>Booking Oversigt</h3>
+          <div id="booking-details">
+            <div class="detail-row">
+              <span>Service:</span>
+              <span id="selected-service">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Dato:</span>
+              <span id="selected-date">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Tid:</span>
+              <span id="selected-time">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Booster:</span>
+              <span id="selected-booster">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Lokation:</span>
+              <span id="selected-location">-</span>
+            </div>
+            <div class="detail-row total">
+              <span>Total:</span>
+              <span id="total-price">{{ product.price | money }}</span>
+            </div>
+          </div>
+          <button id="proceed-to-checkout" class="btn-primary" disabled>Fortsæt til Betaling</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inquiry Modal -->
+<div id="inquiry-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h3>Send Forespørgsel</h3>
+    <form id="inquiry-form">
+      <div class="form-group">
+        <label for="inquiry-name">Navn:</label>
+        <input type="text" id="inquiry-name" required>
+      </div>
+      <div class="form-group">
+        <label for="inquiry-email">Email:</label>
+        <input type="email" id="inquiry-email" required>
+      </div>
+      <div class="form-group">
+        <label for="inquiry-phone">Telefon:</label>
+        <input type="tel" id="inquiry-phone" required>
+      </div>
+      <div class="form-group">
+        <label for="inquiry-message">Besked:</label>
+        <textarea id="inquiry-message" rows="4"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="close-inquiry">Annuller</button>
+        <button type="submit" class="btn-primary">Send Forespørgsel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Pass Shopify product data to booking widget
+  window.shopifyProduct = {
+    id: {{ product.id }},
+    title: {{ product.title | json }},
+    price: {{ product.price | divided_by: 100.0 }},
+    handle: {{ product.handle | json }},
+    vendor: {{ product.vendor | json }}
+  };
+</script>
+
+{{ 'booking-widget.js' | asset_url | script_tag }}
