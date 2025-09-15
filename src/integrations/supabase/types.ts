@@ -7,13 +7,85 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
+      address_cache: {
+        Row: {
+          address: string
+          bbr_data: Json | null
+          cached_at: string
+          city: string | null
+          expires_at: string
+          id: string
+          postal_code: string | null
+        }
+        Insert: {
+          address: string
+          bbr_data?: Json | null
+          cached_at?: string
+          city?: string | null
+          expires_at?: string
+          id?: string
+          postal_code?: string | null
+        }
+        Update: {
+          address?: string
+          bbr_data?: Json | null
+          cached_at?: string
+          city?: string | null
+          expires_at?: string
+          id?: string
+          postal_code?: string | null
+        }
+        Relationships: []
+      }
+      agent_profiles: {
+        Row: {
+          bio: string | null
+          company_name: string | null
+          created_at: string
+          email: string
+          id: string
+          license_number: string | null
+          name: string
+          phone: string | null
+          profile_image_url: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          license_number?: string | null
+          name: string
+          phone?: string | null
+          profile_image_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          license_number?: string | null
+          name?: string
+          phone?: string | null
+          profile_image_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       booking_reminders: {
         Row: {
           created_at: string
@@ -774,6 +846,172 @@ export type Database = {
           },
         ]
       }
+      price_estimates: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          estimated_price: number
+          estimation_data: Json | null
+          estimation_method: string | null
+          id: string
+          property_listing_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          estimated_price: number
+          estimation_data?: Json | null
+          estimation_method?: string | null
+          id?: string
+          property_listing_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          estimated_price?: number
+          estimation_data?: Json | null
+          estimation_method?: string | null
+          id?: string
+          property_listing_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_estimates_property_listing_id_fkey"
+            columns: ["property_listing_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_listings: {
+        Row: {
+          address: string
+          agent_email: string | null
+          agent_id: string | null
+          agent_name: string | null
+          agent_phone: string | null
+          asking_price: number | null
+          bbr_data: Json | null
+          build_year: number | null
+          city: string
+          created_at: string
+          description: string | null
+          energy_label: string | null
+          estimated_price: number | null
+          external_data: Json | null
+          floor_area: number | null
+          floor_level: number | null
+          id: string
+          listing_date: string | null
+          listing_price: number | null
+          monthly_costs: number | null
+          plot_area: number | null
+          postal_code: string
+          price_per_m2: number | null
+          property_type: string
+          rooms: number | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          agent_email?: string | null
+          agent_id?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
+          asking_price?: number | null
+          bbr_data?: Json | null
+          build_year?: number | null
+          city: string
+          created_at?: string
+          description?: string | null
+          energy_label?: string | null
+          estimated_price?: number | null
+          external_data?: Json | null
+          floor_area?: number | null
+          floor_level?: number | null
+          id?: string
+          listing_date?: string | null
+          listing_price?: number | null
+          monthly_costs?: number | null
+          plot_area?: number | null
+          postal_code: string
+          price_per_m2?: number | null
+          property_type: string
+          rooms?: number | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          agent_email?: string | null
+          agent_id?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
+          asking_price?: number | null
+          bbr_data?: Json | null
+          build_year?: number | null
+          city?: string
+          created_at?: string
+          description?: string | null
+          energy_label?: string | null
+          estimated_price?: number | null
+          external_data?: Json | null
+          floor_area?: number | null
+          floor_level?: number | null
+          id?: string
+          listing_date?: string | null
+          listing_price?: number | null
+          monthly_costs?: number | null
+          plot_area?: number | null
+          postal_code?: string
+          price_per_m2?: number | null
+          property_type?: string
+          rooms?: number | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      property_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          photo_url: string
+          property_listing_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          photo_url: string
+          property_listing_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          photo_url?: string
+          property_listing_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_photos_property_listing_id_fkey"
+            columns: ["property_listing_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salon_bookings: {
         Row: {
           created_at: string
@@ -1056,8 +1294,8 @@ export type Database = {
     Functions: {
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
