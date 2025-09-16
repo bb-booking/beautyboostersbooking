@@ -120,124 +120,122 @@ const AdminShopifyProducts = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Shopify Produkter</h1>
-            <p className="text-muted-foreground">
-              Opret booking produkter direkte i din Shopify butik
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Opret nyt produkt</CardTitle>
-              <CardDescription>
-                Udfyld formularen for at oprette et nyt booking produkt i Shopify
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Titel *</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="F.eks. Makeup - Base"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="body_html">Beskrivelse</Label>
-                <Textarea
-                  id="body_html"
-                  name="body_html"
-                  value={formData.body_html}
-                  onChange={handleInputChange}
-                  placeholder="Beskriv produktet og hvad det inkluderer..."
-                  rows={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="price">Pris (DKK) *</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  placeholder="800"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="image_src">Billede URL</Label>
-                <Input
-                  id="image_src"
-                  name="image_src"
-                  value={formData.image_src}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  name="tags"
-                  value={formData.tags}
-                  onChange={handleInputChange}
-                  placeholder="beauty-service,booking,makeup"
-                />
-              </div>
-
-              <Button 
-                onClick={createProduct} 
-                disabled={loading}
-                className="w-full"
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Opret produkt i Shopify
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Foruddefinerede services</CardTitle>
-              <CardDescription>
-                Klik på en service for hurtigt at udfylde formularen
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {predefinedServices.map((service, index) => (
-                <div
-                  key={index}
-                  className="p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                  onClick={() => useTemplate(service)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">{service.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {service.price} DKK
-                      </p>
-                    </div>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Shopify Produkter</h1>
+          <p className="text-muted-foreground">
+            Opret booking produkter direkte i din Shopify butik
+          </p>
         </div>
       </div>
-    </AdminLayout>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Opret nyt produkt</CardTitle>
+            <CardDescription>
+              Udfyld formularen for at oprette et nyt booking produkt i Shopify
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titel *</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="F.eks. Makeup - Base"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="body_html">Beskrivelse</Label>
+              <Textarea
+                id="body_html"
+                name="body_html"
+                value={formData.body_html}
+                onChange={handleInputChange}
+                placeholder="Beskriv produktet og hvad det inkluderer..."
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Pris (DKK) *</Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleInputChange}
+                placeholder="800"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image_src">Billede URL</Label>
+              <Input
+                id="image_src"
+                name="image_src"
+                value={formData.image_src}
+                onChange={handleInputChange}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <Input
+                id="tags"
+                name="tags"
+                value={formData.tags}
+                onChange={handleInputChange}
+                placeholder="beauty-service,booking,makeup"
+              />
+            </div>
+
+            <Button 
+              onClick={createProduct} 
+              disabled={loading}
+              className="w-full"
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Opret produkt i Shopify
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Foruddefinerede services</CardTitle>
+            <CardDescription>
+              Klik på en service for hurtigt at udfylde formularen
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {predefinedServices.map((service, index) => (
+              <div
+                key={index}
+                className="p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                onClick={() => useTemplate(service)}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-medium">{service.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {service.price} DKK
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 
