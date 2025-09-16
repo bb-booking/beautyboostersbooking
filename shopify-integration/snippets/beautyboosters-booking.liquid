@@ -1,0 +1,509 @@
+{% comment %}
+BeautyBoosters – Én samlet Shopify snippet (HTML + CSS + JS)
+Brug: {% render 'beautyboosters-booking', product: product %}
+Dette snippet indeholder al styling og JavaScript inline og kræver ingen ekstra assets.
+{% endcomment %}
+
+{% assign selected_variant = product.selected_or_first_available_variant %}
+
+<style>
+/* BeautyBoosters Booking Widget Styles (inline) */
+.booking-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.product-hero {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  padding: 60px 0;
+  margin-bottom: 40px;
+}
+.booking-header { text-align: center; }
+.booking-title { font-size: 2.5rem; font-weight: 700; color: #333; margin-bottom: 16px; }
+.booking-description { font-size: 1.1rem; color: #666; margin-bottom: 24px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.booking-price .price { font-size: 1.5rem; font-weight: 600; color: #2c5aa0; }
+.booking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-bottom: 40px; }
+.booking-section { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.booking-section h3 { font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 20px; }
+/* Service */
+.service-card { border: 2px solid #e0e0e0; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.3s ease; }
+.service-card.active { border-color: #2c5aa0; background: #f8fafe; }
+.service-card h4 { margin: 0 0 8px 0; font-weight: 600; }
+/* Calendar */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 20px; }
+.calendar-header { padding: 8px; text-align: center; font-weight: 600; color: #666; font-size: 0.9rem; }
+.calendar-date { padding: 12px; text-align: center; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background: #fff; }
+.calendar-date:hover { background: #f0f7ff; border-color: #2c5aa0; }
+.calendar-date.selected { background: #2c5aa0; color: #fff; border-color: #2c5aa0; }
+/* Time slots */
+#time-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+.time-slot { padding: 10px; text-align: center; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background: #fff; font-size: 0.9rem; }
+.time-slot:hover { background: #f0f7ff; border-color: #2c5aa0; }
+.time-slot.selected { background: #2c5aa0; color: #fff; border-color: #2c5aa0; }
+/* Address */
+.location-input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 1rem; }
+#address-suggestions { margin-top: 8px; }
+.address-suggestion { padding: 10px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; transition: background-color 0.2s ease; }
+.address-suggestion:hover { background: #f5f5f5; }
+.address-suggestion:first-child { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+.address-suggestion:last-child { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+/* Boosters */
+.booster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.booster-card { border: 2px solid #e0e0e0; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; background: #fff; }
+.booster-card:hover { border-color: #2c5aa0; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(44, 90, 160, 0.1); }
+.booster-card.selected { border-color: #2c5aa0; background: #f8fafe; }
+.booster-image { height: 200px; overflow: hidden; }
+.booster-image img { width: 100%; height: 100%; object-fit: cover; }
+.booster-info { padding: 16px; }
+.booster-info h4 { margin: 0 0 8px 0; font-weight: 600; font-size: 1.1rem; }
+.booster-rating { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 0.9rem; color: #666; }
+.stars { color: #ffd700; }
+.booster-specialties { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.specialty { background: #e8f2ff; color: #2c5aa0; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
+.booster-price { font-weight: 600; font-size: 1.1rem; color: #2c5aa0; margin-bottom: 12px; }
+.btn-select-booster { width: 100%; padding: 10px; background: #2c5aa0; color: #fff; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease; }
+.btn-select-booster:hover { background: #1e3f73; }
+/* Loading */
+.loading-state { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.skeleton-loader { height: 300px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 12px; }
+@keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* Summary */
+.booking-summary { margin-top: 40px; }
+.summary-card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+.summary-card h3 { margin: 0 0 20px 0; font-size: 1.25rem; font-weight: 600; }
+.detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+.detail-row.total { font-weight: 600; font-size: 1.1rem; border-bottom: none; margin-top: 16px; padding-top: 16px; border-top: 2px solid #e0e0e0; }
+.btn-primary { width: 100%; padding: 14px; background: #2c5aa0; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; margin-top: 20px; }
+.btn-primary:hover:not(:disabled) { background: #1e3f73; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+.btn-secondary { background: #f5f5f5; color: #333; border: 1px solid #e0e0e0; padding: 12px 24px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+.btn-secondary:hover { background: #e8e8e8; }
+/* No boosters */
+.no-boosters { text-align: center; padding: 40px 20px; }
+.no-boosters p { margin-bottom: 20px; color: #666; }
+/* Modal */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: #fff; border-radius: 12px; padding: 24px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+.modal-content h3 { margin: 0 0 20px 0; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 4px; font-weight: 500; }
+.form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 1rem; }
+.form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+.form-actions button { padding: 10px 20px; border-radius: 6px; cursor: pointer; border: 1px solid #e0e0e0; background: #fff; transition: all 0.2s ease; }
+.form-actions button:hover { background: #f5f5f5; }
+/* Responsive */
+@media (max-width: 768px) {
+  .booking-grid { grid-template-columns: 1fr; }
+  .booking-title { font-size: 2rem; }
+  .calendar-grid { font-size: 0.9rem; }
+  .calendar-date, .time-slot { padding: 8px; }
+  .booster-grid { grid-template-columns: 1fr; }
+  .modal-content { margin: 20px; width: calc(100% - 40px); }
+}
+</style>
+
+<div class="booking-container">
+  <div class="product-hero">
+    <div class="container">
+      <div class="booking-header">
+        <h1 class="booking-title">{{ product.title }}</h1>
+        <p class="booking-description">{{ product.description }}</p>
+        <div class="booking-price">
+          <span class="price">Fra {{ product.price | money }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="booking-content">
+    <div class="container">
+      <div class="booking-grid">
+        <div class="booking-section">
+          <h3>Vælg Service</h3>
+          <div id="service-selector">
+            <div
+              class="service-card active"
+              data-service-id="{{ selected_variant.id }}"
+              data-service-name="{{ product.title | escape }}"
+              data-service-price="{{ selected_variant.price | divided_by: 100.0 }}"
+            >
+              <h4>{{ product.title }}</h4>
+              <p>{{ selected_variant.price | money }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-section">
+          <h3>Vælg Dato & Tid</h3>
+          <div id="calendar-container">
+            <div id="booking-calendar"></div>
+            <div id="time-slots"></div>
+          </div>
+        </div>
+
+        <div class="booking-section">
+          <h3>Lokation</h3>
+          <div id="location-input">
+            <input type="text" id="address" placeholder="Indtast din adresse" class="location-input">
+            <div id="address-suggestions"></div>
+          </div>
+        </div>
+
+        <div class="booking-section">
+          <h3>Vælg Booster</h3>
+          <div id="booster-loading" class="loading-state">
+            <div class="skeleton-loader"></div>
+            <div class="skeleton-loader"></div>
+            <div class="skeleton-loader"></div>
+          </div>
+          <div id="booster-list" class="booster-grid"></div>
+          <div id="no-boosters" class="no-boosters" style="display: none;">
+            <p>Ingen ledige boosters fundet for den valgte dato og tid.</p>
+            <button id="send-inquiry" class="btn-secondary">Send Forespørgsel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="booking-summary">
+        <div class="summary-card">
+          <h3>Booking Oversigt</h3>
+          <div id="booking-details">
+            <div class="detail-row">
+              <span>Service:</span>
+              <span id="selected-service">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Dato:</span>
+              <span id="selected-date">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Tid:</span>
+              <span id="selected-time">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Booster:</span>
+              <span id="selected-booster">-</span>
+            </div>
+            <div class="detail-row">
+              <span>Lokation:</span>
+              <span id="selected-location">-</span>
+            </div>
+            <div class="detail-row total">
+              <span>Total:</span>
+              <span id="total-price">{{ selected_variant.price | money }}</span>
+            </div>
+          </div>
+          <button id="proceed-to-checkout" class="btn-primary" disabled>Fortsæt til Betaling</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="inquiry-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h3>Send Forespørgsel</h3>
+    <form id="inquiry-form">
+      <div class="form-group">
+        <label for="inquiry-name">Navn:</label>
+        <input type="text" id="inquiry-name" required>
+      </div>
+      <div class="form-group">
+        <label for="inquiry-email">Email:</label>
+        <input type="email" id="inquiry-email" required>
+      </div>
+      <div class="form-group">
+        <label for="inquiry-phone">Telefon:</label>
+        <input type="tel" id="inquiry-phone" required>
+      </div>
+      <div class="form-group">
+        <label for="inquiry-message">Besked:</label>
+        <textarea id="inquiry-message" rows="4"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="close-inquiry">Annuller</button>
+        <button type="submit" class="btn-primary">Send Forespørgsel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Giv JS adgang til produkt + variant
+window.shopifyProduct = {
+  id: {{ selected_variant.id }},
+  productId: {{ product.id }},
+  variantId: {{ selected_variant.id }},
+  title: {{ product.title | json }},
+  price: {{ selected_variant.price | divided_by: 100.0 }},
+  handle: {{ product.handle | json }},
+  vendor: {{ product.vendor | json }}
+};
+
+// Booking widget (inline)
+class BookingWidget {
+  constructor() {
+    // Supabase (indsat automatisk)
+    this.supabaseUrl = 'https://ffmahgphhprqphukcand.supabase.co';
+    this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmbWFoZ3BoaHBycXBodWtjYW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1Njc3OTMsImV4cCI6MjA3MDE0Mzc5M30.ENuTgX8WNjgTBszJApnB-9JSp3hUDRPfQUirmQSzxUY';
+
+    this.selectedService = null;
+    this.selectedDate = null;
+    this.selectedTime = null;
+    this.selectedBooster = null;
+    this.selectedLocation = null;
+    this.boosters = [];
+    this.init();
+  }
+
+  async init() {
+    this.setupEventListeners();
+    this.initializeService();
+    this.setupCalendar();
+    this.setupLocationInput();
+  }
+
+  initializeService() {
+    if (window.shopifyProduct) {
+      this.selectedService = {
+        id: window.shopifyProduct.id,
+        name: window.shopifyProduct.title,
+        price: window.shopifyProduct.price
+      };
+      this.updateServiceDisplay();
+    }
+  }
+
+  setupEventListeners() {
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('calendar-date')) {
+        this.selectDate(e.target.dataset.date);
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('time-slot')) {
+        this.selectTime(e.target.dataset.time);
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.booster-card')) {
+        const boosterCard = e.target.closest('.booster-card');
+        const boosterId = boosterCard.dataset.boosterId;
+        this.selectBooster(boosterId);
+      }
+    });
+    const proceedBtn = document.getElementById('proceed-to-checkout');
+    if (proceedBtn) proceedBtn.addEventListener('click', () => this.proceedToCheckout());
+
+    const sendInquiry = document.getElementById('send-inquiry');
+    if (sendInquiry) sendInquiry.addEventListener('click', () => this.showInquiryModal());
+
+    const closeInquiry = document.getElementById('close-inquiry');
+    if (closeInquiry) closeInquiry.addEventListener('click', () => this.hideInquiryModal());
+
+    const inquiryForm = document.getElementById('inquiry-form');
+    if (inquiryForm) inquiryForm.addEventListener('submit', (e) => { e.preventDefault(); this.sendInquiry(); });
+  }
+
+  setupCalendar() {
+    const calendarContainer = document.getElementById('booking-calendar');
+    if (!calendarContainer) return;
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    let html = '<div class="calendar-grid">';
+    ['Man','Tir','Ons','Tor','Fre','Lør','Søn'].forEach(day => { html += `<div class="calendar-header">${day}</div>`; });
+    for (let i = 1; i <= nextMonth.getDate(); i++) {
+      const date = new Date(today.getFullYear(), today.getMonth(), i);
+      if (date >= new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+        const dateStr = date.toISOString().split('T')[0];
+        html += `<div class="calendar-date" data-date="${dateStr}">${i}</div>`;
+      }
+    }
+    html += '</div>';
+    calendarContainer.innerHTML = html;
+  }
+
+  setupLocationInput() {
+    const addressInput = document.getElementById('address');
+    if (!addressInput) return;
+    let debounceTimer;
+    addressInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { this.getAddressSuggestions(e.target.value); }, 300);
+    });
+  }
+
+  async getAddressSuggestions(query) {
+    if (!query || query.length < 3) return;
+    try {
+      const response = await fetch(`https://api.dataforsyningen.dk/adresser?q=${encodeURIComponent(query)}&per_side=5`);
+      const addresses = await response.json();
+      const suggestions = document.getElementById('address-suggestions');
+      if (!suggestions) return;
+      suggestions.innerHTML = addresses.map(addr =>
+        `<div class="address-suggestion" data-address="${addr.adgangsadresse.adressebetegnelse}">${addr.adgangsadresse.adressebetegnelse}</div>`
+      ).join('');
+      suggestions.querySelectorAll('.address-suggestion').forEach(suggestion => {
+        suggestion.addEventListener('click', () => { this.selectLocation(suggestion.dataset.address); });
+      });
+    } catch (err) {
+      console.error('Address lookup failed:', err);
+    }
+  }
+
+  selectDate(date) {
+    document.querySelectorAll('.calendar-date').forEach(el => el.classList.remove('selected'));
+    const el = document.querySelector(`[data-date="${date}"]`);
+    if (el) el.classList.add('selected');
+    this.selectedDate = date;
+    this.generateTimeSlots();
+    this.updateBookingSummary();
+    if (this.selectedTime) this.fetchAvailableBoosters();
+  }
+
+  selectTime(time) {
+    document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+    const el = document.querySelector(`[data-time="${time}"]`);
+    if (el) el.classList.add('selected');
+    this.selectedTime = time;
+    this.updateBookingSummary();
+    this.fetchAvailableBoosters();
+  }
+
+  selectLocation(address) {
+    this.selectedLocation = address;
+    const input = document.getElementById('address');
+    if (input) input.value = address;
+    const sug = document.getElementById('address-suggestions');
+    if (sug) sug.innerHTML = '';
+    this.updateBookingSummary();
+  }
+
+  generateTimeSlots() {
+    const timeSlotsContainer = document.getElementById('time-slots');
+    if (!timeSlotsContainer) return;
+    const timeSlots = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'];
+    timeSlotsContainer.innerHTML = timeSlots.map(time => `<div class=\"time-slot\" data-time=\"${time}\">${time}</div>`).join('');
+  }
+
+  async fetchAvailableBoosters() {
+    if (!this.selectedDate || !this.selectedTime || !this.selectedService) return;
+    const boosterList = document.getElementById('booster-list');
+    const boosterLoading = document.getElementById('booster-loading');
+    const noBoosters = document.getElementById('no-boosters');
+    if (boosterLoading) boosterLoading.style.display = 'block';
+    if (boosterList) boosterList.style.display = 'none';
+    if (noBoosters) noBoosters.style.display = 'none';
+
+    try {
+      // TODO: Skift til rigtig Supabase kald. Lige nu mock.
+      const mockBoosters = [
+        { id: '1', name: 'Angelica Bloch', specialties: ['Makeup','Hair'], rating: 4.9, reviews: 127, image: 'https://placehold.co/600x400?text=Angelica', price: this.selectedService.price },
+        { id: '2', name: 'Marie Hansen', specialties: ['SFX','Makeup'], rating: 4.8, reviews: 89, image: 'https://placehold.co/600x400?text=Marie', price: this.selectedService.price }
+      ];
+      setTimeout(() => {
+        this.boosters = mockBoosters;
+        this.renderBoosters();
+        if (boosterLoading) boosterLoading.style.display = 'none';
+        if (mockBoosters.length > 0) { if (boosterList) boosterList.style.display = 'grid'; } else { if (noBoosters) noBoosters.style.display = 'block'; }
+      }, 700);
+    } catch (err) {
+      console.error('Error fetching boosters:', err);
+      if (boosterLoading) boosterLoading.style.display = 'none';
+      if (noBoosters) noBoosters.style.display = 'block';
+    }
+  }
+
+  renderBoosters() {
+    const boosterList = document.getElementById('booster-list');
+    if (!boosterList) return;
+    boosterList.innerHTML = this.boosters.map(booster => `
+      <div class=\"booster-card\" data-booster-id=\"${booster.id}\">
+        <div class=\"booster-image\"><img src=\"${booster.image}\" alt=\"${booster.name}\" loading=\"lazy\"></div>
+        <div class=\"booster-info\">
+          <h4>${booster.name}</h4>
+          <div class=\"booster-rating\"><span class=\"stars\">★★★★★</span><span>${booster.rating} (${booster.reviews})</span></div>
+          <div class=\"booster-specialties\">${booster.specialties.map(s => `<span class=\\\"specialty\\\">${s}</span>`).join('')}</div>
+          <div class=\"booster-price\">${this.selectedService.price.toFixed(0)} kr</div>
+          <button class=\"btn-select-booster\">Vælg Booster</button>
+        </div>
+      </div>`).join('');
+  }
+
+  selectBooster(boosterId) {
+    const booster = this.boosters.find(b => b.id === boosterId);
+    if (!booster) return;
+    document.querySelectorAll('.booster-card').forEach(card => card.classList.remove('selected'));
+    const card = document.querySelector(`[data-booster-id="${boosterId}"]`);
+    if (card) card.classList.add('selected');
+    this.selectedBooster = booster;
+    this.updateBookingSummary();
+    this.checkBookingComplete();
+  }
+
+  updateServiceDisplay() {
+    if (this.selectedService) {
+      const el = document.getElementById('selected-service');
+      if (el) el.textContent = this.selectedService.name;
+    }
+  }
+
+  updateBookingSummary() {
+    if (this.selectedService) { const el = document.getElementById('selected-service'); if (el) el.textContent = this.selectedService.name; }
+    if (this.selectedDate) { const d = new Date(this.selectedDate); const el = document.getElementById('selected-date'); if (el) el.textContent = d.toLocaleDateString('da-DK'); }
+    if (this.selectedTime) { const el = document.getElementById('selected-time'); if (el) el.textContent = this.selectedTime; }
+    if (this.selectedBooster) { const el = document.getElementById('selected-booster'); if (el) el.textContent = this.selectedBooster.name; }
+    if (this.selectedLocation) { const el = document.getElementById('selected-location'); if (el) el.textContent = this.selectedLocation; }
+    if (this.selectedService) { const el = document.getElementById('total-price'); if (el) el.textContent = `${this.selectedService.price.toFixed(0)} kr`; }
+  }
+
+  checkBookingComplete() {
+    const isComplete = this.selectedService && this.selectedDate && this.selectedTime && this.selectedBooster && this.selectedLocation;
+    const btn = document.getElementById('proceed-to-checkout');
+    if (btn) btn.disabled = !isComplete;
+  }
+
+  proceedToCheckout() {
+    const bookingData = {
+      service: this.selectedService,
+      date: this.selectedDate,
+      time: this.selectedTime,
+      booster: this.selectedBooster,
+      location: this.selectedLocation,
+      total: this.selectedService.price
+    };
+    sessionStorage.setItem('beautybosters_booking', JSON.stringify(bookingData));
+    this.addToCartWithBooking(bookingData);
+  }
+
+  async addToCartWithBooking(bookingData) {
+    try {
+      const formData = { items: [{ id: window.shopifyProduct.id, quantity: 1, properties: { 'Booking Date': `${bookingData.date} ${bookingData.time}`, 'Booster': bookingData.booster.name, 'Location': bookingData.location, 'Booking ID': `BB-${Date.now()}` } }] };
+      const response = await fetch('/cart/add.js', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+      if (response.ok) { window.location.href = '/cart'; } else { throw new Error('Failed to add to cart'); }
+    } catch (err) { console.error('Error adding to cart:', err); alert('Der skete en fejl. Prøv igen.'); }
+  }
+
+  showInquiryModal() { const m = document.getElementById('inquiry-modal'); if (m) m.style.display = 'flex'; }
+  hideInquiryModal() { const m = document.getElementById('inquiry-modal'); if (m) m.style.display = 'none'; }
+
+  async sendInquiry() {
+    const formData = {
+      name: document.getElementById('inquiry-name')?.value,
+      email: document.getElementById('inquiry-email')?.value,
+      phone: document.getElementById('inquiry-phone')?.value,
+      message: document.getElementById('inquiry-message')?.value,
+      service: this.selectedService?.name,
+      date: this.selectedDate,
+      time: this.selectedTime,
+      location: this.selectedLocation
+    };
+    try {
+      const res = await fetch(`${this.supabaseUrl}/functions/v1/send-inquiry-email`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.supabaseKey}` }, body: JSON.stringify(formData) });
+      if (res.ok) { alert('Din forespørgsel er sendt! Vi kontakter dig snarest.'); this.hideInquiryModal(); } else { throw new Error('Failed'); }
+    } catch (err) { console.error('Error sending inquiry:', err); alert('Der skete en fejl. Prøv igen senere.'); }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { new BookingWidget(); });
+</script>
