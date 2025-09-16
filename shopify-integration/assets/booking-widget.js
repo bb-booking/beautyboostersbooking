@@ -5,8 +5,8 @@
 
 class BookingWidget {
   constructor() {
-    this.supabaseUrl = 'https://your-project.supabase.co';
-    this.supabaseKey = 'your-anon-key';
+    this.supabaseUrl = 'https://ffmahgphhprqphukcand.supabase.co';
+    this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmbWFoZ3BoaHBycXBodWtjYW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1Njc3OTMsImV4cCI6MjA3MDE0Mzc5M30.ENuTgX8WNjgTBszJApnB-9JSp3hUDRPfQUirmQSzxUY';
     this.selectedService = null;
     this.selectedDate = null;
     this.selectedTime = null;
