@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 export default function AdminLogin() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("signup");
-  const [email, setEmail] = useState("hello@beautyboosters.dk");
-  const [password, setPassword] = useState("Skovlund42!");
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
