@@ -1,0 +1,12 @@
+# SPA fallback for client-side routing
+/*    /index.html   200
+
+# Shopify integration paths (if needed for external access)
+/book/*   /index.html   200
+/services/*   /index.html   200
+/booking/*   /index.html   200
+
+# Admin and booster paths
+/admin/*   /index.html   200
+/booster/*   /index.html   200
+/salon/*   /index.html   200

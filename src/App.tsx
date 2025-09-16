@@ -9,6 +9,7 @@ import Header from "@/components/layout/Header";
 import ChatWidget from "@/components/chat/ChatWidget";
 import SiteFooter from "@/components/layout/SiteFooter";
 import Index from "./pages/Index";
+import BookingLanding from "./pages/BookingLanding";
 import Services from "./pages/Services";
 import Address from "./pages/Address";
 import InquiryForm from "./pages/InquiryForm";
@@ -67,6 +68,7 @@ const App = () => (
               <main>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/book" element={<BookingLanding />} />
                   <Route path="/services" element={<Services />} />
                   <Route path="/address" element={<Address />} />
                   <Route path="/inquiry" element={<InquiryForm />} />
