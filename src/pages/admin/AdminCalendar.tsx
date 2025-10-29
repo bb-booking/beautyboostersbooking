@@ -552,10 +552,10 @@ const AdminCalendar = () => {
       ) : (
         <div className="space-y-4">
           {/* Date Headers */}
-          <div className="grid grid-cols-8 gap-2">
-            <div className="p-3 font-medium">Booster</div>
+          <div style={{ display: 'grid', gridTemplateColumns: `150px repeat(${daysToShow.length}, 1fr)` }} className="gap-2">
+            <div className="p-3 font-medium bg-muted rounded">Booster</div>
             {daysToShow.map(day => (
-              <div key={day.toISOString()} className="p-3 text-center">
+              <div key={day.toISOString()} className="p-3 text-center bg-muted rounded">
                 <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
                 <div className="text-sm text-muted-foreground">{format(day, 'd/M')}</div>
               </div>
@@ -567,22 +567,22 @@ const AdminCalendar = () => {
             {filteredBoosters.map(booster => (
               <Card key={booster.id} className={`${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
                 <CardContent className="p-0">
-                  <div className="grid grid-cols-8 gap-2">
+                  <div style={{ display: 'grid', gridTemplateColumns: `150px repeat(${daysToShow.length}, 1fr)` }} className="gap-2 p-2">
                     {/* Booster Info */}
-                    <div className="p-3 border-r">
+                    <div className="p-3 border rounded bg-background">
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           checked={selectedBoosters.includes(booster.id)}
                           onCheckedChange={() => toggleBoosterSelection(booster.id)}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{booster.name}</div>
+                          <div className="font-medium truncate text-sm">{booster.name}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
                             {booster.location}
                           </div>
                           <Badge 
-                            className={`text-xs ${booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                            className={`text-xs mt-1 ${booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                           >
                             {booster.is_available ? 'Aktiv' : 'Inaktiv'}
                           </Badge>
@@ -595,7 +595,7 @@ const AdminCalendar = () => {
                       const dayAvailability = getBoosterAvailabilityForDate(booster.id, day);
                       
                       return (
-                        <div key={day.toISOString()} className="p-2 min-h-20">
+                        <div key={day.toISOString()} className="p-2 min-h-20 border rounded bg-background">
                           {dayAvailability.length > 0 ? (
                             <div className="space-y-1">
                               {dayAvailability.map(avail => {
@@ -625,8 +625,7 @@ const AdminCalendar = () => {
                                 );
                               })}
                             </div>
-                          ) : null}
-                          {dayAvailability.length === 0 && (
+                          ) : (
                             <div className="text-xs text-muted-foreground text-center py-3">
                               Ingen data
                             </div>
