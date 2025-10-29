@@ -559,11 +559,21 @@ const AdminJobs = () => {
     if (!selectedJobForAssign || boosters.length === 0) return;
     
     try {
+      // Filter out already assigned boosters - only add new ones
+      const alreadyAssignedIds = selectedJobForAssign.assigned_boosters?.map(a => a.booster_id) || [];
+      const newBoosters = boosters.filter(b => !alreadyAssignedIds.includes(b.id));
+      
+      if (newBoosters.length === 0) {
+        toast.info('Ingen nye boosters at tildele');
+        setSelectedJobForAssign(null);
+        return;
+      }
+
       // Add new booster assignments
       const { error: insertError } = await supabase
         .from('job_booster_assignments')
         .insert(
-          boosters.map(booster => ({
+          newBoosters.map(booster => ({
             job_id: selectedJobForAssign.id,
             booster_id: booster.id,
             assigned_by: 'admin'
@@ -573,7 +583,7 @@ const AdminJobs = () => {
       if (insertError) throw insertError;
 
       // Update job status if all boosters are assigned
-      const currentAssignedCount = (selectedJobForAssign.assigned_boosters?.length || 0) + boosters.length;
+      const currentAssignedCount = (selectedJobForAssign.assigned_boosters?.length || 0) + newBoosters.length;
       if (currentAssignedCount >= selectedJobForAssign.boosters_needed) {
         await supabase
           .from('jobs')
@@ -581,7 +591,7 @@ const AdminJobs = () => {
           .eq('id', selectedJobForAssign.id);
       }
 
-      toast.success(`${boosters.length} booster(s) tildelt til job!`);
+      toast.success(`${newBoosters.length} booster(s) tildelt til job!`);
       setSelectedJobForAssign(null);
       fetchJobs();
     } catch (error) {
