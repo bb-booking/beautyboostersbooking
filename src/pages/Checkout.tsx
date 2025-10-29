@@ -41,9 +41,9 @@ export default function Checkout() {
   // Editable booking state
   const [localBooking, setLocalBooking] = useState(booking);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    typeof booking.date === 'string' ? new Date(booking.date) : booking.date
+    booking?.date ? (typeof booking.date === 'string' ? new Date(booking.date) : booking.date) : undefined
   );
-  const [selectedTime, setSelectedTime] = useState<string>(booking.time);
+  const [selectedTime, setSelectedTime] = useState<string>(booking?.time || '');
 
   // Ekstra boosters tildeling
   const [assignOpen, setAssignOpen] = useState(false);
@@ -53,7 +53,7 @@ export default function Checkout() {
   const [addressQuery, setAddressQuery] = useState<string>(
     bookingDetails?.location
       ? `${bookingDetails.location.address}, ${bookingDetails.location.postalCode} ${bookingDetails.location.city}`
-      : (booking.location || '')
+      : (booking?.location || '')
   );
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
