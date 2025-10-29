@@ -182,9 +182,24 @@ const BoosterSignup = () => {
 
   const selectAddress = (location: any) => {
     let city = '';
+    let formattedAddress = '';
     
+    // Extract city from address components
     if (location.address) {
-      city = location.address.city || location.address.town || location.address.municipality || '';
+      city = location.address.city || location.address.town || location.address.municipality || location.address.county || '';
+      
+      // Build a clean address format
+      const parts = [];
+      if (location.address.road) parts.push(location.address.road);
+      if (location.address.house_number) parts.push(location.address.house_number);
+      if (city) parts.push(city);
+      
+      formattedAddress = parts.length > 0 ? parts.join(', ') : location.display_name;
+    } else {
+      // Fallback: try to extract from display_name
+      const addressParts = location.display_name.split(',');
+      formattedAddress = addressParts.slice(0, 2).join(',').trim();
+      city = addressParts[2]?.trim() || '';
     }
 
     setFormData(prev => ({
@@ -192,7 +207,7 @@ const BoosterSignup = () => {
       latitude: parseFloat(location.lat),
       longitude: parseFloat(location.lon),
       city: city,
-      address: location.display_name
+      address: formattedAddress
     }));
 
     setShowSuggestions(false);
