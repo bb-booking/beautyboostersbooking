@@ -218,6 +218,41 @@ const Booking = () => {
 
   const fetchSpecificBooster = async () => {
     if (!boosterId) return;
+
+    // If boosterId is not a UUID (e.g. classic numeric ids like "2"),
+    // use mock data instead of querying Supabase to avoid 22P02 errors.
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(boosterId);
+    if (!isUuid) {
+      const mockById: Record<string, Booster> = {
+        '1': {
+          id: '1',
+          name: 'Sarah Nielsen',
+          specialties: ['Makeup', 'Bryllup', 'Event'],
+          hourly_rate: 1999,
+          portfolio_image_url: '/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png',
+          location: 'København N',
+          rating: 4.8,
+          review_count: 127,
+          years_experience: 5,
+          bio: 'Professionel makeup artist med speciale i bryllups- og event makeup'
+        },
+        '2': {
+          id: '2',
+          name: 'Maria Andersen',
+          specialties: ['Makeup', 'Hår', 'Fashion'],
+          hourly_rate: 1100,
+          portfolio_image_url: '/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png',
+          location: 'Frederiksberg',
+          rating: 4.9,
+          review_count: 89,
+          years_experience: 7,
+          bio: 'Erfaren artist med fokus på moderne trends og personlig stil'
+        }
+      };
+      const mock = mockById[boosterId];
+      if (mock) setSpecificBooster(mock);
+      return;
+    }
     
     setLoadingSpecificBooster(true);
     try {
