@@ -618,12 +618,18 @@ const AdminJobs = () => {
   });
 
   const getEligibleBoosters = (job: Job) => {
-    return boosters.filter(booster => 
-      booster.location === job.location &&
-      booster.is_available &&
-      (job.required_skills.length === 0 || 
-       job.required_skills.some(skill => booster.specialties.includes(skill)))
-    ).length;
+    return boosters.filter(booster => {
+      // Check location - allow partial match (e.g., "København" matches "København N")
+      const locationMatch = booster.location.toLowerCase().includes(job.location.toLowerCase()) || 
+                           job.location.toLowerCase().includes(booster.location.toLowerCase());
+      
+      const isAvailable = booster.is_available;
+      
+      const hasRequiredSkills = job.required_skills.length === 0 || 
+                               job.required_skills.some(skill => booster.specialties.includes(skill));
+      
+      return locationMatch && isAvailable && hasRequiredSkills;
+    }).length;
   };
   if (loading) {
     return (
@@ -1003,10 +1009,17 @@ Eksempel på notifikation som booster vil modtage.`;
                   <Badge className={getStatusColor(job.status)}>
                     {getStatusText(job.status)}
                   </Badge>
-                  <Badge variant="outline">
-                    <Users className="h-3 w-3 mr-1" />
-                    {getEligibleBoosters(job)} boosters
-                  </Badge>
+                  {job.assigned_booster_id ? (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Tildelt booster
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">
+                      <Users className="h-3 w-3 mr-1" />
+                      {getEligibleBoosters(job)} tilgængelige
+                    </Badge>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -1032,6 +1045,14 @@ Eksempel på notifikation som booster vil modtage.`;
                       <div className="flex items-center space-x-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
                         <span>{job.boosters_needed} boosters søges</span>
+                      </div>
+                    )}
+                    {job.assigned_booster_id && (
+                      <div className="flex items-center space-x-2 mt-2 p-2 bg-green-50 rounded-md">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-green-700">
+                          Tildelt: {boosters.find(b => b.id === job.assigned_booster_id)?.name || 'Booster'}
+                        </span>
                       </div>
                     )}
                   </div>
