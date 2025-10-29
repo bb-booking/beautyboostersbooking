@@ -258,10 +258,15 @@ export default function Checkout() {
       const nextTime = addHoursToTime(selectedTime, service.duration);
       const stored = sessionStorage.getItem('bookingDetails');
       const details = stored ? JSON.parse(stored) : {};
+      
+      // Preserve existing services and add new service with updated time
+      const existingServices = details.services || [service];
       const newDetails = {
         ...details,
+        services: existingServices, // Keep existing services
         date: (selectedDate || booking.date),
         time: nextTime,
+        appendingService: true, // Flag to indicate we're adding, not replacing
       };
       sessionStorage.setItem('bookingDetails', JSON.stringify(newDetails));
       sessionStorage.setItem('appendBoosterId', booster.id);
