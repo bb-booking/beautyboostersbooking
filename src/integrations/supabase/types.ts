@@ -313,6 +313,7 @@ export type Database = {
       }
       conversation_messages: {
         Row: {
+          booster_id: string | null
           conversation_id: string
           created_at: string
           email: string | null
@@ -322,6 +323,7 @@ export type Database = {
           sender: string
         }
         Insert: {
+          booster_id?: string | null
           conversation_id: string
           created_at?: string
           email?: string | null
@@ -331,6 +333,7 @@ export type Database = {
           sender: string
         }
         Update: {
+          booster_id?: string | null
           conversation_id?: string
           created_at?: string
           email?: string | null
@@ -340,6 +343,13 @@ export type Database = {
           sender?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversation_messages_booster_id_fkey"
+            columns: ["booster_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversation_messages_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -351,35 +361,53 @@ export type Database = {
       }
       conversations: {
         Row: {
+          archived: boolean | null
           created_at: string
           email: string | null
+          group_name: string | null
           id: string
           last_message_at: string | null
           name: string | null
+          participants: Json | null
           phone: string | null
+          priority: string | null
           status: string
+          tags: string[] | null
+          type: string
           unread_admin_count: number
           unread_user_count: number
         }
         Insert: {
+          archived?: boolean | null
           created_at?: string
           email?: string | null
+          group_name?: string | null
           id?: string
           last_message_at?: string | null
           name?: string | null
+          participants?: Json | null
           phone?: string | null
+          priority?: string | null
           status?: string
+          tags?: string[] | null
+          type?: string
           unread_admin_count?: number
           unread_user_count?: number
         }
         Update: {
+          archived?: boolean | null
           created_at?: string
           email?: string | null
+          group_name?: string | null
           id?: string
           last_message_at?: string | null
           name?: string | null
+          participants?: Json | null
           phone?: string | null
+          priority?: string | null
           status?: string
+          tags?: string[] | null
+          type?: string
           unread_admin_count?: number
           unread_user_count?: number
         }
