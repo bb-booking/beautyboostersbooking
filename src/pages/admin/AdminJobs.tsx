@@ -348,6 +348,17 @@ const AdminJobs = () => {
     });
   };
 
+  const toggleSelectAll = () => {
+    const eligible = getEligibleBoostersForJob();
+    if (selectedBoostersForNotification.size === eligible.length) {
+      // Deselect all
+      setSelectedBoostersForNotification(new Set());
+    } else {
+      // Select all
+      setSelectedBoostersForNotification(new Set(eligible.map(b => b.id)));
+    }
+  };
+
   const createJobAndNotifyBoosters = async () => {
     try {
       const totalPrice = calculateTotalPrice();
@@ -1129,42 +1140,52 @@ Eksempel på notifikation som booster vil modtage.`;
                         Ingen boosters matcher kriterierne for dette job
                       </div>
                     ) : (
-                      <ScrollArea className="h-96">
-                        <div className="space-y-2 pr-4">
-                          {getEligibleBoostersForJob().map((booster) => (
-                            <label
-                              key={booster.id}
-                              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
-                            >
-                              <Checkbox
-                                checked={selectedBoostersForNotification.has(booster.id)}
-                                onCheckedChange={() => toggleBoosterSelection(booster.id)}
-                              />
-                              <img
-                                src={booster.portfolio_image_url || "/placeholder.svg"}
-                                alt={booster.name}
-                                className="h-12 w-12 rounded-full object-cover"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{booster.name}</span>
-                                  {typeof booster.rating === 'number' && (
-                                    <span className="text-xs text-muted-foreground">{booster.rating.toFixed(1)}★</span>
-                                  )}
+                      <>
+                        <label className="flex items-center gap-3 p-3 rounded-lg border bg-accent/50 cursor-pointer font-medium">
+                          <Checkbox
+                            checked={selectedBoostersForNotification.size === getEligibleBoostersForJob().length && getEligibleBoostersForJob().length > 0}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                          <span>Vælg alle ({getEligibleBoostersForJob().length})</span>
+                        </label>
+                        
+                        <ScrollArea className="h-96">
+                          <div className="space-y-2 pr-4">
+                            {getEligibleBoostersForJob().map((booster) => (
+                              <label
+                                key={booster.id}
+                                className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                              >
+                                <Checkbox
+                                  checked={selectedBoostersForNotification.has(booster.id)}
+                                  onCheckedChange={() => toggleBoosterSelection(booster.id)}
+                                />
+                                <img
+                                  src={booster.portfolio_image_url || "/placeholder.svg"}
+                                  alt={booster.name}
+                                  className="h-12 w-12 rounded-full object-cover"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{booster.name}</span>
+                                    {typeof booster.rating === 'number' && (
+                                      <span className="text-xs text-muted-foreground">{booster.rating.toFixed(1)}★</span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">{booster.location}</div>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {booster.specialties.slice(0, 4).map((specialty) => (
+                                      <Badge key={specialty} variant="outline" className="text-[10px] h-4 px-1">
+                                        {specialty}
+                                      </Badge>
+                                    ))}
+                                  </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground">{booster.location}</div>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {booster.specialties.slice(0, 4).map((specialty) => (
-                                    <Badge key={specialty} variant="outline" className="text-[10px] h-4 px-1">
-                                      {specialty}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                              </label>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </>
                     )}
                   </div>
 
