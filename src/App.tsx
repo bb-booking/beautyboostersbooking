@@ -53,6 +53,7 @@ import BoosterBookingRequests from "./pages/booster/BoosterBookingRequests";
 import Auth from "./pages/Auth";
 import BoosterLogin from "./pages/booster/BoosterLogin";
 import GiftCards from "./pages/GiftCards";
+import InstallApp from "./pages/InstallApp";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 const queryClient = new QueryClient();
  
@@ -87,6 +88,7 @@ const App = () => (
                   
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/giftcards" element={<GiftCards />} />
+                  <Route path="/install" element={<InstallApp />} />
                   <Route path="/booster/login" element={<BoosterLogin />} />
                   {/* Admin routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
