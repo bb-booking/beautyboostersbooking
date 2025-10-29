@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import JobChat from "@/components/job/JobChat";
 import InvoiceCreator from "@/components/invoice/InvoiceCreator";
+import AssignBoostersDialog, { BoosterOption } from "@/components/boosters/AssignBoostersDialog";
 
 interface Job {
   id: string;
@@ -90,6 +91,8 @@ const AdminJobs = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedJobForChat, setSelectedJobForChat] = useState<string | null>(null);
+  const [selectedJobForEdit, setSelectedJobForEdit] = useState<Job | null>(null);
+  const [selectedJobForAssign, setSelectedJobForAssign] = useState<Job | null>(null);
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -334,6 +337,140 @@ const AdminJobs = () => {
     }
   };
 
+  const updateJob = async () => {
+    if (!selectedJobForEdit) return;
+    
+    try {
+      const totalPrice = calculateTotalPrice();
+      const totalDuration = calculateTotalDuration();
+      const serviceTypes = newJob.selectedServices.map(s => s.service_name).join(', ');
+      
+      const { error: jobError } = await supabase
+        .from('jobs')
+        .update({
+          title: newJob.title,
+          description: newJob.description,
+          service_type: serviceTypes,
+          location: newJob.location,
+          required_skills: newJob.selectedCompetenceTags,
+          hourly_rate: totalPrice,
+          date_needed: newJob.date_needed ? format(newJob.date_needed, 'yyyy-MM-dd') : null,
+          time_needed: newJob.time_needed,
+          duration_hours: totalDuration,
+          client_name: newJob.client_name,
+          client_type: newJob.client_type,
+          boosters_needed: newJob.boosters_needed
+        })
+        .eq('id', selectedJobForEdit.id);
+
+      if (jobError) throw jobError;
+
+      // Delete old services and competence tags
+      await supabase.from('job_services').delete().eq('job_id', selectedJobForEdit.id);
+      await supabase.from('job_competence_tags').delete().eq('job_id', selectedJobForEdit.id);
+
+      // Insert updated services
+      if (newJob.selectedServices.length > 0) {
+        const { error: servicesError } = await supabase
+          .from('job_services')
+          .insert(
+            newJob.selectedServices.map(service => ({
+              job_id: selectedJobForEdit.id,
+              service_id: service.service_id,
+              service_name: service.service_name,
+              service_price: service.service_price,
+              people_count: service.people_count
+            }))
+          );
+
+        if (servicesError) throw servicesError;
+      }
+
+      // Insert updated competence tags
+      if (newJob.selectedCompetenceTags.length > 0) {
+        const { error: tagsError } = await supabase
+          .from('job_competence_tags')
+          .insert(
+            newJob.selectedCompetenceTags.map(tagId => ({
+              job_id: selectedJobForEdit.id,
+              competence_tag_id: tagId
+            }))
+          );
+
+        if (tagsError) throw tagsError;
+      }
+
+      toast.success('Job opdateret!');
+      setSelectedJobForEdit(null);
+      resetForm();
+      fetchJobs();
+    } catch (error) {
+      console.error('Error updating job:', error);
+      toast.error('Fejl ved opdatering af job');
+    }
+  };
+
+  const handleEditJob = (job: Job) => {
+    setSelectedJobForEdit(job);
+    setNewJob({
+      title: job.title,
+      description: job.description || "",
+      location: job.location,
+      date_needed: job.date_needed ? new Date(job.date_needed) : undefined,
+      time_needed: job.time_needed || "",
+      duration_hours: job.duration_hours || 0,
+      client_name: job.client_name || "",
+      client_type: job.client_type,
+      boosters_needed: job.boosters_needed,
+      selectedServices: [],
+      selectedCompetenceTags: job.required_skills
+    });
+    setAddressQuery(job.location);
+  };
+
+  const handleAssignBoosters = async (boosters: BoosterOption[]) => {
+    if (!selectedJobForAssign || boosters.length === 0) return;
+    
+    try {
+      // For now, just assign the first booster (single assignment)
+      const { error } = await supabase
+        .from('jobs')
+        .update({ 
+          assigned_booster_id: boosters[0].id,
+          status: 'assigned'
+        })
+        .eq('id', selectedJobForAssign.id);
+
+      if (error) throw error;
+
+      toast.success(`${boosters.length} booster(s) tildelt til job!`);
+      setSelectedJobForAssign(null);
+      fetchJobs();
+    } catch (error) {
+      console.error('Error assigning boosters:', error);
+      toast.error('Fejl ved tildeling af boosters');
+    }
+  };
+
+  const resetForm = () => {
+    setNewJob({
+      title: "",
+      description: "",
+      location: "",
+      date_needed: undefined,
+      time_needed: "",
+      duration_hours: 0,
+      client_name: "",
+      client_type: "privat",
+      boosters_needed: 1,
+      selectedServices: [],
+      selectedCompetenceTags: []
+    });
+    setAddressQuery("");
+    setAddressSuggestions([]);
+    setShowAddressSuggestions(false);
+  };
+
   const addService = (serviceId: string) => {
     const service = services.find(s => s.id === serviceId);
     if (service && !newJob.selectedServices.find(s => s.service_id === serviceId)) {
@@ -516,7 +653,13 @@ Eksempel på notifikation som booster vil modtage.`;
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Job Management</h2>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <Dialog open={showCreateDialog || !!selectedJobForEdit} onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateDialog(false);
+            setSelectedJobForEdit(null);
+            resetForm();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -525,7 +668,7 @@ Eksempel på notifikation som booster vil modtage.`;
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Opret nyt job</DialogTitle>
+              <DialogTitle>{selectedJobForEdit ? 'Rediger job' : 'Opret nyt job'}</DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -800,14 +943,18 @@ Eksempel på notifikation som booster vil modtage.`;
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                <Button variant="outline" onClick={() => {
+                  setShowCreateDialog(false);
+                  setSelectedJobForEdit(null);
+                  resetForm();
+                }}>
                   Annuller
                 </Button>
                 <Button 
-                  onClick={createJob} 
+                  onClick={selectedJobForEdit ? updateJob : createJob} 
                   disabled={!newJob.title || !newJob.location || !newJob.date_needed || newJob.selectedServices.length === 0}
                 >
-                  Opret & Send til Boosters
+                  {selectedJobForEdit ? 'Gem ændringer' : 'Opret & Send til Boosters'}
                 </Button>
               </div>
             </div>
@@ -960,12 +1107,12 @@ Eksempel på notifikation som booster vil modtage.`;
                     <Eye className="h-4 w-4 mr-1" />
                     Se ansøgninger
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleEditJob(job)}>
                     <Edit className="h-4 w-4 mr-1" />
                     Rediger
                   </Button>
                   {job.status === 'open' && (
-                    <Button size="sm">
+                    <Button size="sm" onClick={() => setSelectedJobForAssign(job)}>
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Tildel
                     </Button>
@@ -1009,6 +1156,20 @@ Eksempel på notifikation som booster vil modtage.`;
             />
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Assign Boosters Dialog */}
+      {selectedJobForAssign && (
+        <AssignBoostersDialog
+          open={!!selectedJobForAssign}
+          onOpenChange={(open) => !open && setSelectedJobForAssign(null)}
+          date={selectedJobForAssign.date_needed}
+          time={selectedJobForAssign.time_needed}
+          serviceCategory={selectedJobForAssign.service_type}
+          desiredCount={selectedJobForAssign.boosters_needed}
+          onAutoAssign={handleAssignBoosters}
+          onConfirm={handleAssignBoosters}
+        />
       )}
     </div>
   );
