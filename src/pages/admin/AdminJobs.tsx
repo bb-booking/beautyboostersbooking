@@ -7,13 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { 
   Plus, 
   MapPin, 
   Clock, 
-  Calendar,
+  Calendar as CalendarIcon,
   Users,
   Filter,
   Search,
@@ -22,6 +25,7 @@ import {
   CheckCircle,
   MessageSquare
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import JobChat from "@/components/job/JobChat";
 import InvoiceCreator from "@/components/invoice/InvoiceCreator";
 
@@ -52,6 +56,7 @@ interface Service {
   price: number;
   clientType: 'privat' | 'virksomhed';
   category: string;
+  durationMinutes: number;
 }
 
 interface JobService {
@@ -90,7 +95,7 @@ const AdminJobs = () => {
     title: "",
     description: "",
     location: "",
-    date_needed: "",
+    date_needed: undefined as Date | undefined,
     time_needed: "",
     duration_hours: 0,
     client_name: "",
@@ -106,11 +111,28 @@ const AdminJobs = () => {
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
 
+  // Time options (every 30 minutes from 6:00 to 22:00)
+  const timeOptions = Array.from({ length: 33 }, (_, i) => {
+    const hour = Math.floor(i / 2) + 6;
+    const minute = i % 2 === 0 ? "00" : "30";
+    return `${hour.toString().padStart(2, '0')}:${minute}`;
+  });
+
   // Calculate total price from all selected services
   const calculateTotalPrice = () => {
     return newJob.selectedServices.reduce((total, service) => {
       return total + (service.service_price * service.people_count);
     }, 0);
+  };
+
+  // Calculate total duration from all selected services (in hours)
+  const calculateTotalDuration = () => {
+    const totalMinutes = newJob.selectedServices.reduce((total, service) => {
+      const serviceData = services.find(s => s.id === service.service_id);
+      if (!serviceData) return total;
+      return total + (serviceData.durationMinutes * service.people_count);
+    }, 0);
+    return Math.ceil(totalMinutes / 60); // Convert to hours, round up
   };
 
   // Calculate BeautyBoosters cut and booster earnings
@@ -155,29 +177,29 @@ const AdminJobs = () => {
   }, []);
 
   const fetchServices = async () => {
-    // Hardcoded services matching the ones from Services.tsx
+    // Hardcoded services matching the ones from Services.tsx with duration
     const allServices: Service[] = [
       // Private services
-      { id: '1', name: 'Makeup Styling', price: 1999, clientType: 'privat', category: 'Makeup & Hår' },
-      { id: '2', name: 'Hårstyling / håropsætning', price: 1999, clientType: 'privat', category: 'Makeup & Hår' },
-      { id: '3', name: 'Makeup & Hårstyling', price: 2999, clientType: 'privat', category: 'Makeup & Hår' },
-      { id: '4', name: 'Spraytan', price: 499, clientType: 'privat', category: 'Spraytan' },
-      { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, clientType: 'privat', category: 'Konfirmation' },
-      { id: '6', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, clientType: 'privat', category: 'Bryllup - Brudestyling' },
-      { id: '7', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, clientType: 'privat', category: 'Bryllup - Brudestyling' },
-      { id: '8', name: '1:1 Makeup Session', price: 2499, clientType: 'privat', category: 'Makeup Kurser' },
-      { id: '9', name: 'The Beauty Bar (makeup kursus)', price: 4499, clientType: 'privat', category: 'Makeup Kurser' },
-      { id: '10', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, clientType: 'privat', category: 'Event' },
-      { id: '11', name: 'Ansigtsmaling til børn', price: 4499, clientType: 'privat', category: 'Børn' },
+      { id: '1', name: 'Makeup Styling', price: 1999, clientType: 'privat', category: 'Makeup & Hår', durationMinutes: 60 },
+      { id: '2', name: 'Hårstyling / håropsætning', price: 1999, clientType: 'privat', category: 'Makeup & Hår', durationMinutes: 60 },
+      { id: '3', name: 'Makeup & Hårstyling', price: 2999, clientType: 'privat', category: 'Makeup & Hår', durationMinutes: 90 },
+      { id: '4', name: 'Spraytan', price: 499, clientType: 'privat', category: 'Spraytan', durationMinutes: 30 },
+      { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, clientType: 'privat', category: 'Konfirmation', durationMinutes: 90 },
+      { id: '6', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, clientType: 'privat', category: 'Bryllup - Brudestyling', durationMinutes: 120 },
+      { id: '7', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, clientType: 'privat', category: 'Bryllup - Brudestyling', durationMinutes: 180 },
+      { id: '8', name: '1:1 Makeup Session', price: 2499, clientType: 'privat', category: 'Makeup Kurser', durationMinutes: 120 },
+      { id: '9', name: 'The Beauty Bar (makeup kursus)', price: 4499, clientType: 'privat', category: 'Makeup Kurser', durationMinutes: 180 },
+      { id: '10', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, clientType: 'privat', category: 'Event', durationMinutes: 180 },
+      { id: '11', name: 'Ansigtsmaling til børn', price: 4499, clientType: 'privat', category: 'Børn', durationMinutes: 120 },
       
       // Business services
-      { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, clientType: 'virksomhed', category: 'Shoot/reklame' },
-      { id: '21', name: 'Key Makeup Artist til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
-      { id: '22', name: 'Makeup Assistent til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
-      { id: '23', name: 'SFX Expert', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
-      { id: '24', name: 'Parykdesign', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
-      { id: '25', name: 'MUA til Film/TV', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt' },
-      { id: '26', name: 'Event Makeup Services', price: 0, clientType: 'virksomhed', category: 'Makeup / styling til Event' }
+      { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, clientType: 'virksomhed', category: 'Shoot/reklame', durationMinutes: 180 },
+      { id: '21', name: 'Key Makeup Artist til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 480 },
+      { id: '22', name: 'Makeup Assistent til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 480 },
+      { id: '23', name: 'SFX Expert', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 240 },
+      { id: '24', name: 'Parykdesign', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 360 },
+      { id: '25', name: 'MUA til Film/TV', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 480 },
+      { id: '26', name: 'Event Makeup Services', price: 0, clientType: 'virksomhed', category: 'Makeup / styling til Event', durationMinutes: 240 }
     ];
     
     setServices(allServices);
@@ -230,6 +252,7 @@ const AdminJobs = () => {
   const createJob = async () => {
     try {
       const totalPrice = calculateTotalPrice();
+      const totalDuration = calculateTotalDuration();
       const serviceTypes = newJob.selectedServices.map(s => s.service_name).join(', ');
       
       const { data: jobData, error: jobError } = await supabase
@@ -241,9 +264,9 @@ const AdminJobs = () => {
           location: newJob.location,
           required_skills: newJob.selectedCompetenceTags,
           hourly_rate: totalPrice,
-          date_needed: newJob.date_needed,
+          date_needed: newJob.date_needed ? format(newJob.date_needed, 'yyyy-MM-dd') : null,
           time_needed: newJob.time_needed,
-          duration_hours: newJob.duration_hours,
+          duration_hours: totalDuration,
           client_name: newJob.client_name,
           client_type: newJob.client_type,
           boosters_needed: newJob.boosters_needed,
@@ -291,7 +314,7 @@ const AdminJobs = () => {
         title: "",
         description: "",
         location: "",
-        date_needed: "",
+        date_needed: undefined,
         time_needed: "",
         duration_hours: 0,
         client_name: "",
@@ -686,30 +709,52 @@ Eksempel på notifikation som booster vil modtage.`;
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="date_needed">Dato *</Label>
-                  <Input
-                    id="date_needed"
-                    type="date"
-                    value={newJob.date_needed}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, date_needed: e.target.value }))}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newJob.date_needed && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newJob.date_needed ? format(newJob.date_needed, "PPP") : <span>Vælg dato</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newJob.date_needed}
+                        onSelect={(date) => setNewJob(prev => ({ ...prev, date_needed: date }))}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label htmlFor="time_needed">Tidspunkt</Label>
-                  <Input
-                    id="time_needed"
-                    type="time"
-                    value={newJob.time_needed}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, time_needed: e.target.value }))}
-                  />
+                  <Select value={newJob.time_needed} onValueChange={(value) => setNewJob(prev => ({ ...prev, time_needed: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vælg tidspunkt" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeOptions.map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="duration_hours">Varighed (timer)</Label>
+                  <Label htmlFor="duration_hours">Varighed (auto-beregnet)</Label>
                   <Input
                     id="duration_hours"
                     type="number"
-                    value={newJob.duration_hours}
-                    onChange={(e) => setNewJob(prev => ({ ...prev, duration_hours: parseInt(e.target.value) || 0 }))}
-                    placeholder="3"
+                    value={calculateTotalDuration()}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
               </div>
