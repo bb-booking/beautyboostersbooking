@@ -139,19 +139,28 @@ serve(async (req) => {
 
     if (emailErr) {
       console.error('Resend error', emailErr);
+      // If domain is not verified, use onboarding domain and send to hello@beautyboosters.dk
+      // This is a temporary workaround until the domain is verified
       const msg = String((emailErr as any)?.error || (emailErr as any)?.message || emailErr);
       if (msg.includes('domain is not verified') || (emailErr as any)?.statusCode === 403) {
-        // Retry with Resend's onboarding domain as a fallback (dev-safe)
+        // Send to admin email with onboarding domain as fallback
         const fallbackFrom = 'BeautyBoosters <onboarding@resend.dev>';
+        const adminEmail = 'hello@beautyboosters.dk';
         const { error: retryErr } = await resend.emails.send({
           from: fallbackFrom,
-          to: [payload.toEmail],
-          subject: `${title} fra ${payload.fromName}`,
-          html,
+          to: [adminEmail],
+          subject: `[GAVEKORT] ${title} fra ${payload.fromName} til ${payload.toName}`,
+          html: `
+            <div style="background:#fff3cd;padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid #ffc107;">
+              <strong>⚠️ BEMÆRK:</strong> Dette gavekort skulle sendes til ${payload.toEmail}, men domænet beautyboosters.dk er ikke verificeret i Resend.
+              <br>For at sende direkte til kunder, skal du verificere domænet på <a href="https://resend.com/domains">resend.com/domains</a>.
+            </div>
+            ${html}
+          `,
         });
         if (retryErr) {
           console.error('Resend retry error', retryErr);
-          return new Response(JSON.stringify({ error: 'Kunne ikke sende email' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+          return new Response(JSON.stringify({ error: 'Kunne ikke sende email. Verificer venligst dit domæne på resend.com/domains' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
         }
       } else {
         return new Response(JSON.stringify({ error: 'Kunne ikke sende email' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
