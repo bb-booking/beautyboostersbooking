@@ -49,6 +49,7 @@ import BoosterFinance from "./pages/booster/BoosterFinance";
 import BoosterMessages from "./pages/booster/BoosterMessages";
 import BoosterSettings from "./pages/booster/BoosterSettings";
 import BoosterReviews from "./pages/booster/BoosterReviews";
+import BoosterBookingRequests from "./pages/booster/BoosterBookingRequests";
 import Auth from "./pages/Auth";
 import BoosterLogin from "./pages/booster/BoosterLogin";
 import GiftCards from "./pages/GiftCards";
@@ -106,6 +107,7 @@ const App = () => (
                   <Route path="/booster" element={<BoosterLayout />}>
                     <Route index element={<BoosterCalendar />} />
                     <Route path="dashboard" element={<BoosterDashboard />} />
+                    <Route path="requests" element={<BoosterBookingRequests />} />
                     <Route path="jobs" element={<BoosterJobs />} />
                     <Route path="calendar" element={<BoosterCalendar />} />
                     <Route path="portfolio" element={<BoosterPortfolio />} />

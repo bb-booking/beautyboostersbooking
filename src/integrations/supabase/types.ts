@@ -119,10 +119,12 @@ export type Database = {
       bookings: {
         Row: {
           amount: number
+          assignment_attempts: number | null
           booking_date: string
           booking_time: string
           booster_id: string | null
           booster_name: string | null
+          booster_status: string | null
           cancellation_policy_accepted: boolean | null
           created_at: string
           customer_email: string
@@ -132,6 +134,7 @@ export type Database = {
           discount_code: string | null
           duration_hours: number | null
           id: string
+          last_assignment_attempt: string | null
           location: string | null
           payment_captured_at: string | null
           payment_intent_id: string | null
@@ -142,10 +145,12 @@ export type Database = {
         }
         Insert: {
           amount: number
+          assignment_attempts?: number | null
           booking_date: string
           booking_time: string
           booster_id?: string | null
           booster_name?: string | null
+          booster_status?: string | null
           cancellation_policy_accepted?: boolean | null
           created_at?: string
           customer_email: string
@@ -155,6 +160,7 @@ export type Database = {
           discount_code?: string | null
           duration_hours?: number | null
           id?: string
+          last_assignment_attempt?: string | null
           location?: string | null
           payment_captured_at?: string | null
           payment_intent_id?: string | null
@@ -165,10 +171,12 @@ export type Database = {
         }
         Update: {
           amount?: number
+          assignment_attempts?: number | null
           booking_date?: string
           booking_time?: string
           booster_id?: string | null
           booster_name?: string | null
+          booster_status?: string | null
           cancellation_policy_accepted?: boolean | null
           created_at?: string
           customer_email?: string
@@ -178,6 +186,7 @@ export type Database = {
           discount_code?: string | null
           duration_hours?: number | null
           id?: string
+          last_assignment_attempt?: string | null
           location?: string | null
           payment_captured_at?: string | null
           payment_intent_id?: string | null

@@ -9,7 +9,8 @@ import {
   Tag,
   User,
   Briefcase,
-  Star
+  Star,
+  Bell
 } from "lucide-react"
 
 import {
@@ -34,6 +35,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/booster/dashboard",
     icon: Home,
+  },
+  {
+    title: "Booking Anmodninger",
+    url: "/booster/requests",
+    icon: Bell,
   },
   {
     title: "Ledige jobs",
