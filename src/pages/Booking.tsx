@@ -22,6 +22,13 @@ interface Service {
   price: number;
   duration: number;
   category: string;
+  description?: string;
+  groupPricing?: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+  };
 }
 
 interface Booster {
@@ -51,12 +58,14 @@ const Booking = () => {
   const navigate = useNavigate();
   const { boosterId } = useParams();
   
-  // Get service ID from URL (if coming from services) or determine from booster specialties
-  const [determinedServiceId, setDeterminedServiceId] = useState<string>(searchParams.get('service') || '1');
+  // Get service ID from URL or determine from booster specialties
+  const [determinedServiceId, setDeterminedServiceId] = useState<string>(searchParams.get('service') || '');
   const serviceId = determinedServiceId;
   
   // State
   const [service, setService] = useState<Service | null>(null);
+  const [boosterServices, setBoosterServices] = useState<Service[]>([]);
+  const [showServiceSelection, setShowServiceSelection] = useState(false);
   const [specificBooster, setSpecificBooster] = useState<Booster | null>(null);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
   const [selectedCounts, setSelectedCounts] = useState<{people: number; boosters: number; extraHours?: number} | null>(null);
@@ -69,6 +78,7 @@ const Booking = () => {
   const [loadingSpecificBooster, setLoadingSpecificBooster] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   // Generate time slots in 30-minute intervals from 06:00-23:00
   const generateTimeSlots = () => {
@@ -130,7 +140,7 @@ const Booking = () => {
     } else if (boosterId) {
       // Create default booking details for direct booster booking
       setBookingDetails({
-        serviceId: determinedServiceId,
+        serviceId: determinedServiceId || '1',
         location: {
           address: 'Kundens adresse',
           postalCode: '0000',
@@ -147,11 +157,14 @@ const Booking = () => {
 
   }, [boosterId, determinedServiceId]);
 
-  // Update service ID when booster data is loaded
+  // Load booster services when booster is loaded
   useEffect(() => {
-    if (specificBooster && boosterId && !searchParams.get('service')) {
-      const newServiceId = getServiceIdFromSpecialties(specificBooster.specialties);
-      setDeterminedServiceId(newServiceId);
+    if (specificBooster && boosterId) {
+      loadBoosterServices();
+      // If no service selected, show service selection
+      if (!searchParams.get('service') && !determinedServiceId) {
+        setShowServiceSelection(true);
+      }
     }
   }, [specificBooster, boosterId, searchParams]);
 
@@ -171,41 +184,73 @@ const Booking = () => {
     }
   }, [selectedDate, selectedTime, bookingDetails, boosterId]);
 
+  const getAllServices = () => {
+    return [
+      { id: '1', name: 'Makeup Styling', price: 1999, duration: 1, category: 'Makeup & Hår', description: 'Professionel makeup styling' },
+      { id: '2', name: 'Hårstyling / håropsætning', price: 1999, duration: 1, category: 'Makeup & Hår', description: 'Professionel hårstyling' },
+      { id: '3', name: 'Makeup & Hårstyling', price: 2999, duration: 1.5, category: 'Makeup & Hår', description: 'Komplet styling' },
+      { id: '4', name: 'Spraytan', price: 499, duration: 0.5, category: 'Spraytan', description: 'Naturlig tan' },
+      { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, duration: 1.5, category: 'Konfirmation', description: 'Styling til konfirmation' },
+      { id: '6', name: 'Brudestyling - Makeup Styling', price: 2999, duration: 2, category: 'Bryllup - Brudestyling', description: 'Makeup til bruden' },
+      { id: '7', name: 'Brudestyling - Hårstyling', price: 2999, duration: 2, category: 'Bryllup - Brudestyling', description: 'Hår til bruden' },
+      { id: '8', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, duration: 3, category: 'Bryllup - Brudestyling', description: 'Komplet brudestyling' },
+      { id: '9', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, duration: 4.5, category: 'Bryllup - Brudestyling', description: 'Brudestyling med prøve' },
+      { id: '10', name: 'Brudestyling Premium - Makeup og Hårstyling', price: 8999, duration: 8, category: 'Bryllup - Brudestyling', description: 'Premium brudestyling' },
+      { id: '11', name: 'Brudepigestyling - Makeup & Hår (1 person)', price: 2999, duration: 1.5, category: 'Bryllup - Brudestyling', description: 'Brudepige styling' },
+      { id: '12', name: 'Brudepigestyling - Makeup & Hår (2 personer)', price: 4999, duration: 2.5, category: 'Bryllup - Brudestyling', description: '2 brudepiger styling' },
+      { id: '13', name: 'Brudestyling + 1 person ekstra', price: 7499, duration: 4, category: 'Bryllup - Brudestyling', description: 'Brud + ekstra person' },
+      { id: '14', name: '1:1 Makeup Session', price: 2499, duration: 1.5, category: 'Makeup Kurser', description: 'Personlig makeup session' },
+      { id: '16', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, duration: 3, category: 'Event', description: 'Touch-up service' },
+      { id: '17', name: 'Ansigtsmaling til børn', price: 4499, duration: 3, category: 'Børn', description: 'Face painting' },
+      { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, duration: 3, category: 'Shoot/reklame', description: 'Styling til shoot' },
+    ];
+  };
+
+  const loadBoosterServices = () => {
+    if (!specificBooster) return;
+    
+    const allServices = getAllServices();
+    const specialtyMap: { [key: string]: string[] } = {
+      'Makeup': ['1', '3', '5', '6', '8', '9', '10', '11', '12', '13', '14', '16', '20'],
+      'Hår': ['2', '3', '5', '7', '8', '9', '10', '11', '12', '13', '20'],
+      'Spraytan': ['4'],
+      'Bryllup': ['6', '7', '8', '9', '10', '11', '12', '13'],
+      'Event': ['16'],
+      'Fashion': ['1', '3', '20'],
+      'Konfirmation': ['5'],
+      'Børn': ['17'],
+      'Shoot/Reklame': ['20'],
+      'SFX': ['20']
+    };
+    
+    // Get all service IDs that match booster specialties
+    const serviceIds = new Set<string>();
+    specificBooster.specialties.forEach(specialty => {
+      const ids = specialtyMap[specialty] || [];
+      ids.forEach(id => serviceIds.add(id));
+    });
+    
+    // Filter services
+    const matchingServices = allServices.filter(s => serviceIds.has(s.id));
+    setBoosterServices(matchingServices);
+  };
+
   const fetchService = async () => {
+    if (!serviceId) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Mock service data - replace with actual API call
-      const mockServices = {
-        '1': { id: '1', name: 'Makeup Styling', price: 1999, duration: 1, category: 'Makeup & Hår' },
-        '2': { id: '2', name: 'Hårstyling / håropsætning', price: 1999, duration: 1, category: 'Makeup & Hår' },
-        '3': { id: '3', name: 'Makeup & Hårstyling', price: 2999, duration: 1.5, category: 'Makeup & Hår' },
-        '4': { id: '4', name: 'Spraytan', price: 499, duration: 0.5, category: 'Spraytan' },
-        '5': { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, duration: 1.5, category: 'Konfirmation' },
-        '6': { id: '6', name: 'Brudestyling - Makeup Styling', price: 2999, duration: 2, category: 'Bryllup - Brudestyling' },
-        '7': { id: '7', name: 'Brudestyling - Hårstyling', price: 2999, duration: 2, category: 'Bryllup - Brudestyling' },
-        '8': { id: '8', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, duration: 3, category: 'Bryllup - Brudestyling' },
-        '9': { id: '9', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, duration: 4.5, category: 'Bryllup - Brudestyling' },
-        '10': { id: '10', name: 'Brudestyling Premium - Makeup og Hårstyling', price: 8999, duration: 8, category: 'Bryllup - Brudestyling' },
-        '11': { id: '11', name: 'Brudepigestyling - Makeup & Hår (1 person)', price: 2999, duration: 1.5, category: 'Bryllup - Brudestyling' },
-        '12': { id: '12', name: 'Brudepigestyling - Makeup & Hår (2 personer)', price: 4999, duration: 2.5, category: 'Bryllup - Brudestyling' },
-        '13': { id: '13', name: 'Brudestyling + 1 person ekstra', price: 7499, duration: 4, category: 'Bryllup - Brudestyling' },
-        '14': { id: '14', name: '1:1 Makeup Session', price: 2499, duration: 1.5, category: 'Makeup Kurser' },
-        '16': { id: '16', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, duration: 3, category: 'Event' },
-        '17': { id: '17', name: 'Ansigtsmaling til børn', price: 4499, duration: 3, category: 'Børn' },
-        '20': { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, duration: 3, category: 'Shoot/reklame' },
+      const allServices = getAllServices();
+      const serviceData = allServices.find(s => s.id === serviceId) || {
+        id: serviceId,
+        name: 'Beauty Service',
+        price: 1999,
+        duration: 1,
+        category: 'Makeup & Hår',
+        description: 'Professionel service'
       };
-      
-      let serviceData = mockServices[serviceId as keyof typeof mockServices];
-      
-      // If specific service ID not found, use a default service
-      if (!serviceData) {
-        serviceData = { 
-          id: serviceId, 
-          name: 'Beauty Service', 
-          price: 1999, 
-          duration: 1, 
-          category: 'Makeup & Hår' 
-        };
-      }
       
       setService(serviceData);
     } catch (error) {
@@ -397,20 +442,43 @@ const Booking = () => {
     });
   };
 
-  const handleSendInquiry = (boosterId?: string) => {
-    if (!selectedDate || !selectedTime || !service) return;
+  const handleSendRequest = async () => {
+    if (!selectedDate || !selectedTime || !service || !specificBooster) {
+      toast.error("Vælg venligst dato, tid og service");
+      return;
+    }
     
-    const inquiryData = {
-      service,
-      date: selectedDate,
-      time: selectedTime,
-      location: bookingDetails?.location,
-      boosterId
-    };
-    
-    // Navigate to inquiry form or show success message
-    toast.success("Forespørgsel sendt til booster netværket!");
-    console.log('Inquiry data:', inquiryData);
+    setSendingRequest(true);
+    try {
+      // Create a booking request
+      const { error } = await supabase
+        .from('booster_booking_requests')
+        .insert({
+          booking_id: null, // Will be updated when customer completes booking
+          booster_id: specificBooster.id,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast.success(`Forespørgsel sendt til ${specificBooster.name}!`);
+      
+      // Navigate back or show confirmation
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+    } catch (error) {
+      console.error('Error sending request:', error);
+      toast.error("Kunne ikke sende forespørgsel. Prøv igen.");
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
+  const handleSelectService = (selectedService: Service) => {
+    setDeterminedServiceId(selectedService.id);
+    setService(selectedService);
+    setShowServiceSelection(false);
   };
 
   if (loading || (boosterId && loadingSpecificBooster)) {
@@ -420,6 +488,46 @@ const Booking = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Skeleton className="h-96 w-full" />
           <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show service selection for booster-specific booking
+  if (boosterId && showServiceSelection && boosterServices.length > 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Link to={`/stylist/${boosterId}`} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Tilbage til Booster
+        </Link>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">
+              Vælg service hos {specificBooster?.name}
+            </h1>
+            <p className="text-muted-foreground">
+              Vælg den service du ønsker at booke
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {boosterServices.map((svc) => (
+              <Card key={svc.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleSelectService(svc)}>
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold text-lg mb-2">{svc.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{svc.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold">{svc.price} kr</span>
+                    <Badge variant="outline">{svc.duration} timer</Badge>
+                  </div>
+                  <Button className="w-full mt-4">
+                    Vælg service
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -564,13 +672,38 @@ const Booking = () => {
           </CardContent>
         </Card>
 
-        {/* Available Boosters - Moved up and only show when date/time selected */}
-        {selectedDate && selectedTime && (
+        {/* Send request button for booster-specific booking */}
+        {boosterId && selectedDate && selectedTime && service && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">Klar til at sende forespørgsel?</h3>
+                  <p className="text-muted-foreground">
+                    Du sender nu en forespørgsel til {specificBooster?.name} for {service.name} den {format(selectedDate, 'EEEE d. MMMM yyyy', { locale: da })} kl. {selectedTime}
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleSendRequest}
+                  disabled={sendingRequest}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {sendingRequest ? 'Sender...' : 'Send forespørgsel til booster'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Available Boosters - Only for non-booster-specific bookings */}
+        {!boosterId && selectedDate && selectedTime && (
           <div>
             <h2 className="text-2xl font-semibold mb-6">
               {loadingBoosters ? 'Søger ledige tider...' : 
-               showFallback ? (boosterId ? `${specificBooster?.name} er ikke ledig på dette tidspunkt` : 'Ingen ledige på dette tidspunkt') : 
-               boosterId ? `Ledig tid for ${specificBooster?.name}` : 'Tilgængelige boosters'}
+               showFallback ? 'Ingen ledige på dette tidspunkt' : 
+               'Tilgængelige boosters'}
             </h2>
 
             {loadingBoosters ? (
@@ -588,7 +721,7 @@ const Booking = () => {
                         Der er ingen boosters ledige på det valgte tidspunkt. Du kan sende en forespørgsel til vores booster-netværk.
                       </p>
                       <Button 
-                        onClick={() => handleSendInquiry()}
+                        onClick={() => toast.info("Forespørgsel funktionalitet kommer snart")}
                         className="bg-orange-600 hover:bg-orange-700"
                       >
                         <Send className="h-4 w-4 mr-2" />
@@ -633,7 +766,7 @@ const Booking = () => {
                                 <Button 
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleSendInquiry(booster.id)}
+                                  onClick={() => toast.info("Forespørgsel funktionalitet kommer snart")}
                                 >
                                   <Send className="h-3 w-3 mr-1" />
                                   Send forespørgsel
