@@ -603,6 +603,48 @@ export type Database = {
           },
         ]
       }
+      job_booster_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          booster_id: string
+          id: string
+          job_id: string
+          notes: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          booster_id: string
+          id?: string
+          job_id: string
+          notes?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          booster_id?: string
+          id?: string
+          job_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_booster_assignments_booster_id_fkey"
+            columns: ["booster_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_booster_assignments_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_communications: {
         Row: {
           created_at: string | null

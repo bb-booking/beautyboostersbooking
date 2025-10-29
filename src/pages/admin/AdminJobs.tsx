@@ -23,7 +23,8 @@ import {
   Eye,
   Edit,
   CheckCircle,
-  MessageSquare
+  MessageSquare,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import JobChat from "@/components/job/JobChat";
@@ -49,6 +50,11 @@ interface Job {
   status: 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
   assigned_booster_id?: string;
   created_at: string;
+  assigned_boosters?: Array<{
+    id: string;
+    booster_id: string;
+    booster_name: string;
+  }>;
 }
 
 interface Service {
@@ -225,13 +231,40 @@ const AdminJobs = () => {
 
   const fetchJobs = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
         .select('*, client_type, boosters_needed')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setJobs((data || []) as Job[]);
+      if (jobsError) throw jobsError;
+
+      // Fetch assigned boosters for each job
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('job_booster_assignments')
+        .select(`
+          id,
+          job_id,
+          booster_id,
+          booster_profiles (
+            name
+          )
+        `);
+
+      if (assignmentsError) throw assignmentsError;
+
+      // Combine jobs with their assigned boosters
+      const jobsWithBoosters = (jobsData || []).map(job => ({
+        ...job,
+        assigned_boosters: (assignmentsData || [])
+          .filter((assignment: any) => assignment.job_id === job.id)
+          .map((assignment: any) => ({
+            id: assignment.id,
+            booster_id: assignment.booster_id,
+            booster_name: assignment.booster_profiles?.name || 'Unknown'
+          }))
+      }));
+
+      setJobs(jobsWithBoosters as Job[]);
     } catch (error) {
       console.error('Error fetching jobs:', error);
       toast.error('Fejl ved hentning af jobs');
@@ -432,16 +465,27 @@ const AdminJobs = () => {
     if (!selectedJobForAssign || boosters.length === 0) return;
     
     try {
-      // For now, just assign the first booster (single assignment)
-      const { error } = await supabase
-        .from('jobs')
-        .update({ 
-          assigned_booster_id: boosters[0].id,
-          status: 'assigned'
-        })
-        .eq('id', selectedJobForAssign.id);
+      // Add new booster assignments
+      const { error: insertError } = await supabase
+        .from('job_booster_assignments')
+        .insert(
+          boosters.map(booster => ({
+            job_id: selectedJobForAssign.id,
+            booster_id: booster.id,
+            assigned_by: 'admin'
+          }))
+        );
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // Update job status if all boosters are assigned
+      const currentAssignedCount = (selectedJobForAssign.assigned_boosters?.length || 0) + boosters.length;
+      if (currentAssignedCount >= selectedJobForAssign.boosters_needed) {
+        await supabase
+          .from('jobs')
+          .update({ status: 'assigned' })
+          .eq('id', selectedJobForAssign.id);
+      }
 
       toast.success(`${boosters.length} booster(s) tildelt til job!`);
       setSelectedJobForAssign(null);
@@ -449,6 +493,23 @@ const AdminJobs = () => {
     } catch (error) {
       console.error('Error assigning boosters:', error);
       toast.error('Fejl ved tildeling af boosters');
+    }
+  };
+
+  const handleRemoveBooster = async (jobId: string, assignmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_booster_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+      if (error) throw error;
+
+      toast.success('Booster fjernet');
+      fetchJobs();
+    } catch (error) {
+      console.error('Error removing booster:', error);
+      toast.error('Fejl ved fjernelse af booster');
     }
   };
 
@@ -1009,10 +1070,10 @@ Eksempel på notifikation som booster vil modtage.`;
                   <Badge className={getStatusColor(job.status)}>
                     {getStatusText(job.status)}
                   </Badge>
-                  {job.assigned_booster_id ? (
+                  {job.assigned_boosters && job.assigned_boosters.length > 0 ? (
                     <Badge variant="secondary" className="bg-green-100 text-green-800">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      Tildelt booster
+                      {job.assigned_boosters.length}/{job.boosters_needed} tildelt
                     </Badge>
                   ) : (
                     <Badge variant="outline">
@@ -1041,18 +1102,55 @@ Eksempel på notifikation som booster vil modtage.`;
                         ({job.client_type === 'privat' ? 'inkl. moms' : 'ex. moms'})
                       </span>
                     </div>
-                    {job.boosters_needed && job.boosters_needed > 1 && (
+                    {job.assigned_boosters && job.assigned_boosters.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Tildelte boosters:</span>
+                          {job.assigned_boosters.length < job.boosters_needed && (
+                            <span className="text-sm text-orange-600">
+                              Mangler {job.boosters_needed - job.assigned_boosters.length} mere
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          {job.assigned_boosters.map((assignment) => (
+                            <div key={assignment.id} className="flex items-center justify-between p-2 bg-green-50 rounded-md">
+                              <div className="flex items-center space-x-2">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="text-sm text-green-700">{assignment.booster_name}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveBooster(job.id, assignment.id);
+                                }}
+                              >
+                                <X className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        {job.assigned_boosters.length < job.boosters_needed && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedJobForAssign(job);
+                            }}
+                            className="w-full"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Tilføj flere boosters
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
                       <div className="flex items-center space-x-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
                         <span>{job.boosters_needed} boosters søges</span>
-                      </div>
-                    )}
-                    {job.assigned_booster_id && (
-                      <div className="flex items-center space-x-2 mt-2 p-2 bg-green-50 rounded-md">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-700">
-                          Tildelt: {boosters.find(b => b.id === job.assigned_booster_id)?.name || 'Booster'}
-                        </span>
                       </div>
                     )}
                   </div>
