@@ -1282,10 +1282,11 @@ Eksempel på notifikation som booster vil modtage.`;
         <AssignBoostersDialog
           open={!!selectedJobForAssign}
           onOpenChange={(open) => !open && setSelectedJobForAssign(null)}
+          alreadyAssignedIds={selectedJobForAssign.assigned_boosters?.map(b => b.booster_id) || []}
           date={selectedJobForAssign.date_needed}
           time={selectedJobForAssign.time_needed}
           serviceCategory={selectedJobForAssign.service_type}
-          desiredCount={selectedJobForAssign.boosters_needed}
+          desiredCount={selectedJobForAssign.boosters_needed - (selectedJobForAssign.assigned_boosters?.length || 0)}
           onAutoAssign={handleAssignBoosters}
           onConfirm={handleAssignBoosters}
         />

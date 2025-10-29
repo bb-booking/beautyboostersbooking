@@ -29,6 +29,7 @@ interface AssignBoostersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   primaryBoosterId?: string;
+  alreadyAssignedIds?: string[];
   date?: Date | string;
   time?: string;
   serviceCategory?: string;
@@ -55,6 +56,7 @@ export default function AssignBoostersDialog({
   open,
   onOpenChange,
   primaryBoosterId,
+  alreadyAssignedIds = [],
   date,
   time,
   serviceCategory,
@@ -86,7 +88,17 @@ export default function AssignBoostersDialog({
         if (specialtyFilter) list = list.filter((b) => (b.specialties || []).includes(specialtyFilter));
         // Simple sort: highest rating, then reviews
         list.sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)) || (Number(b.review_count || 0) - Number(a.review_count || 0)));
-        if (mounted) setBoosters(list as BoosterOption[]);
+        if (mounted) {
+          setBoosters(list as BoosterOption[]);
+          // Pre-select already assigned boosters
+          const preSelected: Record<string, BoosterOption> = {};
+          list.forEach((b: any) => {
+            if (alreadyAssignedIds.includes(b.id)) {
+              preSelected[b.id] = b as BoosterOption;
+            }
+          });
+          setSelected(preSelected);
+        }
       } catch (e) {
         console.error("Failed to load boosters", e);
         if (mounted) setBoosters([]);
@@ -95,7 +107,7 @@ export default function AssignBoostersDialog({
       }
     })();
     return () => { mounted = false; };
-  }, [open, primaryBoosterId, specialtyFilter]);
+  }, [open, primaryBoosterId, specialtyFilter, alreadyAssignedIds]);
 
   useEffect(() => {
     if (!open) {
@@ -118,13 +130,17 @@ export default function AssignBoostersDialog({
   const selectedList = useMemo(() => Object.values(selected), [selected]);
 
   const toggleSelect = (b: BoosterOption) => {
+    // Don't allow toggling already assigned boosters
+    if (alreadyAssignedIds.includes(b.id)) return;
+    
     setSelected((prev) => {
       const copy = { ...prev } as Record<string, BoosterOption>;
       if (copy[b.id]) {
         delete copy[b.id];
       } else {
         const currentCount = Object.keys(copy).length;
-        if (typeof desiredCount === "number" && desiredCount > 0 && currentCount >= desiredCount) {
+        const totalNeeded = (desiredCount ?? 0) + alreadyAssignedIds.length;
+        if (typeof desiredCount === "number" && desiredCount > 0 && currentCount >= totalNeeded) {
           return copy;
         }
         copy[b.id] = b;
@@ -181,42 +197,60 @@ export default function AssignBoostersDialog({
                 ) : filtered.length === 0 ? (
                   <div className="text-sm text-muted-foreground">Ingen boosters fundet</div>
                 ) : (
-                  filtered.map((b) => (
-                    <label key={b.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent cursor-pointer">
-                      <Checkbox checked={!!selected[b.id]} onCheckedChange={() => toggleSelect(b)} />
-                      <img
-                        src={b.portfolio_image_url || "/placeholder.svg"}
-                        alt={b.name}
-                        className="h-10 w-10 rounded object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{b.name}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {b.location || "Ukendt lokation"}
+                  filtered.map((b) => {
+                    const isAlreadyAssigned = alreadyAssignedIds.includes(b.id);
+                    return (
+                      <label key={b.id} className={`flex items-center gap-3 p-2 rounded-md ${isAlreadyAssigned ? 'bg-accent/50 cursor-not-allowed opacity-60' : 'hover:bg-accent cursor-pointer'}`}>
+                        <Checkbox 
+                          checked={!!selected[b.id]} 
+                          onCheckedChange={() => toggleSelect(b)}
+                          disabled={isAlreadyAssigned}
+                        />
+                        <img
+                          src={b.portfolio_image_url || "/placeholder.svg"}
+                          alt={b.name}
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">
+                            {b.name}
+                            {isAlreadyAssigned && <span className="ml-2 text-xs text-muted-foreground">(Allerede tildelt)</span>}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {b.location || "Ukendt lokation"}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(b.specialties || []).slice(0, 3).map((s) => (
+                              <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {(b.specialties || []).slice(0, 3).map((s) => (
-                            <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                      {typeof b.rating === "number" && (
-                        <div className="text-xs text-muted-foreground">{b.rating?.toFixed(1)}★</div>
-                      )}
-                    </label>
-                  ))
+                        {typeof b.rating === "number" && (
+                          <div className="text-xs text-muted-foreground">{b.rating?.toFixed(1)}★</div>
+                        )}
+                      </label>
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
             <DialogFooter>
               <div className="flex-1 text-sm text-muted-foreground">
                 {typeof desiredCount === 'number' && desiredCount > 0
-                  ? `Valgt: ${selectedList.length} af ${desiredCount}`
+                  ? `Valgt: ${selectedList.length} af ${desiredCount + alreadyAssignedIds.length} (${alreadyAssignedIds.length} allerede tildelt)`
                   : `Valgt: ${selectedList.length}`
                 }
               </div>
               <Button variant="outline" onClick={() => setManualMode(false)}>Tilbage</Button>
-              <Button onClick={handleConfirm} disabled={typeof desiredCount === 'number' && desiredCount > 0 ? selectedList.length !== desiredCount : selectedList.length === 0}>Bekræft valg</Button>
+              <Button 
+                onClick={handleConfirm} 
+                disabled={typeof desiredCount === 'number' && desiredCount > 0 
+                  ? selectedList.length !== (desiredCount + alreadyAssignedIds.length)
+                  : selectedList.length === 0
+                }
+              >
+                Bekræft valg
+              </Button>
             </DialogFooter>
           </div>
         )}
