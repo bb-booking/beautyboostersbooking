@@ -253,6 +253,29 @@ const AdminCalendar = () => {
     return [...new Set(allSpecialties)];
   };
 
+  const getTimeSlots = () => {
+    const slots = [];
+    for (let hour = 7; hour <= 21; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      if (hour < 21) {
+        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+      }
+    }
+    return slots;
+  };
+
+  const timeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const isTimeInSlot = (slotTime: string, startTime: string, endTime: string) => {
+    const slotMinutes = timeToMinutes(slotTime);
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -435,92 +458,188 @@ const AdminCalendar = () => {
       </div>
 
       {/* Calendar Grid */}
-      <div className="space-y-4">
-        {/* Date Headers */}
-        <div className="grid grid-cols-8 gap-2">
-          <div className="p-3 font-medium">Booster</div>
-          {daysToShow.map(day => (
-            <div key={day.toISOString()} className="p-3 text-center">
-              <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
-              <div className="text-sm text-muted-foreground">{format(day, 'd/M')}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Booster Rows */}
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-          {filteredBoosters.map(booster => (
-            <Card key={booster.id} className={`${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
-              <CardContent className="p-0">
-                <div className="grid grid-cols-8 gap-2">
-                  {/* Booster Info */}
-                  <div className="p-3 border-r">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={selectedBoosters.includes(booster.id)}
-                        onCheckedChange={() => toggleBoosterSelection(booster.id)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{booster.name}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {booster.location}
+      {viewMode === 'day' ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <div className="inline-block min-w-full">
+                <div style={{ display: 'grid', gridTemplateColumns: `80px repeat(${filteredBoosters.length}, minmax(150px, 1fr))` }}>
+                  {/* Header Row */}
+                  <div className="p-3 font-medium border-b border-r bg-muted sticky left-0 z-20">
+                    Tid
+                  </div>
+                  {filteredBoosters.map(booster => (
+                    <div key={booster.id} className="p-3 border-b border-r bg-muted">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectedBoosters.includes(booster.id)}
+                          onCheckedChange={() => toggleBoosterSelection(booster.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate text-sm">{booster.name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {booster.location}
+                          </div>
                         </div>
-                        <Badge 
-                          className={`text-xs ${booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                        >
-                          {booster.is_available ? 'Aktiv' : 'Inaktiv'}
-                        </Badge>
                       </div>
                     </div>
-                  </div>
+                  ))}
 
-                  {/* Daily Availability */}
-                  {daysToShow.map(day => {
-                    const dayAvailability = getBoosterAvailabilityForDate(booster.id, day);
-                    
-                    return (
-                      <div key={day.toISOString()} className="p-2 min-h-20">
-                        {dayAvailability.length > 0 ? (
-                          <div className="space-y-1">
-                            {dayAvailability.map(avail => {
-                              const job = getJobForAvailability(avail.job_id);
-                              return (
-                                <div key={avail.id} className="text-xs">
+                  {/* Time Rows */}
+                  {getTimeSlots().map(timeSlot => (
+                    <>
+                      <div key={`time-${timeSlot}`} className="p-2 border-b border-r text-sm font-medium bg-muted/50 sticky left-0 z-10">
+                        {timeSlot}
+                      </div>
+                      {filteredBoosters.map(booster => {
+                        const dayAvailability = getBoosterAvailabilityForDate(booster.id, selectedDate);
+                        const slotAvailability = dayAvailability.find(avail => 
+                          isTimeInSlot(timeSlot, avail.start_time, avail.end_time)
+                        );
+                        
+                        return (
+                          <div key={`${booster.id}-${timeSlot}`} className="p-2 border-b border-r min-h-12">
+                            {slotAvailability && isTimeInSlot(timeSlot, slotAvailability.start_time, slotAvailability.end_time) && (
+                              timeSlot === slotAvailability.start_time.slice(0, 5) ? (
+                                <div className="text-xs">
                                   <Badge 
-                                    className={`w-full text-xs ${getStatusColor(avail.status)} flex items-center gap-1`}
+                                    className={`w-full ${getStatusColor(slotAvailability.status)} flex items-center gap-1 mb-1`}
                                   >
-                                    {getStatusIcon(avail.status)}
+                                    {getStatusIcon(slotAvailability.status)}
                                     <span className="truncate">
-                                      {avail.start_time.slice(0, 5)}-{avail.end_time.slice(0, 5)}
+                                      {slotAvailability.start_time.slice(0, 5)}-{slotAvailability.end_time.slice(0, 5)}
                                     </span>
                                   </Badge>
-                                  {job && (
-                                    <div className="mt-1 p-1 bg-blue-50 rounded text-xs">
-                                      <div className="font-medium truncate">{job.title}</div>
-                                      {job.client_name && (
-                                        <div className="text-muted-foreground truncate">{job.client_name}</div>
-                                      )}
+                                  {slotAvailability.job_id && (
+                                    (() => {
+                                      const job = getJobForAvailability(slotAvailability.job_id);
+                                      return job ? (
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          <div className="font-medium truncate">{job.title}</div>
+                                          {job.client_name && (
+                                            <div className="truncate">{job.client_name}</div>
+                                          )}
+                                          <div className="flex items-center gap-1 truncate">
+                                            <MapPin className="h-3 w-3" />
+                                            {job.location}
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })()
+                                  )}
+                                  {slotAvailability.notes && (
+                                    <div className="text-xs text-muted-foreground mt-1 truncate">
+                                      {slotAvailability.notes}
                                     </div>
                                   )}
                                 </div>
-                              );
-                            })}
+                              ) : (
+                                <div className={`h-full ${getStatusColor(slotAvailability.status)} opacity-30`}></div>
+                              )
+                            )}
                           </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-muted-foreground">
-                            <span className="text-xs">Ingen data</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {/* Date Headers */}
+          <div className="grid grid-cols-8 gap-2">
+            <div className="p-3 font-medium">Booster</div>
+            {daysToShow.map(day => (
+              <div key={day.toISOString()} className="p-3 text-center">
+                <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
+                <div className="text-sm text-muted-foreground">{format(day, 'd/M')}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Booster Rows */}
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {filteredBoosters.map(booster => (
+              <Card key={booster.id} className={`${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
+                <CardContent className="p-0">
+                  <div className="grid grid-cols-8 gap-2">
+                    {/* Booster Info */}
+                    <div className="p-3 border-r">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectedBoosters.includes(booster.id)}
+                          onCheckedChange={() => toggleBoosterSelection(booster.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{booster.name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {booster.location}
+                          </div>
+                          <Badge 
+                            className={`text-xs ${booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                          >
+                            {booster.is_available ? 'Aktiv' : 'Inaktiv'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Daily Availability */}
+                    {daysToShow.map(day => {
+                      const dayAvailability = getBoosterAvailabilityForDate(booster.id, day);
+                      
+                      return (
+                        <div key={day.toISOString()} className="p-2 min-h-20">
+                          {dayAvailability.length > 0 ? (
+                            <div className="space-y-1">
+                              {dayAvailability.map(avail => {
+                                const job = getJobForAvailability(avail.job_id);
+                                return (
+                                  <div key={avail.id} className="text-xs">
+                                    <Badge 
+                                      className={`w-full text-xs ${getStatusColor(avail.status)} flex items-center gap-1`}
+                                    >
+                                      {getStatusIcon(avail.status)}
+                                      <span className="truncate">
+                                        {avail.start_time.slice(0, 5)}-{avail.end_time.slice(0, 5)}
+                                      </span>
+                                    </Badge>
+                                    {job && (
+                                      <div className="mt-1 text-muted-foreground">
+                                        <div className="font-medium truncate">{job.title}</div>
+                                        {job.client_name && (
+                                          <div className="truncate">{job.client_name}</div>
+                                        )}
+                                      </div>
+                                    )}
+                                    {avail.notes && (
+                                      <div className="text-muted-foreground truncate">{avail.notes}</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                          {dayAvailability.length === 0 && (
+                            <div className="text-xs text-muted-foreground text-center py-3">
+                              Ingen data
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Status Legend */}
       <Card>
