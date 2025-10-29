@@ -32,6 +32,7 @@ interface BoosterProfile {
   years_experience: number;
   is_available: boolean;
   bio?: string;
+  portfolio_image_url?: string | null;
 }
 
 interface Service {
@@ -550,6 +551,11 @@ const AdminBoosters = () => {
                   <Checkbox 
                     checked={selectedBoosters.includes(booster.id)}
                     onChange={() => toggleBoosterSelection(booster.id)}
+                  />
+                  <img
+                    src={booster.portfolio_image_url || "/placeholder.svg"}
+                    alt={booster.name}
+                    className="h-16 w-16 rounded-full object-cover"
                   />
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
