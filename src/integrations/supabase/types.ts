@@ -1401,10 +1401,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      has_salon_access: {
-        Args: { _salon_id: string }
-        Returns: boolean
-      }
+      has_salon_access: { Args: { _salon_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "booster" | "salon"
