@@ -8,6 +8,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape function to prevent XSS
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 type RequestBody = {
   conversationId: string;
   name?: string;
@@ -30,15 +41,15 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const subject = `Ny chatbesked fra ${name?.trim() || "kunde"}`;
+    const subject = `Ny chatbesked fra ${escapeHtml(name?.trim() || "kunde")}`;
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2>Ny chatbesked</h2>
-        <p><strong>Navn:</strong> ${name || "(ikke angivet)"}</p>
-        <p><strong>Email:</strong> ${email || "(ikke angivet)"}</p>
-        <p><strong>Samtale ID:</strong> ${conversationId}</p>
+        <p><strong>Navn:</strong> ${escapeHtml(name || "(ikke angivet)")}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email || "(ikke angivet)")}</p>
+        <p><strong>Samtale ID:</strong> ${escapeHtml(conversationId)}</p>
         <hr />
-        <p style="white-space: pre-line;">${message}</p>
+        <p style="white-space: pre-line;">${escapeHtml(message)}</p>
       </div>
     `;
 
@@ -60,7 +71,7 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("send-chat-email error", error);
     return new Response(
-      JSON.stringify({ error: error?.message || "Unknown error" }),
+      JSON.stringify({ error: 'Der opstod en fejl ved afsendelse af besked. Prøv igen senere.' }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

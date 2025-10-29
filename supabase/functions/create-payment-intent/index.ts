@@ -7,6 +7,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation function
+function validateBookingInput(data: any): { valid: boolean; error?: string } {
+  if (!data.amount || typeof data.amount !== 'number' || data.amount < 0 || data.amount > 1000000) {
+    return { valid: false, error: 'Ugyldigt beløb' };
+  }
+  
+  if (!data.customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.customerEmail)) {
+    return { valid: false, error: 'Ugyldig email adresse' };
+  }
+  
+  if (data.bookingData?.customerName && (data.bookingData.customerName.length < 2 || data.bookingData.customerName.length > 100)) {
+    return { valid: false, error: 'Ugyldigt navn' };
+  }
+  
+  if (data.bookingData?.serviceName && data.bookingData.serviceName.length > 200) {
+    return { valid: false, error: 'Ugyldig service' };
+  }
+  
+  return { valid: true };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -14,7 +35,21 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, bookingData, customerEmail } = await req.json();
+    const requestData = await req.json();
+    
+    // Validate input
+    const validation = validateBookingInput(requestData);
+    if (!validation.valid) {
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
+    
+    const { amount, bookingData, customerEmail } = requestData;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -141,7 +176,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error creating payment intent:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Der opstod en fejl ved oprettelse af betaling. Prøv igen senere.' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
