@@ -110,6 +110,7 @@ const AdminJobs = () => {
   const [addressQuery, setAddressQuery] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Time options (every 30 minutes from 6:00 to 22:00)
   const timeOptions = Array.from({ length: 33 }, (_, i) => {
@@ -709,7 +710,7 @@ Eksempel på notifikation som booster vil modtage.`;
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="date_needed">Dato *</Label>
-                  <Popover>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -726,7 +727,10 @@ Eksempel på notifikation som booster vil modtage.`;
                       <Calendar
                         mode="single"
                         selected={newJob.date_needed}
-                        onSelect={(date) => setNewJob(prev => ({ ...prev, date_needed: date }))}
+                        onSelect={(date) => {
+                          setNewJob(prev => ({ ...prev, date_needed: date }));
+                          setDatePickerOpen(false);
+                        }}
                         disabled={(date) => date < new Date()}
                         initialFocus
                         className={cn("p-3 pointer-events-auto")}
