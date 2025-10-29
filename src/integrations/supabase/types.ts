@@ -316,6 +316,8 @@ export type Database = {
           booster_id: string | null
           conversation_id: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           email: string | null
           id: string
           message: string | null
@@ -326,6 +328,8 @@ export type Database = {
           booster_id?: string | null
           conversation_id: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           email?: string | null
           id?: string
           message?: string | null
@@ -336,6 +340,8 @@ export type Database = {
           booster_id?: string | null
           conversation_id?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           email?: string | null
           id?: string
           message?: string | null

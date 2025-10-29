@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MessageSquare, Send, Users, UserCircle, Filter, Plus, Archive, Star, AlertCircle } from "lucide-react";
+import { MessageSquare, Send, Users, UserCircle, Filter, Plus, Archive, Star, AlertCircle, Edit2, Trash2, Check, X } from "lucide-react";
 
 interface Conversation {
   id: string;
@@ -40,6 +40,8 @@ interface ConversationMessage {
   sender: string; // 'user' | 'admin'
   message: string | null;
   email: string | null;
+  edited_at: string | null;
+  deleted_at: string | null;
 }
 
 export default function AdminMessages() {
@@ -57,6 +59,9 @@ export default function AdminMessages() {
   const [newConvType, setNewConvType] = useState<'booster' | 'group'>('booster');
   const [selectedBoosters, setSelectedBoosters] = useState<string[]>([]);
   const [groupName, setGroupName] = useState("");
+  const [showManageGroup, setShowManageGroup] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editedMessage, setEditedMessage] = useState("");
 
   const loadBoosters = async () => {
     const { data, error } = await supabase
@@ -94,8 +99,9 @@ export default function AdminMessages() {
   const loadMessages = async (conversationId: string) => {
     const { data, error } = await supabase
       .from("conversation_messages")
-      .select("id, conversation_id, created_at, sender, message, email")
+      .select("id, conversation_id, created_at, sender, message, email, edited_at, deleted_at")
       .eq("conversation_id", conversationId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: true });
     if (error) {
       console.error(error);
@@ -139,7 +145,6 @@ export default function AdminMessages() {
     const text = reply.trim();
     if (!text || !selectedId) return;
 
-    // Insert message first
     const { error } = await supabase
       .from("conversation_messages")
       .insert([{ conversation_id: selectedId, sender: "admin", message: text }]);
@@ -148,24 +153,6 @@ export default function AdminMessages() {
       console.error(error);
       toast({ title: "Kunne ikke sende", description: error.message, variant: "destructive" });
       return;
-    }
-
-    // Fire-and-forget email to customer if we have their email
-    try {
-      const conv = conversations.find((c) => c.id === selectedId);
-      if (conv?.email) {
-        await supabase.functions.invoke("send-chat-email", {
-          body: {
-            conversationId: selectedId,
-            name: conv.name,
-            email: conv.email,
-            message: text,
-            sender: "admin",
-          },
-        });
-      }
-    } catch (e: any) {
-      console.warn("Email send failed:", e?.message || e);
     }
 
     setReply("");
@@ -266,11 +253,73 @@ export default function AdminMessages() {
     }
   };
 
+  const updateGroupMembers = async () => {
+    if (!selectedId) return;
+    const { error } = await supabase
+      .from("conversations")
+      .update({ participants: selectedBoosters })
+      .eq("id", selectedId);
+
+    if (error) {
+      console.error(error);
+      toast({ title: "Kunne ikke opdatere medlemmer", variant: "destructive" });
+      return;
+    }
+    await loadConversations();
+    setShowManageGroup(false);
+    toast({ title: "Medlemmer opdateret" });
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    const { error } = await supabase
+      .from("conversation_messages")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", messageId);
+
+    if (error) {
+      console.error(error);
+      toast({ title: "Kunne ikke slette besked", variant: "destructive" });
+      return;
+    }
+    
+    if (selectedId) await loadMessages(selectedId);
+    toast({ title: "Besked slettet" });
+  };
+
+  const saveEditMessage = async () => {
+    if (!editingMessageId || !editedMessage.trim()) return;
+
+    const { error } = await supabase
+      .from("conversation_messages")
+      .update({ 
+        message: editedMessage.trim(),
+        edited_at: new Date().toISOString()
+      })
+      .eq("id", editingMessageId);
+
+    if (error) {
+      console.error(error);
+      toast({ title: "Kunne ikke redigere besked", variant: "destructive" });
+      return;
+    }
+
+    setEditingMessageId(null);
+    setEditedMessage("");
+    if (selectedId) await loadMessages(selectedId);
+    toast({ title: "Besked redigeret" });
+  };
+
   const getPriorityIcon = (priority: string) => {
     if (priority === 'urgent' || priority === 'high') {
       return <AlertCircle className="h-3 w-3" />;
     }
     return null;
+  };
+
+  const getGroupMembers = () => {
+    if (!selectedConversation || selectedConversation.type !== 'group') return [];
+    const participantIds = selectedConversation.participants as any[];
+    return boosters.filter(b => participantIds?.includes(b.id));
   };
 
   return (
@@ -413,14 +462,63 @@ export default function AdminMessages() {
               <div className="flex items-center justify-between pb-3">
                 <div className="flex items-center gap-3">
                   {getConversationIcon(selectedConversation.type)}
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold">{getConversationTitle(selectedConversation)}</h3>
                     {selectedConversation.type === 'customer' && selectedConversation.email && (
                       <div className="text-xs text-muted-foreground">{selectedConversation.email}</div>
                     )}
+                    {selectedConversation.type === 'group' && (
+                      <div className="text-xs text-muted-foreground">
+                        {getGroupMembers().length} medlemmer
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {selectedConversation.type === 'group' && (
+                    <Dialog open={showManageGroup} onOpenChange={setShowManageGroup}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedBoosters((selectedConversation.participants as any[]) || []);
+                          }}
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          Håndter medlemmer
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Gruppmedlemmer - {selectedConversation.group_name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="border rounded-md p-3 max-h-60 overflow-auto space-y-2">
+                            {boosters.map((b) => (
+                              <div key={b.id} className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={selectedBoosters.includes(b.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedBoosters([...selectedBoosters, b.id]);
+                                    } else {
+                                      setSelectedBoosters(selectedBoosters.filter(id => id !== b.id));
+                                    }
+                                  }}
+                                />
+                                <span className="text-sm">{b.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setShowManageGroup(false)}>Annuller</Button>
+                          <Button onClick={updateGroupMembers}>Gem ændringer</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                   <Select
                     value={selectedConversation.priority}
                     onValueChange={(v) => updatePriority(selectedConversation.id, v)}
@@ -448,19 +546,84 @@ export default function AdminMessages() {
               <div className="flex-1 overflow-auto space-y-3 pr-1">
                 {messages.map((m) => (
                   <div key={m.id} className={`max-w-[80%] ${m.sender === "admin" ? "ml-auto" : ""}`}>
-                    <div className={`rounded-lg p-3 border ${
-                      m.sender === "admin" 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-muted"
-                    }`}>
-                      <div className="text-xs opacity-80 mb-1">
-                        {m.sender === "admin" ? "Admin" : m.email || getConversationTitle(selectedConversation)}
+                    {editingMessageId === m.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editedMessage}
+                          onChange={(e) => setEditedMessage(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              saveEditMessage();
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingMessageId(null);
+                              setEditedMessage("");
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEditMessage}>
+                            <Check className="h-3 w-3 mr-1" /> Gem
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingMessageId(null);
+                            setEditedMessage("");
+                          }}>
+                            <X className="h-3 w-3 mr-1" /> Annuller
+                          </Button>
+                        </div>
                       </div>
-                      <div className="whitespace-pre-wrap text-sm">{m.message}</div>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground mt-1">
-                      {new Date(m.created_at).toLocaleString('da-DK')}
-                    </div>
+                    ) : (
+                      <>
+                        <div className={`rounded-lg p-3 border ${
+                          m.sender === "admin" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted"
+                        }`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-xs opacity-80">
+                              {m.sender === "admin" ? "Admin" : m.email || getConversationTitle(selectedConversation)}
+                            </div>
+                            {m.sender === "admin" && (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 hover:bg-primary-foreground/20"
+                                  onClick={() => {
+                                    setEditingMessageId(m.id);
+                                    setEditedMessage(m.message || "");
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 hover:bg-destructive/20"
+                                  onClick={() => {
+                                    if (confirm("Er du sikker på at du vil slette denne besked?")) {
+                                      deleteMessage(m.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="whitespace-pre-wrap text-sm">{m.message}</div>
+                          {m.edited_at && (
+                            <div className="text-[10px] opacity-60 mt-1">(redigeret)</div>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          {new Date(m.created_at).toLocaleString('da-DK')}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
                 <div ref={bottomRef} />
