@@ -810,10 +810,12 @@ Eksempel på notifikation som booster vil modtage.`;
             setShowCreateDialog(false);
             setSelectedJobForEdit(null);
             resetForm();
+          } else if (!selectedJobForEdit) {
+            setShowCreateDialog(true);
           }
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Opret Job
             </Button>
