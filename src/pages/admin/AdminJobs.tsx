@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import JobChat from "@/components/job/JobChat";
 import InvoiceCreator from "@/components/invoice/InvoiceCreator";
 import AssignBoostersDialog, { BoosterOption } from "@/components/boosters/AssignBoostersDialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Job {
   id: string;
@@ -89,6 +91,8 @@ interface BoosterProfile {
   location: string;
   specialties: string[];
   is_available: boolean;
+  portfolio_image_url?: string | null;
+  rating?: number | null;
 }
 
 const AdminJobs = () => {
@@ -103,6 +107,8 @@ const AdminJobs = () => {
   const [selectedJobForChat, setSelectedJobForChat] = useState<string | null>(null);
   const [selectedJobForEdit, setSelectedJobForEdit] = useState<Job | null>(null);
   const [selectedJobForAssign, setSelectedJobForAssign] = useState<Job | null>(null);
+  const [showBoosterSelectionStep, setShowBoosterSelectionStep] = useState(false);
+  const [selectedBoostersForNotification, setSelectedBoostersForNotification] = useState<Set<string>>(new Set());
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -289,7 +295,7 @@ const AdminJobs = () => {
     try {
       const { data, error } = await supabase
         .from('booster_profiles')
-        .select('id, name, location, specialties, is_available');
+        .select('id, name, location, specialties, is_available, portfolio_image_url, rating');
 
       if (error) throw error;
       setBoosters(data || []);
@@ -298,7 +304,51 @@ const AdminJobs = () => {
     }
   };
 
-  const createJob = async () => {
+  const proceedToBoosterSelection = () => {
+    // Validate required fields before showing booster selection
+    if (!newJob.location || !newJob.date_needed || newJob.selectedServices.length === 0) {
+      toast.error('Udfyld venligst lokation, dato og mindst én service');
+      return;
+    }
+    
+    // Get eligible boosters and pre-select them all
+    const eligible = getEligibleBoostersForJob();
+    setSelectedBoostersForNotification(new Set(eligible.map(b => b.id)));
+    setShowBoosterSelectionStep(true);
+  };
+
+  const getEligibleBoostersForJob = () => {
+    return boosters.filter(booster => {
+      // Check location match
+      const locationMatch = booster.location.toLowerCase().includes(newJob.location.toLowerCase()) || 
+                           newJob.location.toLowerCase().includes(booster.location.toLowerCase());
+      
+      const isAvailable = booster.is_available;
+      
+      // Check if booster has required skills (if any are specified)
+      const hasRequiredSkills = newJob.selectedCompetenceTags.length === 0 || 
+                               newJob.selectedCompetenceTags.some(tagId => {
+                                 const tag = competenceTags.find(t => t.id === tagId);
+                                 return tag && booster.specialties.includes(tag.name);
+                               });
+      
+      return locationMatch && isAvailable && hasRequiredSkills;
+    });
+  };
+
+  const toggleBoosterSelection = (boosterId: string) => {
+    setSelectedBoostersForNotification(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(boosterId)) {
+        newSet.delete(boosterId);
+      } else {
+        newSet.add(boosterId);
+      }
+      return newSet;
+    });
+  };
+
+  const createJobAndNotifyBoosters = async () => {
     try {
       const totalPrice = calculateTotalPrice();
       const totalDuration = calculateTotalDuration();
@@ -357,8 +407,28 @@ const AdminJobs = () => {
         if (tagsError) throw tagsError;
       }
 
-      toast.success('Job oprettet og sendt til relevante boosters!');
+      // Send notifications to selected boosters
+      if (selectedBoostersForNotification.size > 0) {
+        const notificationMessage = `Service: ${serviceTypes} | Lokation: ${newJob.location} | Dato: ${newJob.date_needed ? format(newJob.date_needed, 'dd-MM-yyyy') : 'TBA'}${newJob.time_needed ? ` kl. ${newJob.time_needed}` : ''} | Pris: ${totalPrice} DKK${newJob.client_type === 'privat' ? ' (inkl. moms)' : ' (ex. moms)'}${newJob.boosters_needed > 1 ? ` | ${newJob.boosters_needed} boosters søges` : ''}`;
+
+        const notifications = Array.from(selectedBoostersForNotification).map(boosterId => ({
+          recipient_id: boosterId,
+          job_id: jobData.id,
+          title: `Nyt job tilgængeligt: ${newJob.title}`,
+          message: notificationMessage,
+          type: 'job_notification'
+        }));
+
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert(notifications);
+
+        if (notifError) throw notifError;
+      }
+
+      toast.success(`Job oprettet og sendt til ${selectedBoostersForNotification.size} booster(s)!`);
       setShowCreateDialog(false);
+      setShowBoosterSelectionStep(false);
       setNewJob({
         title: "",
         description: "",
@@ -372,6 +442,7 @@ const AdminJobs = () => {
         selectedServices: [],
         selectedCompetenceTags: []
       });
+      setSelectedBoostersForNotification(new Set());
       setAddressQuery("");
       setAddressSuggestions([]);
       setShowAddressSuggestions(false);
@@ -542,6 +613,8 @@ const AdminJobs = () => {
     setAddressQuery("");
     setAddressSuggestions([]);
     setShowAddressSuggestions(false);
+    setShowBoosterSelectionStep(false);
+    setSelectedBoostersForNotification(new Set());
   };
 
   const addService = (serviceId: string) => {
@@ -1014,28 +1087,98 @@ Eksempel på notifikation som booster vil modtage.`;
                 </Select>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <Label className="text-sm font-medium text-blue-900">Eksempel på booster notifikation:</Label>
-                <div className="mt-2 text-sm text-blue-800 font-mono whitespace-pre-line">
-                  {exampleNotification}
-                </div>
-              </div>
+              {!showBoosterSelectionStep ? (
+                <>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <Label className="text-sm font-medium text-blue-900">Eksempel på booster notifikation:</Label>
+                    <div className="mt-2 text-sm text-blue-800 font-mono whitespace-pre-line">
+                      {exampleNotification}
+                    </div>
+                  </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => {
-                  setShowCreateDialog(false);
-                  setSelectedJobForEdit(null);
-                  resetForm();
-                }}>
-                  Annuller
-                </Button>
-                <Button 
-                  onClick={selectedJobForEdit ? updateJob : createJob} 
-                  disabled={!newJob.title || !newJob.location || !newJob.date_needed || newJob.selectedServices.length === 0}
-                >
-                  {selectedJobForEdit ? 'Gem ændringer' : 'Opret & Send til Boosters'}
-                </Button>
-              </div>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button variant="outline" onClick={() => {
+                      setShowCreateDialog(false);
+                      setSelectedJobForEdit(null);
+                      resetForm();
+                    }}>
+                      Annuller
+                    </Button>
+                    <Button 
+                      onClick={selectedJobForEdit ? updateJob : proceedToBoosterSelection} 
+                      disabled={!newJob.title || !newJob.location || !newJob.date_needed || newJob.selectedServices.length === 0}
+                    >
+                      {selectedJobForEdit ? 'Gem ændringer' : 'Vælg boosters →'}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium">Vælg boosters til notifikation</h3>
+                      <Badge variant="secondary">
+                        {selectedBoostersForNotification.size} valgt
+                      </Badge>
+                    </div>
+                    
+                    {getEligibleBoostersForJob().length === 0 ? (
+                      <div className="p-6 text-center text-muted-foreground">
+                        Ingen boosters matcher kriterierne for dette job
+                      </div>
+                    ) : (
+                      <ScrollArea className="h-96">
+                        <div className="space-y-2 pr-4">
+                          {getEligibleBoostersForJob().map((booster) => (
+                            <label
+                              key={booster.id}
+                              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={selectedBoostersForNotification.has(booster.id)}
+                                onCheckedChange={() => toggleBoosterSelection(booster.id)}
+                              />
+                              <img
+                                src={booster.portfolio_image_url || "/placeholder.svg"}
+                                alt={booster.name}
+                                className="h-12 w-12 rounded-full object-cover"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{booster.name}</span>
+                                  {typeof booster.rating === 'number' && (
+                                    <span className="text-xs text-muted-foreground">{booster.rating.toFixed(1)}★</span>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">{booster.location}</div>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {booster.specialties.slice(0, 4).map((specialty) => (
+                                    <Badge key={specialty} variant="outline" className="text-[10px] h-4 px-1">
+                                      {specialty}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-4 border-t">
+                    <Button variant="outline" onClick={() => setShowBoosterSelectionStep(false)}>
+                      ← Tilbage
+                    </Button>
+                    <Button 
+                      onClick={createJobAndNotifyBoosters}
+                      disabled={selectedBoostersForNotification.size === 0}
+                    >
+                      Opret job & Send til {selectedBoostersForNotification.size} booster(s)
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </DialogContent>
         </Dialog>
