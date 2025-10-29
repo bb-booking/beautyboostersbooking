@@ -226,7 +226,7 @@ const BoosterSignup = () => {
         (formData.businessType === 'cvr' && formData.cvrNumber) ||
         (formData.businessType === 'cpr' && formData.cprNumber)
       );
-      case 3: return formData.name && formData.email && formData.phone;
+      case 3: return formData.name && formData.email && formData.phone && formData.password && formData.password.length >= 6;
       case 4: return formData.address && formData.city && formData.latitude !== null && formData.workRadius > 0;
       case 5: return formData.primaryTransport;
       case 6: return formData.yearsExperience > 0;
@@ -386,14 +386,17 @@ const BoosterSignup = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Adgangskode</Label>
+                <Label htmlFor="password">Adgangskode *</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Vælg en adgangskode"
+                  placeholder="Vælg en adgangskode (min. 6 tegn)"
                   value={formData.password}
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 />
+                {formData.password && formData.password.length < 6 && (
+                  <p className="text-sm text-destructive">Adgangskoden skal være mindst 6 tegn</p>
+                )}
               </div>
             </div>
           </div>
