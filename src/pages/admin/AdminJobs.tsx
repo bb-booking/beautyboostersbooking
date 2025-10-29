@@ -99,6 +99,7 @@ const AdminJobs = () => {
     selectedServices: [] as JobService[],
     selectedCompetenceTags: [] as string[]
   });
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
 
   // Calculate total price from all selected services
   const calculateTotalPrice = () => {
@@ -348,6 +349,41 @@ const AdminJobs = () => {
     }));
   };
 
+  const generateJobTitle = async () => {
+    if (newJob.selectedServices.length === 0 || !newJob.location) {
+      return;
+    }
+
+    setIsGeneratingTitle(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-job-title', {
+        body: {
+          services: newJob.selectedServices,
+          location: newJob.location,
+          clientType: newJob.client_type
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.title) {
+        setNewJob(prev => ({ ...prev, title: data.title }));
+      }
+    } catch (error) {
+      console.error('Error generating job title:', error);
+      toast.error('Kunne ikke generere job titel');
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
+  // Auto-generate title when services or location change
+  useEffect(() => {
+    if (newJob.selectedServices.length > 0 && newJob.location) {
+      generateJobTitle();
+    }
+  }, [newJob.selectedServices, newJob.location, newJob.client_type]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-blue-100 text-blue-800';
@@ -507,13 +543,21 @@ Eksempel på notifikation som booster vil modtage.`;
               </div>
 
               <div>
-                <Label htmlFor="title">Job titel *</Label>
-                <Input
-                  id="title"
-                  value={newJob.title}
-                  onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="F.eks. Bryllupsmakeup i Aarhus"
-                />
+                <Label htmlFor="title">Job titel (auto-genereret)</Label>
+                <div className="relative">
+                  <Input
+                    id="title"
+                    value={newJob.title}
+                    onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder={isGeneratingTitle ? "Genererer titel..." : "Vælg services og lokation først"}
+                    disabled={isGeneratingTitle}
+                  />
+                  {isGeneratingTitle && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

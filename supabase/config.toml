@@ -67,3 +67,6 @@ verify_jwt = false
 
 [functions.shopify-order-webhook]
 verify_jwt = false
+
+[functions.generate-job-title]
+verify_jwt = false
