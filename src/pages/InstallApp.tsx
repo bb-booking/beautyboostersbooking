@@ -61,7 +61,7 @@ const InstallApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background py-12 px-4">
       <Helmet>
         <title>Installér BeautyBoosters App</title>
         <meta name="description" content="Installér BeautyBoosters appen på din telefon og få hurtig adgang til bookings og notifikationer" />
@@ -76,7 +76,7 @@ const InstallApp = () => {
         </div>
 
         {isInstalled ? (
-          <Card className="border-primary bg-primary/5">
+          <Card className="border-primary/30 bg-card">
             <CardContent className="p-8 text-center">
               <Check className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h2 className="text-2xl font-bold mb-2">App installeret! 🎉</h2>

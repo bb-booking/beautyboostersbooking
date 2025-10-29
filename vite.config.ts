@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
         name: 'BeautyBoosters',
         short_name: 'BeautyBoosters',
         description: 'Professionelle beauty services til døren - Book makeup artister, hårfrisører og beauty boosters',
-        theme_color: '#E5989B',
+        theme_color: '#D4BBA5',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
@@ -55,6 +55,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [
           {
