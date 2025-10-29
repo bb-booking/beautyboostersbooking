@@ -6,10 +6,58 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PrintableGiftCard } from "@/components/giftcard/PrintableGiftCard";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+
+
+function PaymentForm({ 
+  giftCardData, 
+  onSuccess 
+}: { 
+  giftCardData: any; 
+  onSuccess: (code: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/giftcards`,
+      },
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      toast.error(error.message);
+      setProcessing(false);
+    } else {
+      toast.success('Betaling gennemført!');
+      onSuccess(giftCardData.code);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      <Button type="submit" size="lg" className="w-full" disabled={!stripe || processing}>
+        {processing ? 'Behandler...' : `Betal ${giftCardData.amount} DKK`}
+      </Button>
+    </form>
+  );
+}
 
 export default function GiftCards() {
   const [mode, setMode] = useState<'amount' | 'service'>('amount');
@@ -22,75 +70,45 @@ export default function GiftCards() {
   const [fromName, setFromName] = useState('');
   const [message, setMessage] = useState('');
   const [validTo, setValidTo] = useState<string>('');
-  const [sending, setSending] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [printData, setPrintData] = useState<any>(null);
+  const [clientSecret, setClientSecret] = useState<string>('');
+  const [giftCardCode, setGiftCardCode] = useState<string>('');
+  const [showPayment, setShowPayment] = useState(false);
 
-  const createGiftCard = async () => {
-    if (!toName || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return null; }
-    if (mode === 'amount' && (!amount || amount < 100)) { toast.error('Vælg et gyldigt beløb (min. 100 DKK)'); return null; }
-    if (mode === 'service' && !serviceName) { toast.error('Angiv servicenavn'); return null; }
+  const handleCreatePayment = async () => {
+    if (!toName || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return; }
+    if (mode === 'amount' && (!amount || amount < 100)) { toast.error('Vælg et gyldigt beløb (min. 100 DKK)'); return; }
+    if (mode === 'service' && !serviceName) { toast.error('Angiv servicenavn'); return; }
 
+    setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-giftcard', {
+      const { data, error } = await supabase.functions.invoke('create-giftcard-payment', {
         body: {
-          toName, fromName, message,
+          amount: mode === 'amount' ? amount : (servicePrice || amount),
+          toName, 
+          fromName, 
+          message,
           mode,
-          amount: mode === 'amount' ? amount : undefined,
           serviceName: mode === 'service' ? serviceName : undefined,
           servicePrice: mode === 'service' && servicePrice ? Number(servicePrice) : undefined,
           validTo: validTo || undefined,
         }
       });
       if (error) throw error;
-      return data;
+      setClientSecret(data.clientSecret);
+      setGiftCardCode(data.code);
+      setShowPayment(true);
     } catch (e: any) {
-      toast.error(e.message || 'Kunne ikke oprette gavekort');
-      return null;
-    }
-  };
-
-  const handleSendEmail = async () => {
-    if (!toEmail) { toast.error('Udfyld venligst modtager e-mail'); return; }
-    setSending(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-giftcard', {
-        body: {
-          toName, toEmail, fromName, message,
-          mode,
-          amount: mode === 'amount' ? amount : undefined,
-          serviceName: mode === 'service' ? serviceName : undefined,
-          servicePrice: mode === 'service' && servicePrice ? Number(servicePrice) : undefined,
-          validTo: validTo || undefined,
-        }
-      });
-      if (error) throw error;
-      toast.success('Gavekort sendt! Tjek din e-mail.');
-      setToName(''); setToEmail(''); setFromName(''); setMessage('');
-      setMode('amount'); setAmount(500); setServiceName(''); setServicePrice(''); setValidTo('');
-    } catch (e: any) {
-      toast.error(e.message || 'Kunne ikke sende gavekort');
+      toast.error(e.message || 'Kunne ikke oprette betaling');
     } finally {
-      setSending(false);
+      setProcessing(false);
     }
   };
 
-  const handlePrint = async () => {
-    setSending(true);
-    const data = await createGiftCard();
-    setSending(false);
-    if (data) {
-      setPrintData({
-        code: data.code,
-        toName,
-        fromName,
-        message,
-        mode,
-        amount: mode === 'amount' ? amount : undefined,
-        serviceName: mode === 'service' ? serviceName : undefined,
-        servicePrice: mode === 'service' && servicePrice ? Number(servicePrice) : undefined,
-        validTo: validTo || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
-      });
-    }
+  const handlePaymentSuccess = (code: string) => {
+    setShowPayment(false);
+    // Show options to send email or print
   };
 
   return (
@@ -175,14 +193,9 @@ export default function GiftCards() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button size="lg" variant="outline" onClick={handlePrint} disabled={sending}>
-                {sending ? 'Opretter...' : 'Print gavekort'}
-              </Button>
-              <Button size="lg" onClick={handleSendEmail} disabled={sending}>
-                {sending ? 'Sender...' : 'Send gavekort på e-mail'}
-              </Button>
-            </div>
+            <Button size="lg" className="w-full" onClick={handleCreatePayment} disabled={processing}>
+              {processing ? 'Opretter...' : 'Fortsæt til betaling'}
+            </Button>
           </CardContent>
         </Card>
 
@@ -200,6 +213,22 @@ export default function GiftCards() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showPayment} onOpenChange={setShowPayment}>
+        <DialogContent className="max-w-md">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold">Betal for gavekort</h2>
+            {clientSecret && (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <PaymentForm 
+                  giftCardData={{ amount: mode === 'amount' ? amount : (servicePrice || amount), code: giftCardCode }}
+                  onSuccess={handlePaymentSuccess}
+                />
+              </Elements>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!printData} onOpenChange={(open) => !open && setPrintData(null)}>
         <DialogContent className="max-w-4xl">
