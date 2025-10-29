@@ -53,29 +53,31 @@ export function AdminLayout() {
       if (!session) {
         setAuthorized(false);
         setChecking(false);
-        navigate("/admin/login");
+        navigate("/admin/login", { replace: true });
         return;
       }
 
       const isAdmin = await checkUserRole(session.user.id);
       
       if (isMounted) {
-        setAuthorized(isAdmin);
-        setChecking(false);
-        
         if (!isAdmin) {
-          navigate("/admin/login");
+          setAuthorized(false);
+          setChecking(false);
+          navigate("/admin/login", { replace: true });
+        } else {
+          setAuthorized(true);
+          setChecking(false);
         }
       }
     };
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+    // Check initial session first
+    supabase.auth.getSession().then(({ data: { session } }) => {
       handleSession(session);
     });
 
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Then listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       handleSession(session);
     });
 
@@ -84,6 +86,10 @@ export function AdminLayout() {
       subscription.unsubscribe();
     };
   }, [navigate]);
+
+  if (checking || !authorized) {
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -97,7 +103,7 @@ export function AdminLayout() {
           </header>
           
           <main className="flex-1 p-6 break-words">
-            {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : authorized ? <Outlet /> : <div className="text-sm text-muted-foreground">Ingen adgang</div>}
+            <Outlet />
           </main>
         </div>
       </div>

@@ -19,13 +19,20 @@ export default function AdminLogin() {
   const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate("/admin/messages");
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/admin/messages");
-    });
-    return () => subscription.unsubscribe();
+    let isMounted = true;
+    
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && isMounted) {
+        navigate("/admin/messages", { replace: true });
+      }
+    };
+    
+    checkSession();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
