@@ -1433,10 +1433,6 @@ Eksempel på notifikation som booster vil modtage.`;
                       onInvoiceSent={() => fetchJobs()} 
                     />
                   )}
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-1" />
-                    Se ansøgninger
-                  </Button>
                   <Button variant="outline" size="sm" onClick={() => handleEditJob(job)}>
                     <Edit className="h-4 w-4 mr-1" />
                     Rediger
