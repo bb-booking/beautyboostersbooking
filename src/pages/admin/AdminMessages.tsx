@@ -156,7 +156,11 @@ export default function AdminMessages() {
     }
 
     setReply("");
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+    
+    // Reload messages to show new message immediately
+    await loadMessages(selectedId);
+    
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
   const createConversation = async () => {
