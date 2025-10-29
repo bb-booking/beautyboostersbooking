@@ -29,6 +29,9 @@ interface FormData {
   password: string;
   phone: string;
   address: string;
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
   workRadius: number;
   primaryTransport: string;
   education: Education[];
@@ -63,6 +66,9 @@ const BoosterSignup = () => {
     password: '',
     phone: '',
     address: '',
+    city: '',
+    latitude: null,
+    longitude: null,
     workRadius: 50,
     primaryTransport: '',
     education: [],
@@ -70,6 +76,8 @@ const BoosterSignup = () => {
     portfolioLinks: '',
     contractAccepted: false
   });
+
+  const [isVerifyingAddress, setIsVerifyingAddress] = useState(false);
 
   const handleSkillToggle = (skill: string) => {
     setFormData(prev => ({
@@ -124,6 +132,75 @@ const BoosterSignup = () => {
     }
   };
 
+  const verifyAddress = async () => {
+    if (!formData.address.trim()) {
+      toast({
+        title: "Mangler adresse",
+        description: "Indtast venligst en adresse",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsVerifyingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&countrycodes=dk&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'BeautyBoosters-App'
+          }
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        toast({
+          title: "Ugyldig adresse",
+          description: "Vi kunne ikke finde denne adresse i Danmark. Tjek venligst adressen.",
+          variant: "destructive"
+        });
+        setIsVerifyingAddress(false);
+        return;
+      }
+
+      const location = data[0];
+      const addressParts = location.display_name.split(',');
+      let city = '';
+      
+      // Extract city from address components
+      if (location.address) {
+        city = location.address.city || location.address.town || location.address.municipality || '';
+      } else {
+        // Fallback to parsing display_name
+        city = addressParts[addressParts.length - 3]?.trim() || '';
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        latitude: parseFloat(location.lat),
+        longitude: parseFloat(location.lon),
+        city: city,
+        address: location.display_name
+      }));
+
+      toast({
+        title: "Adresse verificeret",
+        description: `Lokation: ${city}`
+      });
+    } catch (error) {
+      console.error('Address verification error:', error);
+      toast({
+        title: "Fejl ved verifikation",
+        description: "Kunne ikke verificere adressen. Prøv venligst igen.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifyingAddress(false);
+    }
+  };
+
   const canProceedFromStep = (step: number) => {
     switch (step) {
       case 1: return formData.skills.length > 0;
@@ -132,9 +209,9 @@ const BoosterSignup = () => {
         (formData.businessType === 'cpr' && formData.cprNumber)
       );
       case 3: return formData.name && formData.email && formData.phone;
-      case 4: return formData.address && formData.workRadius > 0;
+      case 4: return formData.address && formData.city && formData.latitude !== null && formData.workRadius > 0;
       case 5: return formData.primaryTransport;
-      case 6: return formData.yearsExperience > 0; // Erfaring krævet, uddannelser er valgfrie
+      case 6: return formData.yearsExperience > 0;
       case 7: return formData.contractAccepted;
       default: return false;
     }
@@ -315,12 +392,34 @@ const BoosterSignup = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="address">Adresse</Label>
-                <Input
-                  id="address"
-                  placeholder="Din adresse"
-                  value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="address"
+                    placeholder="Din adresse (fx. Vesterbrogade 12, København)"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      address: e.target.value,
+                      city: '',
+                      latitude: null,
+                      longitude: null
+                    }))}
+                    disabled={isVerifyingAddress}
+                  />
+                  <Button
+                    type="button"
+                    onClick={verifyAddress}
+                    disabled={!formData.address.trim() || isVerifyingAddress}
+                  >
+                    {isVerifyingAddress ? "Verificerer..." : "Verificer"}
+                  </Button>
+                </div>
+                {formData.city && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <span className="text-green-600">✓</span>
+                    Lokation: {formData.city}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
