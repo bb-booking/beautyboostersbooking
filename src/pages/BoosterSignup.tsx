@@ -78,6 +78,9 @@ const BoosterSignup = () => {
   });
 
   const [isVerifyingAddress, setIsVerifyingAddress] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const handleSkillToggle = (skill: string) => {
     setFormData(prev => ({
@@ -132,20 +135,16 @@ const BoosterSignup = () => {
     }
   };
 
-  const verifyAddress = async () => {
-    if (!formData.address.trim()) {
-      toast({
-        title: "Mangler adresse",
-        description: "Indtast venligst en adresse",
-        variant: "destructive"
-      });
+  const searchAddresses = async (query: string) => {
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
-    setIsVerifyingAddress(true);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&countrycodes=dk&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=dk&limit=5`,
         {
           headers: {
             'User-Agent': 'BeautyBoosters-App'
@@ -154,51 +153,55 @@ const BoosterSignup = () => {
       );
       
       const data = await response.json();
-      
-      if (data.length === 0) {
-        toast({
-          title: "Ugyldig adresse",
-          description: "Vi kunne ikke finde denne adresse i Danmark. Tjek venligst adressen.",
-          variant: "destructive"
-        });
-        setIsVerifyingAddress(false);
-        return;
-      }
-
-      const location = data[0];
-      const addressParts = location.display_name.split(',');
-      let city = '';
-      
-      // Extract city from address components
-      if (location.address) {
-        city = location.address.city || location.address.town || location.address.municipality || '';
-      } else {
-        // Fallback to parsing display_name
-        city = addressParts[addressParts.length - 3]?.trim() || '';
-      }
-
-      setFormData(prev => ({
-        ...prev,
-        latitude: parseFloat(location.lat),
-        longitude: parseFloat(location.lon),
-        city: city,
-        address: location.display_name
-      }));
-
-      toast({
-        title: "Adresse verificeret",
-        description: `Lokation: ${city}`
-      });
+      setAddressSuggestions(data);
+      setShowSuggestions(data.length > 0);
     } catch (error) {
-      console.error('Address verification error:', error);
-      toast({
-        title: "Fejl ved verifikation",
-        description: "Kunne ikke verificere adressen. Prøv venligst igen.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsVerifyingAddress(false);
+      console.error('Address search error:', error);
     }
+  };
+
+  const handleAddressChange = (value: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      address: value,
+      city: '',
+      latitude: null,
+      longitude: null
+    }));
+
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      searchAddresses(value);
+    }, 300);
+
+    setSearchTimeout(timeout);
+  };
+
+  const selectAddress = (location: any) => {
+    let city = '';
+    
+    if (location.address) {
+      city = location.address.city || location.address.town || location.address.municipality || '';
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      latitude: parseFloat(location.lat),
+      longitude: parseFloat(location.lon),
+      city: city,
+      address: location.display_name
+    }));
+
+    setShowSuggestions(false);
+    setAddressSuggestions([]);
+
+    toast({
+      title: "Adresse valgt",
+      description: `Lokation: ${city}`
+    });
   };
 
   const canProceedFromStep = (step: number) => {
@@ -392,29 +395,38 @@ const BoosterSignup = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="address">Adresse</Label>
-                <div className="flex gap-2">
+                <div className="relative">
                   <Input
                     id="address"
-                    placeholder="Din adresse (fx. Vesterbrogade 12, København)"
+                    placeholder="Begynd at skrive din adresse..."
                     value={formData.address}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      address: e.target.value,
-                      city: '',
-                      latitude: null,
-                      longitude: null
-                    }))}
-                    disabled={isVerifyingAddress}
+                    onChange={(e) => handleAddressChange(e.target.value)}
+                    onFocus={() => {
+                      if (addressSuggestions.length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
                   />
-                  <Button
-                    type="button"
-                    onClick={verifyAddress}
-                    disabled={!formData.address.trim() || isVerifyingAddress}
-                  >
-                    {isVerifyingAddress ? "Verificerer..." : "Verificer"}
-                  </Button>
+                  {showSuggestions && addressSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {addressSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
+                          onClick={() => selectAddress(suggestion)}
+                        >
+                          <p className="text-sm font-medium">{suggestion.display_name}</p>
+                          {suggestion.address && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {suggestion.address.city || suggestion.address.town || suggestion.address.municipality || ''}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {formData.city && (
+                {formData.city && formData.latitude && (
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="text-green-600">✓</span>
                     Lokation: {formData.city}
