@@ -1,0 +1,32 @@
+
+-- Update booster profiles with actual uploaded images
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/ann-katrine.png' WHERE name = 'Ann-Katrine';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/bela.png' WHERE name = 'Bela';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/carla-sofie-f.png' WHERE name = 'Carla Sofie F.';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/clara-alma.png' WHERE name = 'Clara Alma';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/darun.png' WHERE name = 'Darun';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/donna.png' WHERE name = 'Donna';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/fay.png' WHERE name = 'Fay';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/gabriella.png' WHERE name = 'Gabriella';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/ida-b.png' WHERE name = 'Ida';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/jeanie.png' WHERE name = 'Jeanie';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/josephine-o.png' WHERE name = 'Josephine O.';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/josephine.png' WHERE name = 'Josephine S.';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/karoline.png' WHERE name = 'Karoline';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/katrine-j.png' WHERE name = 'Katrine J.';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/kristine.png' WHERE name = 'Kristine';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/liza-1.png' WHERE name = 'Liza';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/marie.png' WHERE name = 'Marie';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/mariola.png' WHERE name = 'Mariola';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/michaela.png' WHERE name = 'Michaela';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/my-phung.png' WHERE name = 'My Phung';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/nanna.png' WHERE name = 'Nanna';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/niels.png' WHERE name = 'Niels';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/stephanie.png' WHERE name = 'Stephanie';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/tenna.png' WHERE name = 'Tenna';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/thurka.png' WHERE name = 'Thurka';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/trine.png' WHERE name = 'Trine';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/ulla.png' WHERE name = 'Ulla';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/yasmin.png' WHERE name = 'Yasmin';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/angelica-profile.png' WHERE name = 'Angelica';
+UPDATE booster_profiles SET portfolio_image_url = '/lovable-uploads/profiles/nanna.png', name = 'Anna G.' WHERE name = 'Anna G.';
