@@ -894,7 +894,7 @@ Eksempel på notifikation som booster vil modtage.`;
                   <p className="text-sm text-muted-foreground">TIDSPUNKT</p>
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                       <span>{new Date(job.date_needed).toLocaleDateString('da-DK')}</span>
                       {job.time_needed && (
                         <>
