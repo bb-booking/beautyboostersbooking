@@ -150,9 +150,8 @@ export default function AssignBoostersDialog({
   };
 
   const handleAutoAssign = () => {
-    const count = Math.max(0, (desiredCount ?? 1));
-    const pick = boosters.slice(0, count);
-    onAutoAssign(pick);
+    // Instead of auto-assigning, send to ALL qualified boosters
+    onAutoAssign(boosters);
     onOpenChange(false);
   };
 

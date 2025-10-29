@@ -251,6 +251,57 @@ export type Database = {
           },
         ]
       }
+      booster_booking_requests: {
+        Row: {
+          booking_id: string | null
+          booster_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          notified_at: string | null
+          responded_at: string | null
+          response_message: string | null
+          status: string
+        }
+        Insert: {
+          booking_id?: string | null
+          booster_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          notified_at?: string | null
+          responded_at?: string | null
+          response_message?: string | null
+          status?: string
+        }
+        Update: {
+          booking_id?: string | null
+          booster_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          notified_at?: string | null
+          responded_at?: string | null
+          response_message?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booster_booking_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booster_booking_requests_booster_id_fkey"
+            columns: ["booster_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booster_profiles: {
         Row: {
           bio: string | null

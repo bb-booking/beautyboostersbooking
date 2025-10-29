@@ -141,7 +141,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { error: insertError } = await supabase
+    const { data: newBooking, error: insertError } = await supabase
       .from('bookings')
       .insert({
         customer_email: customerEmail,
@@ -157,10 +157,35 @@ serve(async (req) => {
         location: bookingData.location,
         discount_code: bookingData.discountCode,
         discount_amount: bookingData.discountAmount
-      });
+      })
+      .select()
+      .single();
 
     if (insertError) {
       console.error('Error inserting booking:', insertError);
+      throw insertError;
+    }
+
+    // Create booking requests for extra boosters if provided
+    if (bookingData.extraBoosterIds && Array.isArray(bookingData.extraBoosterIds) && bookingData.extraBoosterIds.length > 0) {
+      console.log('Creating booking requests for extra boosters:', bookingData.extraBoosterIds);
+      
+      const requests = bookingData.extraBoosterIds.map((boosterId: string) => ({
+        booking_id: newBooking.id,
+        booster_id: boosterId,
+        status: 'pending'
+      }));
+
+      const { error: requestsError } = await supabase
+        .from('booster_booking_requests')
+        .insert(requests);
+
+      if (requestsError) {
+        console.error('Error creating booking requests:', requestsError);
+        // Don't fail the payment if requests fail - just log it
+      } else {
+        console.log(`Successfully created ${requests.length} booking requests`);
+      }
     }
 
     return new Response(

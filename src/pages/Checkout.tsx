@@ -641,7 +641,14 @@ export default function Checkout() {
           time={selectedTime}
           serviceCategory={service.category}
           desiredCount={Math.max(0, (counts?.boosters ?? 1) - 1)}
-          onAutoAssign={(sel) => setExtraBoosters(sel)}
+          onAutoAssign={async (allQualified) => {
+            // Create booking requests for all qualified boosters
+            // This will be handled after payment is completed
+            console.log('Will send requests to qualified boosters:', allQualified.length);
+            toast.success(`Sender forespørgsel til ${allQualified.length} kvalificerede boosters`);
+            setExtraBoosters(allQualified);
+            setAssignOpen(false);
+          }}
           onConfirm={(sel) => setExtraBoosters(sel)}
         />
 

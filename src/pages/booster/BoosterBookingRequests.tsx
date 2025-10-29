@@ -11,17 +11,23 @@ import { Helmet } from "react-helmet-async";
 
 interface BookingRequest {
   id: string;
-  service_name: string;
-  booking_date: string;
-  booking_time: string;
-  duration_hours: number;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  location: string;
-  special_requests?: string;
-  amount: number;
-  booster_status: string;
+  booking_id: string;
+  created_at: string;
+  expires_at: string;
+  status: string;
+  bookings: {
+    id: string;
+    booking_date: string;
+    booking_time: string;
+    duration_hours: number;
+    service_name: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+    location: string;
+    special_requests?: string;
+    amount: number;
+  };
 }
 
 const BoosterBookingRequests = () => {
@@ -40,8 +46,7 @@ const BoosterBookingRequests = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'bookings',
-          filter: `booster_status=eq.pending`
+          table: 'booster_booking_requests'
         },
         () => {
           fetchRequests();
@@ -60,11 +65,30 @@ const BoosterBookingRequests = () => {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('booster_status', 'pending')
-        .order('booking_date', { ascending: true })
-        .order('booking_time', { ascending: true });
+        .from('booster_booking_requests')
+        .select(`
+          id,
+          booking_id,
+          created_at,
+          expires_at,
+          status,
+          bookings (
+            id,
+            booking_date,
+            booking_time,
+            duration_hours,
+            service_name,
+            customer_name,
+            customer_email,
+            customer_phone,
+            location,
+            special_requests,
+            amount
+          )
+        `)
+        .eq('booster_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setRequests(data || []);
@@ -76,34 +100,25 @@ const BoosterBookingRequests = () => {
     }
   };
 
-  const handleResponse = async (bookingId: string, action: 'accept' | 'reject') => {
-    setProcessing(bookingId);
+  const handleResponse = async (requestId: string, action: 'accept' | 'reject') => {
+    setProcessing(requestId);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('booster_profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile) throw new Error('Booster profile not found');
-
-      const { data, error } = await supabase.functions.invoke('handle-booking-response', {
-        body: {
-          bookingId,
-          action,
-          boosterId: profile.id
-        }
-      });
+      const status = action === 'accept' ? 'accepted' : 'rejected';
+      
+      const { error } = await supabase
+        .from('booster_booking_requests')
+        .update({
+          status,
+          responded_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
 
       if (error) throw error;
 
       if (action === 'accept') {
         toast.success('Booking accepteret! Den er nu tilføjet til din kalender.');
       } else {
-        toast.info(data.message || 'Booking afvist');
+        toast.success('Booking afvist');
       }
 
       fetchRequests();
@@ -154,97 +169,107 @@ const BoosterBookingRequests = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {requests.map((request) => (
-            <Card key={request.id} className="overflow-hidden">
-              <CardHeader className="bg-primary/5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl mb-2">
-                      {request.service_name}
-                    </CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(request.booking_date), 'EEEE d. MMMM yyyy', { locale: da })}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {request.booking_time.slice(0, 5)} ({request.duration_hours}t)
+          {requests.map((request) => {
+            const booking = request.bookings;
+            const isExpired = new Date(request.expires_at) < new Date();
+            
+            return (
+              <Card key={request.id} className={`overflow-hidden ${isExpired ? 'opacity-60' : ''}`}>
+                <CardHeader className="bg-primary/5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-xl mb-2">
+                        {booking.service_name}
+                      </CardTitle>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(booking.booking_date), 'EEEE d. MMMM yyyy', { locale: da })}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {booking.booking_time.slice(0, 5)} ({booking.duration_hours || 2}t)
+                        </div>
                       </div>
                     </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge className="text-lg">
+                        {booking.amount} DKK
+                      </Badge>
+                      {isExpired && <Badge variant="secondary">Udløbet</Badge>}
+                    </div>
                   </div>
-                  <Badge className="text-lg">
-                    {request.amount} DKK
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Kunde:</span>
-                        <span>{request.customer_name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <a href={`mailto:${request.customer_email}`} className="hover:underline">
-                          {request.customer_email}
-                        </a>
-                      </div>
-                      {request.customer_phone && (
+                </CardHeader>
+                
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <a href={`tel:${request.customer_phone}`} className="hover:underline">
-                            {request.customer_phone}
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Kunde:</span>
+                          <span>{booking.customer_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <a href={`mailto:${booking.customer_email}`} className="hover:underline">
+                            {booking.customer_email}
                           </a>
                         </div>
-                      )}
-                    </div>
+                        {booking.customer_phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <a href={`tel:${booking.customer_phone}`} className="hover:underline">
+                              {booking.customer_phone}
+                            </a>
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Lokation:</span>
-                        <span>{request.location}</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Lokation:</span>
+                          <span>{booking.location}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {request.special_requests && (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-1">Specielle ønsker:</p>
-                      <p className="text-sm text-muted-foreground">{request.special_requests}</p>
-                    </div>
-                  )}
+                    {booking.special_requests && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium mb-1">Specielle ønsker:</p>
+                        <p className="text-sm text-muted-foreground">{booking.special_requests}</p>
+                      </div>
+                    )}
 
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      onClick={() => handleResponse(request.id, 'accept')}
-                      disabled={processing === request.id}
-                      className="flex-1"
-                      size="lg"
-                    >
-                      <Check className="h-5 w-5 mr-2" />
-                      Acceptér Booking
-                    </Button>
-                    <Button
-                      onClick={() => handleResponse(request.id, 'reject')}
-                      disabled={processing === request.id}
-                      variant="outline"
-                      className="flex-1"
-                      size="lg"
-                    >
-                      <X className="h-5 w-5 mr-2" />
-                      Afvis
-                    </Button>
+                    {!isExpired && (
+                      <div className="flex gap-3 pt-4">
+                        <Button
+                          onClick={() => handleResponse(request.id, 'accept')}
+                          disabled={processing === request.id}
+                          className="flex-1"
+                          size="lg"
+                        >
+                          <Check className="h-5 w-5 mr-2" />
+                          Acceptér Booking
+                        </Button>
+                        <Button
+                          onClick={() => handleResponse(request.id, 'reject')}
+                          disabled={processing === request.id}
+                          variant="outline"
+                          className="flex-1"
+                          size="lg"
+                        >
+                          <X className="h-5 w-5 mr-2" />
+                          Afvis
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
