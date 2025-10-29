@@ -81,6 +81,7 @@ const BoosterSignup = () => {
   const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSkillToggle = (skill: string) => {
     setFormData(prev => ({
@@ -113,6 +114,8 @@ const BoosterSignup = () => {
       return;
     }
 
+    setIsSubmitting(true);
+    
     try {
       const redirectUrl = `${window.location.origin}/booster/login`;
       const { error } = await supabase.auth.signUp({
@@ -129,8 +132,13 @@ const BoosterSignup = () => {
         title: "Ansøgning sendt!",
         description: "Tjek din e-mail for at bekræfte din konto."
       });
-      navigate("/booster/login");
+      
+      // Wait a bit before navigating
+      setTimeout(() => {
+        navigate("/booster/login");
+      }, 1500);
     } catch (e: any) {
+      setIsSubmitting(false);
       toast({ title: "Fejl ved oprettelse", description: e.message, variant: "destructive" });
     }
   };
@@ -747,9 +755,9 @@ const BoosterSignup = () => {
               ) : (
                 <Button 
                   onClick={handleSubmit}
-                  disabled={!canProceedFromStep(currentStep)}
+                  disabled={!canProceedFromStep(currentStep) || isSubmitting}
                 >
-                  Send ansøgning
+                  {isSubmitting ? "Sender..." : "Send ansøgning"}
                 </Button>
               )}
             </div>
