@@ -54,6 +54,10 @@ interface Job {
     id: string;
     booster_id: string;
     booster_name: string;
+    portfolio_image_url?: string | null;
+    location?: string | null;
+    rating?: number | null;
+    specialties?: string[];
   }>;
 }
 
@@ -238,7 +242,7 @@ const AdminJobs = () => {
 
       if (jobsError) throw jobsError;
 
-      // Fetch assigned boosters for each job
+      // Fetch assigned boosters for each job with full profile info
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('job_booster_assignments')
         .select(`
@@ -246,7 +250,11 @@ const AdminJobs = () => {
           job_id,
           booster_id,
           booster_profiles (
-            name
+            name,
+            portfolio_image_url,
+            location,
+            rating,
+            specialties
           )
         `);
 
@@ -260,7 +268,11 @@ const AdminJobs = () => {
           .map((assignment: any) => ({
             id: assignment.id,
             booster_id: assignment.booster_id,
-            booster_name: assignment.booster_profiles?.name || 'Unknown'
+            booster_name: assignment.booster_profiles?.name || 'Unknown',
+            portfolio_image_url: assignment.booster_profiles?.portfolio_image_url,
+            location: assignment.booster_profiles?.location,
+            rating: assignment.booster_profiles?.rating,
+            specialties: assignment.booster_profiles?.specialties || []
           }))
       }));
 
@@ -1112,12 +1124,35 @@ Eksempel på notifikation som booster vil modtage.`;
                             </span>
                           )}
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {job.assigned_boosters.map((assignment) => (
-                            <div key={assignment.id} className="flex items-center justify-between p-2 bg-green-50 rounded-md">
-                              <div className="flex items-center space-x-2">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                <span className="text-sm text-green-700">{assignment.booster_name}</span>
+                            <div key={assignment.id} className="flex items-center justify-between p-3 bg-green-50 rounded-md">
+                              <div className="flex items-center space-x-3">
+                                <img
+                                  src={assignment.portfolio_image_url || "/placeholder.svg"}
+                                  alt={assignment.booster_name}
+                                  className="h-10 w-10 rounded-full object-cover"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-medium text-green-700">{assignment.booster_name}</span>
+                                    {typeof assignment.rating === 'number' && (
+                                      <span className="text-xs text-green-600">{assignment.rating.toFixed(1)}★</span>
+                                    )}
+                                  </div>
+                                  {assignment.location && (
+                                    <div className="text-xs text-muted-foreground">{assignment.location}</div>
+                                  )}
+                                  {assignment.specialties && assignment.specialties.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {assignment.specialties.slice(0, 3).map((specialty) => (
+                                        <Badge key={specialty} variant="outline" className="text-[10px] h-4 px-1">
+                                          {specialty}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               <Button
                                 variant="ghost"
