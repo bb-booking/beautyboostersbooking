@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { PrintableGiftCard } from "@/components/giftcard/PrintableGiftCard";
 
 export default function GiftCards() {
   const [mode, setMode] = useState<'amount' | 'service'>('amount');
@@ -21,12 +23,34 @@ export default function GiftCards() {
   const [message, setMessage] = useState('');
   const [validTo, setValidTo] = useState<string>('');
   const [sending, setSending] = useState(false);
+  const [printData, setPrintData] = useState<any>(null);
 
-  const handleSubmit = async () => {
-    if (!toName || !toEmail || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return; }
-    if (mode === 'amount' && (!amount || amount < 100)) { toast.error('Vælg et gyldigt beløb (min. 100 DKK)'); return; }
-    if (mode === 'service' && !serviceName) { toast.error('Angiv servicenavn'); return; }
+  const createGiftCard = async () => {
+    if (!toName || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return null; }
+    if (mode === 'amount' && (!amount || amount < 100)) { toast.error('Vælg et gyldigt beløb (min. 100 DKK)'); return null; }
+    if (mode === 'service' && !serviceName) { toast.error('Angiv servicenavn'); return null; }
 
+    try {
+      const { data, error } = await supabase.functions.invoke('create-giftcard', {
+        body: {
+          toName, fromName, message,
+          mode,
+          amount: mode === 'amount' ? amount : undefined,
+          serviceName: mode === 'service' ? serviceName : undefined,
+          servicePrice: mode === 'service' && servicePrice ? Number(servicePrice) : undefined,
+          validTo: validTo || undefined,
+        }
+      });
+      if (error) throw error;
+      return data;
+    } catch (e: any) {
+      toast.error(e.message || 'Kunne ikke oprette gavekort');
+      return null;
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!toEmail) { toast.error('Udfyld venligst modtager e-mail'); return; }
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-giftcard', {
@@ -47,6 +71,25 @@ export default function GiftCards() {
       toast.error(e.message || 'Kunne ikke sende gavekort');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    setSending(true);
+    const data = await createGiftCard();
+    setSending(false);
+    if (data) {
+      setPrintData({
+        code: data.code,
+        toName,
+        fromName,
+        message,
+        mode,
+        amount: mode === 'amount' ? amount : undefined,
+        serviceName: mode === 'service' ? serviceName : undefined,
+        servicePrice: mode === 'service' && servicePrice ? Number(servicePrice) : undefined,
+        validTo: validTo || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
+      });
     }
   };
 
@@ -132,9 +175,14 @@ export default function GiftCards() {
               </div>
             )}
 
-            <Button size="lg" className="w-full" onClick={handleSubmit} disabled={sending}>
-              {sending ? 'Sender...' : 'Send gavekort på e-mail'}
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button size="lg" variant="outline" onClick={handlePrint} disabled={sending}>
+                {sending ? 'Opretter...' : 'Print gavekort'}
+              </Button>
+              <Button size="lg" onClick={handleSendEmail} disabled={sending}>
+                {sending ? 'Sender...' : 'Send gavekort på e-mail'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -152,6 +200,12 @@ export default function GiftCards() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!printData} onOpenChange={(open) => !open && setPrintData(null)}>
+        <DialogContent className="max-w-4xl">
+          {printData && <PrintableGiftCard {...printData} onClose={() => setPrintData(null)} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

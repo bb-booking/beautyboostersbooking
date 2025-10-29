@@ -62,6 +62,9 @@ verify_jwt = false
 [functions.send-giftcard]
 verify_jwt = false
 
+[functions.create-giftcard]
+verify_jwt = false
+
 [functions.send-inquiry-email]
 verify_jwt = false
 
