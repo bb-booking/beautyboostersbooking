@@ -79,11 +79,16 @@ const ServiceCard = ({
   };
 
   const calculateDuration = () => {
+    const baseDuration = duration + extraHours;
+    
     // Virksomhed: flere boosters arbejder parallelt, varigheden er pr. session
     if (clientType === "virksomhed") {
-      return duration + extraHours;
+      return baseDuration;
     } else {
-      return duration + extraHours;
+      // Privat: Hvis der er flere personer end boosters, skal tiden ganges op
+      // Eksempel: 4 personer, 2 boosters = 2 runder = 2x varighed
+      const rounds = Math.ceil(people / boosters);
+      return baseDuration * rounds;
     }
   };
 
