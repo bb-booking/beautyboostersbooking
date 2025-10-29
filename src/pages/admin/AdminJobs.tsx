@@ -100,6 +100,11 @@ const AdminJobs = () => {
     selectedCompetenceTags: [] as string[]
   });
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  
+  // Address autocomplete
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
 
   // Calculate total price from all selected services
   const calculateTotalPrice = () => {
@@ -295,6 +300,9 @@ const AdminJobs = () => {
         selectedServices: [],
         selectedCompetenceTags: []
       });
+      setAddressQuery("");
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
       fetchJobs();
     } catch (error) {
       console.error('Error creating job:', error);
@@ -383,6 +391,38 @@ const AdminJobs = () => {
       generateJobTitle();
     }
   }, [newJob.selectedServices, newJob.location, newJob.client_type]);
+
+  // Address autocomplete
+  useEffect(() => {
+    const q = addressQuery.trim();
+    if (q.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://api.dataforsyningen.dk/autocomplete?q=${encodeURIComponent(q)}&type=adresse&fuzzy=true&per_side=8`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        const data = await res.json();
+        const opts = (Array.isArray(data) ? data : [])
+          .map((d: any) => d.tekst || d.forslagstekst || d.adressebetegnelse)
+          .filter(Boolean);
+        setAddressSuggestions(opts);
+        setShowAddressSuggestions(true);
+      } catch {}
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [addressQuery]);
+
+  const selectAddress = (suggestion: string) => {
+    setAddressQuery(suggestion);
+    setNewJob(prev => ({ ...prev, location: suggestion }));
+    setShowAddressSuggestions(false);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -574,16 +614,32 @@ Eksempel på notifikation som booster vil modtage.`;
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="location">Lokation *</Label>
-                  <Select value={newJob.location} onValueChange={(value) => setNewJob(prev => ({ ...prev, location: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Vælg lokation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map(location => (
-                        <SelectItem key={location} value={location}>{location}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Input
+                      id="location"
+                      value={addressQuery}
+                      onChange={(e) => {
+                        setAddressQuery(e.target.value);
+                        setShowAddressSuggestions(true);
+                      }}
+                      onFocus={() => addressSuggestions.length > 0 && setShowAddressSuggestions(true)}
+                      placeholder="Start at taste adresse..."
+                    />
+                    {showAddressSuggestions && addressSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {addressSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-accent text-sm"
+                            onClick={() => selectAddress(suggestion)}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="client_name">Klient navn</Label>
