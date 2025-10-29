@@ -10,6 +10,49 @@ export default function AdminResetPassword() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+    // Exchange the hash fragment for a session
+    const handlePasswordRecovery = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (accessToken && refreshToken) {
+        try {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) throw error;
+          setSessionReady(true);
+        } catch (err: any) {
+          toast({ 
+            title: "Fejl", 
+            description: "Ugyldig eller udløbet link. Anmod om en ny nulstilling.", 
+            variant: "destructive" 
+          });
+        }
+      } else {
+        // Check if already has a session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            setSessionReady(true);
+          } else {
+            toast({ 
+              title: "Auth session missing!", 
+              description: "Klik på linket i din email for at nulstille din adgangskode.",
+              variant: "destructive" 
+            });
+          }
+        });
+      }
+    };
+
+    handlePasswordRecovery();
+  }, [toast]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +76,16 @@ export default function AdminResetPassword() {
       setLoading(false);
     }
   };
+
+  if (!sessionReady) {
+    return (
+      <div className="container max-w-md mx-auto py-10">
+        <Card className="p-6">
+          <p className="text-sm text-muted-foreground">Indlæser...</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-md mx-auto py-10">
