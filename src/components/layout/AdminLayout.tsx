@@ -46,9 +46,11 @@ export function AdminLayout() {
 
   useEffect(() => {
     let isMounted = true;
+    let sessionChecked = false;
 
     const handleSession = async (session: any) => {
-      if (!isMounted) return;
+      if (!isMounted || sessionChecked) return;
+      sessionChecked = true;
       
       if (!session) {
         setAuthorized(false);
@@ -71,19 +73,13 @@ export function AdminLayout() {
       }
     };
 
-    // Check initial session first
+    // Only check session once on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
-    });
-
-    // Then listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       handleSession(session);
     });
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
   }, [navigate]);
 
