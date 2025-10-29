@@ -239,11 +239,12 @@ const AdminCalendar = () => {
         end: endOfWeek(selectedDate, { weekStartsOn: 1 })
       });
     } else {
-      // Show first 7 days of month for compact view
+      // Show entire month
       const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
       return eachDayOfInterval({
         start: startOfMonth,
-        end: addDays(startOfMonth, 6)
+        end: endOfMonth
       });
     }
   };
