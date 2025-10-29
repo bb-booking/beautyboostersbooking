@@ -87,7 +87,12 @@ export function AdminLayout() {
     };
   }, [navigate]);
 
-  if (checking || !authorized) {
+  // Don't render anything while checking or if not authorized
+  if (checking) {
+    return null;
+  }
+
+  if (!authorized) {
     return null;
   }
 
