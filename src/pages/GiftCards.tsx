@@ -27,7 +27,6 @@ function PaymentForm({
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,23 +52,12 @@ function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-muted/50 p-6 rounded-lg min-h-[300px]">
-        <PaymentElement 
-          onReady={() => setIsLoading(false)}
-          options={{
-            layout: {
-              type: 'tabs',
-              defaultCollapsed: false,
-            }
-          }} 
-        />
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">Indlæser betalingsmuligheder...</div>
-          </div>
-        )}
-      </div>
-      <Button type="submit" size="lg" className="w-full" disabled={!stripe || processing || isLoading}>
+      <PaymentElement 
+        options={{
+          layout: 'tabs',
+        }} 
+      />
+      <Button type="submit" size="lg" className="w-full" disabled={!stripe || processing}>
         {processing ? 'Behandler...' : `Betal ${giftCardData.amount} DKK`}
       </Button>
     </form>
