@@ -50,8 +50,15 @@ function PaymentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-muted/50 p-4 rounded-lg">
+        <PaymentElement options={{
+          layout: {
+            type: 'tabs',
+            defaultCollapsed: false,
+          }
+        }} />
+      </div>
       <Button type="submit" size="lg" className="w-full" disabled={!stripe || processing}>
         {processing ? 'Behandler...' : `Betal ${giftCardData.amount} DKK`}
       </Button>
