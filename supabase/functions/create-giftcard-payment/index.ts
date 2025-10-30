@@ -12,11 +12,11 @@ function validateGiftCardInput(data: any): { valid: boolean; error?: string } {
     return { valid: false, error: 'Ugyldigt beløb (min. 100 DKK, max. 100.000 DKK)' };
   }
   
-  if (!data.toName || data.toName.length < 2 || data.toName.length > 100) {
+  if (!data.toName || data.toName.trim().length === 0 || data.toName.length > 100) {
     return { valid: false, error: 'Ugyldigt modtager navn' };
   }
   
-  if (!data.fromName || data.fromName.length < 2 || data.fromName.length > 100) {
+  if (!data.fromName || data.fromName.trim().length === 0 || data.fromName.length > 100) {
     return { valid: false, error: 'Ugyldigt afsender navn' };
   }
   
