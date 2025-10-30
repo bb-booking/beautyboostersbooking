@@ -74,7 +74,6 @@ export default function GiftCards() {
   const [printData, setPrintData] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [giftCardCode, setGiftCardCode] = useState<string>('');
-  const [showPayment, setShowPayment] = useState(false);
 
   const handleCreatePayment = async () => {
     if (!toName || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return; }
@@ -98,7 +97,6 @@ export default function GiftCards() {
       if (error) throw error;
       setClientSecret(data.clientSecret);
       setGiftCardCode(data.code);
-      setShowPayment(true);
     } catch (e: any) {
       toast.error(e.message || 'Kunne ikke oprette betaling');
     } finally {
@@ -107,7 +105,6 @@ export default function GiftCards() {
   };
 
   const handlePaymentSuccess = (code: string) => {
-    setShowPayment(false);
     // Show options to send email or print
   };
 
@@ -122,113 +119,115 @@ export default function GiftCards() {
       <h1 className="text-3xl md:text-4xl font-bold mb-6">Køb gavekort</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Udfyld oplysninger</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Til (navn)</Label>
-                <Input value={toName} onChange={(e) => setToName(e.target.value)} placeholder="Modtagers navn" />
-              </div>
-              <div className="space-y-2">
-                <Label>Til (e-mail)</Label>
-                <Input type="email" value={toEmail} onChange={(e) => setToEmail(e.target.value)} placeholder="modtager@mail.dk" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Fra</Label>
-              <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Dit navn" />
-            </div>
-            <div className="space-y-2">
-              <Label>Personlig hilsen (valgfri)</Label>
-              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="Skriv en kort hilsen..." />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select value={mode} onValueChange={(v) => setMode(v as 'amount' | 'service')}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vælg type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="amount">Beløb</SelectItem>
-                    <SelectItem value="service">Service</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Gyldig til</Label>
-                <Input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
-                <div className="text-xs text-muted-foreground">Vælg slutdato (ellers 24 mdr. fra i dag)</div>
-              </div>
-            </div>
-
-            {mode === 'amount' ? (
-              <div className="space-y-3">
-                <div className="flex gap-2 flex-wrap">
-                  {presets.map((p) => (
-                    <Button key={p} type="button" variant={amount === p ? "default" : "outline"} onClick={() => setAmount(p)}>
-                      {p} DKK
-                    </Button>
-                  ))}
+        {!clientSecret ? (
+          <>
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Udfyld oplysninger</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Til (navn)</Label>
+                    <Input value={toName} onChange={(e) => setToName(e.target.value)} placeholder="Modtagers navn" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Til (e-mail)</Label>
+                    <Input type="email" value={toEmail} onChange={(e) => setToEmail(e.target.value)} placeholder="modtager@mail.dk" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Andet beløb</Label>
-                  <Input type="number" min={100} step={50} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Service</Label>
-                  <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Fx. Brudestyling" />
+                  <Label>Fra</Label>
+                  <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Dit navn" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Service pris (valgfri)</Label>
-                  <Input type="number" min={0} value={servicePrice} onChange={(e) => setServicePrice(e.target.value ? Number(e.target.value) : '')} placeholder="Fx. 1200" />
+                  <Label>Personlig hilsen (valgfri)</Label>
+                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="Skriv en kort hilsen..." />
                 </div>
-              </div>
-            )}
 
-            <Button size="lg" className="w-full" onClick={handleCreatePayment} disabled={processing}>
-              {processing ? 'Opretter...' : 'Fortsæt til betaling'}
-            </Button>
-          </CardContent>
-        </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={mode} onValueChange={(v) => setMode(v as 'amount' | 'service')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Vælg type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="amount">Beløb</SelectItem>
+                        <SelectItem value="service">Service</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Gyldig til</Label>
+                    <Input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+                    <div className="text-xs text-muted-foreground">Vælg slutdato (ellers 24 mdr. fra i dag)</div>
+                  </div>
+                </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Sådan fungerer det</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-              <li>Vælg beløb eller angiv en service</li>
-              <li>Modtageren får gavekortet som e-mail</li>
-              <li>Koden bruges som rabatkode ved checkout</li>
-              <li>Gyldig indtil den valgte dato</li>
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+                {mode === 'amount' ? (
+                  <div className="space-y-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {presets.map((p) => (
+                        <Button key={p} type="button" variant={amount === p ? "default" : "outline"} onClick={() => setAmount(p)}>
+                          {p} DKK
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Andet beløb</Label>
+                      <Input type="number" min={100} step={50} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Service</Label>
+                      <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Fx. Brudestyling" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Service pris (valgfri)</Label>
+                      <Input type="number" min={0} value={servicePrice} onChange={(e) => setServicePrice(e.target.value ? Number(e.target.value) : '')} placeholder="Fx. 1200" />
+                    </div>
+                  </div>
+                )}
 
-      <Dialog open={showPayment} onOpenChange={setShowPayment}>
-        <DialogContent className="max-w-md">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Betal for gavekort</h2>
-            {clientSecret && (
+                <Button size="lg" className="w-full" onClick={handleCreatePayment} disabled={processing}>
+                  {processing ? 'Opretter...' : 'Fortsæt til betaling'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Sådan fungerer det</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                  <li>Vælg beløb eller angiv en service</li>
+                  <li>Modtageren får gavekortet som e-mail</li>
+                  <li>Koden bruges som rabatkode ved checkout</li>
+                  <li>Gyldig indtil den valgte dato</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Gennemfør betaling</CardTitle>
+            </CardHeader>
+            <CardContent>
               <Elements stripe={stripePromise} options={{ clientSecret }}>
                 <PaymentForm 
                   giftCardData={{ amount: mode === 'amount' ? amount : (servicePrice || amount), code: giftCardCode }}
                   onSuccess={handlePaymentSuccess}
                 />
               </Elements>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Dialog open={!!printData} onOpenChange={(open) => !open && setPrintData(null)}>
         <DialogContent className="max-w-4xl">
