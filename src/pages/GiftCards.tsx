@@ -13,7 +13,7 @@ import { PrintableGiftCard } from "@/components/giftcard/PrintableGiftCard";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const stripePromise = loadStripe("pk_live_51QhO3hKPWTVQ25dUlUhbxkOCbYTlX3rFLZ7Yn8yFBKqG0xPOlMHWsZrYbcuTmkEjdkr5G4PjwmVk8pOo1L7bC6g800Bi6yBpjp");
 
 
 function PaymentForm({ 
