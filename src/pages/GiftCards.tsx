@@ -6,15 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PrintableGiftCard } from "@/components/giftcard/PrintableGiftCard";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
-// Load Stripe once outside component
-const stripePromise = loadStripe("pk_live_51QhO3hKPWTVQ25dUlUhbxkOCbYTlX3rFLZ7Yn8yFBKqG0xPOlMHWsZrYbcuTmkEjdkr5G4PjwmVk8pOo1L7bC6g800Bi6yBpjp");
+// Stripe promise will be loaded dynamically
+let stripePromise: Promise<Stripe | null> | null = null;
 
 
 function PaymentForm({ 
@@ -79,6 +79,28 @@ export default function GiftCards() {
   const [printData, setPrintData] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [giftCardCode, setGiftCardCode] = useState<string>('');
+  const [stripeLoading, setStripeLoading] = useState(true);
+
+  // Load Stripe publishable key from edge function
+  useEffect(() => {
+    const loadStripeKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('stripe-public-key');
+        if (error) throw error;
+        
+        if (data?.publishableKey) {
+          stripePromise = loadStripe(data.publishableKey);
+          await stripePromise; // Wait for it to load
+        }
+      } catch (e: any) {
+        console.error('Failed to load Stripe:', e);
+        toast.error('Kunne ikke indlæse betalingssystem');
+      } finally {
+        setStripeLoading(false);
+      }
+    };
+    loadStripeKey();
+  }, []);
 
   const handleCreatePayment = async () => {
     if (!toName || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return; }
@@ -223,12 +245,22 @@ export default function GiftCards() {
               <CardTitle>Gennemfør betaling</CardTitle>
             </CardHeader>
             <CardContent>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <PaymentForm 
-                  giftCardData={{ amount: mode === 'amount' ? amount : (servicePrice || amount), code: giftCardCode }}
-                  onSuccess={handlePaymentSuccess}
-                />
-              </Elements>
+              {stripeLoading ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  Indlæser betalingsmuligheder...
+                </div>
+              ) : stripePromise ? (
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <PaymentForm 
+                    giftCardData={{ amount: mode === 'amount' ? amount : (servicePrice || amount), code: giftCardCode }}
+                    onSuccess={handlePaymentSuccess}
+                  />
+                </Elements>
+              ) : (
+                <div className="py-8 text-center text-destructive">
+                  Kunne ikke indlæse betalingssystem
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
