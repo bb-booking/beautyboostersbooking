@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PrintableGiftCard } from "@/components/giftcard/PrintableGiftCard";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
+// Load Stripe once outside component
 const stripePromise = loadStripe("pk_live_51QhO3hKPWTVQ25dUlUhbxkOCbYTlX3rFLZ7Yn8yFBKqG0xPOlMHWsZrYbcuTmkEjdkr5G4PjwmVk8pOo1L7bC6g800Bi6yBpjp");
 
 
