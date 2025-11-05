@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import PopularServices from "@/components/home/PopularServices";
 import heroFallback from "@/assets/makeup-hair-hero.jpg";
-import beautyHeroNoBg from "@/assets/beauty-hero-no-bg.png";
+import beautyHeroNoBg from "@/assets/beauty-hero-transparent.png";
 
 const Hero = () => {
   const navigate = useNavigate();
