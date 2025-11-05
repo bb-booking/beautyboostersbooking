@@ -91,27 +91,27 @@ export default function BoosterPortfolio() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Portfolio</h1>
           <p className="text-muted-foreground">Vis dine bedste arbejder frem</p>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleInstagramSync}>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={handleInstagramSync} className="w-full sm:w-auto">
             <Instagram className="h-4 w-4 mr-2" />
             Synk Instagram
           </Button>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Camera className="h-4 w-4 mr-2" />
                 Tilføj billede
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Tilføj til portfolio</DialogTitle>
               </DialogHeader>

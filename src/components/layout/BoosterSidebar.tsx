@@ -47,11 +47,6 @@ const menuItems = [
     icon: Briefcase,
   },
   {
-    title: "Min kalender",
-    url: "/booster/calendar",
-    icon: Calendar,
-  },
-  {
     title: "Portfolio",
     url: "/booster/portfolio",
     icon: Camera,

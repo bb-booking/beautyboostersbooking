@@ -195,21 +195,23 @@ export default function BoosterCalendar() {
     : `${format(days[0], "P")} – ${format(days[6], "P")}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Helmet>
         <title>Min kalender – Beauty Boosters</title>
         <meta name="description" content="Dag- og ugekalender for booster med 30-minutters tidsintervaller." />
         <link rel="canonical" href={`${window.location.origin}/booster/calendar`} />
       </Helmet>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold">Min kalender</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? -1 : view === "week" ? -7 : -30))}>Forrige</Button>
-          <Button variant="outline" onClick={() => setDate(startOfDay(new Date()))}>I dag</Button>
-          <Button variant="outline" onClick={() => setDate(addDays(date, view === "day" ? 1 : view === "week" ? 7 : 30))}>Næste</Button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDate(addDays(date, view === "day" ? -1 : view === "week" ? -7 : -30))}>Forrige</Button>
+            <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>I dag</Button>
+            <Button variant="outline" size="sm" onClick={() => setDate(addDays(date, view === "day" ? 1 : view === "week" ? 7 : 30))}>Næste</Button>
+          </div>
           <Select value={view} onValueChange={(v) => setView(v as View)}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Visning" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Visning" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="day">Dag</SelectItem>
               <SelectItem value="week">Uge</SelectItem>
@@ -219,13 +221,13 @@ export default function BoosterCalendar() {
         </div>
       </div>
 
-      <Card className="p-4">
+      <Card className="p-2 md:p-4 overflow-x-auto">
         <div className="text-sm text-muted-foreground mb-2">{headerTitle}</div>
-        <div className="grid" style={{ gridTemplateColumns: `120px repeat(${view === "month" ? Math.min(days.length, 7) : days.length}, minmax(220px, 1fr))` }}>
+        <div className="grid min-w-[800px]" style={{ gridTemplateColumns: `80px repeat(${view === "month" ? Math.min(days.length, 7) : days.length}, minmax(150px, 1fr))` }}>
           {/* Header row */}
           <div />
           {days.map((d) => (
-            <div key={format(d, "yyyy-MM-dd")} className="px-3 py-2 border-b font-medium">
+            <div key={format(d, "yyyy-MM-dd")} className="px-2 py-2 border-b font-medium text-xs md:text-sm">
               {format(d, "EEE d/M")}
             </div>
           ))}
@@ -233,7 +235,7 @@ export default function BoosterCalendar() {
           {/* Rows */}
           {times.map((t) => (
             <>
-              <div key={`time-${t}`} className="border-t px-2 text-xs text-muted-foreground h-12 flex items-start pt-2">{t}</div>
+              <div key={`time-${t}`} className="border-t px-1 text-[10px] md:text-xs text-muted-foreground h-12 flex items-start pt-2">{t}</div>
               {days.map((d) => {
                 const dayKey = format(d, "yyyy-MM-dd");
                 const booked = slotIsBooked(d, t);
@@ -289,10 +291,10 @@ export default function BoosterCalendar() {
                     {startingHere.map((e) => {
                       const meta = parseNotes(e);
                       return (
-                        <div key={e.id} className="absolute inset-0 px-2 py-1">
-                          <div className="h-full w-full rounded-md bg-primary/10 border border-primary/20 text-xs p-2 flex flex-col">
+                        <div key={e.id} className="absolute inset-0 px-1 py-1">
+                          <div className="h-full w-full rounded-md bg-primary/10 border border-primary/20 text-[10px] md:text-xs p-1 md:p-2 flex flex-col">
                             <div className="font-medium truncate">{meta.service || "Booking"}</div>
-                            <div className="text-muted-foreground truncate">
+                            <div className="text-muted-foreground truncate text-[9px] md:text-[11px]">
                               {e.start_time.slice(0,5)}–{e.end_time.slice(0,5)} · {meta.customer_name || ""}
                             </div>
                             {meta.address && (
