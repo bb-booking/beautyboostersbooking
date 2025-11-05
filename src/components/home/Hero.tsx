@@ -194,10 +194,14 @@ const Hero = () => {
         />
 
         <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold text-left">
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold">
               Professionelle artister direkte til døren.
             </h1>
+            
+            <p className="mt-4 text-lg md:text-xl text-muted-foreground">
+              Book en professionel makeup artist eller hår stylist til dit hjem
+            </p>
 
             {/* Search Widget */}
             <Card className="mt-8 md:mt-10 bg-card/95 backdrop-blur-md border-border/50 shadow-xl animate-enter">
