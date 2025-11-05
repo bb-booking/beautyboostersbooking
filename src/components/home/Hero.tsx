@@ -198,9 +198,6 @@ const Hero = () => {
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold text-left">
               Professionelle artister direkte til døren.
             </h1>
-            <p className="mt-4 md:mt-6 text-base sm:text-lg md:text-xl text-muted-foreground animate-fade-in tracking-tight text-left">
-              Book udkørende artister i hele Danmark.
-            </p>
 
             {/* Search Widget */}
             <Card className="mt-8 md:mt-10 bg-card/95 backdrop-blur-md border-border/50 shadow-xl animate-enter">
