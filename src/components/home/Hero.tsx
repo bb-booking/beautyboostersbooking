@@ -174,13 +174,13 @@ const Hero = () => {
   };
 
   return (
-      <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24 overflow-hidden">
+      <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24 overflow-hidden bg-background">
         
         {/* Hero image with no background - positioned with eyes above search field */}
         <img
           src={beautyHeroNoBg}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute left-1/2 -translate-x-1/2 top-0 h-auto w-full max-w-md md:max-w-2xl object-contain pointer-events-none"
+          className="absolute left-1/2 -translate-x-1/2 top-0 h-auto w-full max-w-md md:max-w-2xl object-contain pointer-events-none z-0"
           loading="eager"
           style={{ transform: 'translate(-50%, -15%)' }}
         />
