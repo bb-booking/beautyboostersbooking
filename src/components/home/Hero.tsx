@@ -174,153 +174,128 @@ const Hero = () => {
   };
 
   return (
-      <section className="relative isolate min-h-[70vh] md:min-h-[90vh] flex items-center py-8 md:py-16 overflow-hidden bg-background">
+      <section className="relative isolate min-h-[80vh] md:min-h-[85vh] flex items-center py-8 md:py-12 overflow-hidden bg-background">
         
-        {/* Hero image - large and positioned behind content */}
+        {/* Hero image - positioned to the right */}
         <img
           src={beautyHeroNoBg}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute pointer-events-none z-0"
+          className="absolute pointer-events-none z-0 hidden md:block"
           loading="eager"
           style={{ 
             top: '0',
-            right: '-10%',
-            transform: 'scale(2.5)',
+            right: '0',
+            transform: 'scale(1.8)',
             transformOrigin: 'top right',
             maxWidth: 'none',
             width: 'auto',
-            height: 'auto'
+            height: '100%'
           }}
         />
 
-        <div className="container relative z-10 mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl leading-tight tracking-wide animate-fade-in font-semibold">
+        <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold text-left">
               Professionelle artister direkte til døren.
             </h1>
-            <p className="mt-3 md:mt-4 text-sm sm:text-base md:text-lg text-muted-foreground animate-fade-in tracking-tight">
+            <p className="mt-4 md:mt-6 text-base sm:text-lg md:text-xl text-muted-foreground animate-fade-in tracking-tight text-left">
               Book udkørende artister i hele Danmark.
             </p>
-          </div>
 
-          {/* Search Widget */}
-          <Card className="mt-6 md:mt-8 max-w-3xl mx-auto bg-card/90 backdrop-blur-md border-border/50 shadow-xl animate-enter">
-            <CardContent className="p-4 sm:p-6">
-              <div className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
-                      value={searchData.location}
-                      onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
-                      onFocus={() => setShowLocationSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-                      className="h-10 sm:h-12 text-foreground text-sm sm:text-base"
-                    />
-                    {showLocationSuggestions && (
-                      <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
-                        {locationOptions
-                          .filter((opt) =>
-                            opt.toLowerCase().includes(searchData.location.toLowerCase())
-                          )
-                          .slice(0, 8)
-                          .map((opt) => (
-                            <div
-                              key={opt}
-                              className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setSearchData((prev) => ({ ...prev, location: opt }));
-                                setShowLocationSuggestions(false);
-                              }}
-                            >
-                              {opt}
-                            </div>
-                          ))}
-                      </div>
-                    )}
+            {/* Search Widget */}
+            <Card className="mt-8 md:mt-10 bg-card/95 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+              <CardContent className="p-4 sm:p-6">
+                <div className="space-y-3 sm:space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
+                    <div className="relative">
+                      <Input
+                        placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
+                        value={searchData.location}
+                        onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
+                        onFocus={() => setShowLocationSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
+                        className="h-10 sm:h-12 text-foreground text-sm sm:text-base"
+                      />
+                      {showLocationSuggestions && (
+                        <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
+                          {locationOptions
+                            .filter((opt) =>
+                              opt.toLowerCase().includes(searchData.location.toLowerCase())
+                            )
+                            .slice(0, 8)
+                            .map((opt) => (
+                              <div
+                                key={opt}
+                                className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setSearchData((prev) => ({ ...prev, location: opt }));
+                                  setShowLocationSuggestions(false);
+                                }}
+                              >
+                                {opt}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={isLoadingLocation}
+                      className="h-10 sm:h-12 text-sm sm:text-base sm:w-auto"
+                    >
+                      {isLoadingLocation ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />
+                          Finder lokation...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="mr-2 h-4 w-4" />
+                          Brug nuværende lokation
+                        </>
+                      )}
+                    </Button>
+
+                    <Button className="h-10 sm:h-12 text-sm sm:text-base w-full sm:flex-1" onClick={handleSearch}>
+                      <Search className="mr-2 h-4 w-4" />
+                      Vælg service
+                    </Button>
+                  </div>
+
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={getCurrentLocation}
-                    disabled={isLoadingLocation}
-                    className="h-10 sm:h-12 text-sm sm:text-base sm:w-auto"
-                  >
-                    {isLoadingLocation ? (
-                      <>
-                        <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />
-                        Finder lokation...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin className="mr-2 h-4 w-4" />
-                        Brug nuværende lokation
-                      </>
-                    )}
-                  </Button>
-
-                  <Button className="h-10 sm:h-12 text-sm sm:text-base w-full sm:flex-1" onClick={handleSearch}>
-                    <Search className="mr-2 h-4 w-4" />
-                    Vælg service
-                  </Button>
-                </div>
-
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Secondary CTA */}
-          <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center px-4 sm:px-0">
-            <Button variant="outline" size="lg" className="h-12 text-base sm:text-lg px-6 sm:px-8 py-3" asChild>
-              <Link to="/booster-signup">
-                <Users className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
-                Bliv Booster
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" className="h-12 text-base sm:text-lg px-6 sm:px-8 py-3" asChild>
-              <a href="tel:+4571786575">
-                <Phone className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
-                Ring til os
-              </a>
-            </Button>
-          </div>
-
-          {/* Feature highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mt-8 sm:mt-6 px-4 sm:px-0">
-            <div className="text-center">
-              <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-              </div>
-              <h3 className="text-base sm:text-lg font-normal mb-2">Hurtig Booking</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">Book din beauty‑specialist på få minutter</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-              </div>
-              <h3 className="text-base sm:text-lg font-normal mb-2">Professionelle Artister</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">Certificerede og erfarne beauty‑specialister</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-              </div>
-              <h3 className="text-base sm:text-lg font-normal mb-2">Fleksible Tider</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">Find artister der passer din tidsplan</p>
+            {/* Secondary CTA */}
+            <div className="mt-6 md:mt-8 flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <Button variant="outline" size="lg" className="h-12 text-base px-6 py-3" asChild>
+                <Link to="/booster-signup">
+                  <Users className="mr-2 h-4 w-4" />
+                  Bliv Booster
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="h-12 text-base px-6 py-3" asChild>
+                <a href="tel:+4571786575">
+                  <Phone className="mr-2 h-4 w-4" />
+                  Ring til os
+                </a>
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Popular Services */}
-          <div className="mt-12">
-            <PopularServices />
-          </div>
+        {/* Popular Services - moved outside main content */}
+        <div className="container relative z-10 mx-auto px-4 mt-16 md:mt-20">
+          <PopularServices />
         </div>
       </section>
   );
