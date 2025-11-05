@@ -175,27 +175,15 @@ const Hero = () => {
 
   return (
       <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24 overflow-hidden">
-        {/* Elegant gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary)/0.1)] via-background to-[hsl(var(--accent)/0.15)]" />
         
-        {/* Hero image with no background - positioned elegantly */}
+        {/* Hero image with no background - positioned with eyes above search field */}
         <img
           src={beautyHeroNoBg}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-[120%] w-auto object-contain opacity-90 hidden md:block pointer-events-none"
+          className="absolute left-1/2 -translate-x-1/2 top-0 h-auto w-full max-w-md md:max-w-2xl object-contain pointer-events-none"
           loading="eager"
+          style={{ transform: 'translate(-50%, -15%)' }}
         />
-
-        {/* Mobile: smaller version */}
-        <img
-          src={beautyHeroNoBg}
-          alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-[100%] w-auto object-contain opacity-80 md:hidden pointer-events-none"
-          loading="eager"
-        />
-
-        {/* Subtle overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent" />
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
