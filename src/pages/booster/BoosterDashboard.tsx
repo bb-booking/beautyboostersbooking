@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ interface BoosterStats {
 }
 
 const BoosterDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<BoosterStats>({
     availableJobs: 0,
     completedJobs: 0,
@@ -102,28 +104,28 @@ const BoosterDashboard = () => {
       description: "Administrer tilgængelighed",
       icon: Calendar,
       color: "text-blue-600",
-      action: () => console.log("Open calendar"),
+      action: () => navigate("/booster"),
     },
     {
       title: "Portfolio",
       description: "Upload arbejdseksempler",
       icon: Camera,
       color: "text-green-600",
-      action: () => console.log("Open portfolio"),
+      action: () => navigate("/booster/portfolio"),
     },
     {
       title: "Kompetencer",
       description: "Opdater dine skills",
       icon: Tag,
       color: "text-purple-600",
-      action: () => console.log("Open skills"),
+      action: () => navigate("/booster/skills"),
     },
     {
       title: "Min profil",
       description: "Rediger om mig sektion",
       icon: User,
       color: "text-orange-600",
-      action: () => console.log("Open profile"),
+      action: () => navigate("/booster/profile"),
     },
   ];
 
@@ -241,7 +243,7 @@ const BoosterDashboard = () => {
               <span className="text-sm text-muted-foreground">Tilgængelige slots:</span>
               <span className="font-semibold">8 timer</span>
             </div>
-            <Button className="w-full mt-4">
+            <Button className="w-full mt-4" onClick={() => navigate("/booster")}>
               Se fuld kalender
             </Button>
           </CardContent>
