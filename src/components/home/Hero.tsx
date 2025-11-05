@@ -271,53 +271,7 @@ const Hero = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Secondary CTA */}
-            <div className="mt-6 md:mt-8 flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <Button variant="outline" size="lg" className="h-12 text-base px-6 py-3" asChild>
-                <Link to="/booster-signup">
-                  <Users className="mr-2 h-4 w-4" />
-                  Bliv Booster
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" className="h-12 text-base px-6 py-3" asChild>
-                <a href="tel:+4571786575">
-                  <Phone className="mr-2 h-4 w-4" />
-                  Ring til os
-                </a>
-              </Button>
-            </div>
-
-            {/* Feature highlights */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-8 md:mt-10">
-              <div className="text-center sm:text-left">
-                <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto sm:mx-0 mb-3 sm:mb-4">
-                  <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-                </div>
-                <h3 className="text-base sm:text-lg font-normal mb-2">Hurtig Booking</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">Book din beauty‑specialist på få minutter</p>
-              </div>
-              <div className="text-center sm:text-left">
-                <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto sm:mx-0 mb-3 sm:mb-4">
-                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-                </div>
-                <h3 className="text-base sm:text-lg font-normal mb-2">Professionelle Artister</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">Certificerede og erfarne beauty‑specialister</p>
-              </div>
-              <div className="text-center sm:text-left">
-                <div className="bg-primary/10 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto sm:mx-0 mb-3 sm:mb-4">
-                  <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-                </div>
-                <h3 className="text-base sm:text-lg font-normal mb-2">Fleksible Tider</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">Find artister der passer din tidsplan</p>
-              </div>
-            </div>
           </div>
-        </div>
-
-        {/* Popular Services */}
-        <div className="container relative z-10 mx-auto px-4 mt-12 md:mt-16">
-          <PopularServices />
         </div>
       </section>
   );
