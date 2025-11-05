@@ -183,7 +183,7 @@ const Hero = () => {
           className="absolute pointer-events-none z-0 hidden md:block"
           loading="eager"
           style={{ 
-            top: '0',
+            top: '-3cm',
             right: '0',
             transform: 'scale(1.8)',
             transformOrigin: 'top right',
