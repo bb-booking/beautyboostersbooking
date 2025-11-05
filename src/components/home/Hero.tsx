@@ -180,12 +180,16 @@ const Hero = () => {
         <img
           src={beautyHeroNoBg}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute left-1/2 -translate-x-1/2 top-0 h-auto w-auto pointer-events-none z-0"
+          className="absolute pointer-events-none z-0"
           loading="eager"
           style={{ 
-            transform: 'translate(-50%, 0%) scale(4)',
-            transformOrigin: 'top center',
-            maxWidth: 'none'
+            top: '0',
+            right: '-10%',
+            transform: 'scale(2.5)',
+            transformOrigin: 'top right',
+            maxWidth: 'none',
+            width: 'auto',
+            height: 'auto'
           }}
         />
 
