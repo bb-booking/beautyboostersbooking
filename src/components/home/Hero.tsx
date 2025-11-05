@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import PopularServices from "@/components/home/PopularServices";
 import heroFallback from "@/assets/makeup-hair-hero.jpg";
+import beautyHeroNoBg from "@/assets/beauty-hero-no-bg.png";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -173,31 +174,28 @@ const Hero = () => {
   };
 
   return (
-      <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24">
-        {/* Background image with gradient overlay */}
+      <section className="relative isolate min-h-[70vh] md:min-h-[80vh] flex items-center py-16 md:py-24 overflow-hidden">
+        {/* Elegant gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary)/0.1)] via-background to-[hsl(var(--accent)/0.15)]" />
+        
+        {/* Hero image with no background - positioned elegantly */}
         <img
-          src="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = heroFallback; }}
-          alt="Makeup artist på arbejde – book beauty artist til døren"
-          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[30%]"
+          src={beautyHeroNoBg}
+          alt="Professionel makeup artist – BeautyBoosters"
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-[120%] w-auto object-contain opacity-90 hidden md:block pointer-events-none"
           loading="eager"
         />
-        {/* Background video (desktop) */}
-        <video
-          ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover object-[center_5%] transform-gpu -translate-y-[30%] hidden md:block"
-          muted
-          playsInline
-          autoPlay
-          preload="metadata"
-          aria-label="Stemningsvideo af makeup artist – BeautyBoosters"
-          poster="/lovable-uploads/d79f43b5-733d-495c-94fa-23af4820ffda.png"
-          onLoadedMetadata={(e) => { try { const v = e.currentTarget; v.currentTime = VIDEO_START; v.play().catch(() => {}); } catch {} }}
-          onTimeUpdate={(e) => { const v = e.currentTarget; if (v.currentTime >= VIDEO_END) { v.currentTime = VIDEO_START; v.play().catch(() => {}); } }}
-        >
-          <source src={HERO_VIDEO} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
+
+        {/* Mobile: smaller version */}
+        <img
+          src={beautyHeroNoBg}
+          alt="Professionel makeup artist – BeautyBoosters"
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-[100%] w-auto object-contain opacity-80 md:hidden pointer-events-none"
+          loading="eager"
+        />
+
+        {/* Subtle overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent" />
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
