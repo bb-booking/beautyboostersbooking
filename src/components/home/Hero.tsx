@@ -184,7 +184,7 @@ const Hero = () => {
           loading="eager"
           style={{ 
             top: '-3cm',
-            right: 'calc(-10% - 8cm)',
+            right: 'calc(-10% - 16cm)',
             transform: 'scale(1.8)',
             transformOrigin: 'center right',
             maxWidth: 'none',
