@@ -183,8 +183,8 @@ const Hero = () => {
           className="absolute pointer-events-none z-0 hidden md:block"
           loading="eager"
           style={{ 
-            top: '-3cm',
-            right: 'calc(-10% - 16cm)',
+            top: '0cm',
+            right: 'calc(-10% - 22cm)',
             transform: 'scale(1.8)',
             transformOrigin: 'center right',
             maxWidth: 'none',
@@ -194,7 +194,7 @@ const Hero = () => {
         />
 
         <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
-          <div className="max-w-2xl mx-auto text-center">
+          <div className="max-w-2xl">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold">
               Professionelle artister direkte til døren.
             </h1>
