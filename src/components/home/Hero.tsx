@@ -176,11 +176,14 @@ const Hero = () => {
   return (
       <section className="relative isolate min-h-[80vh] md:min-h-[85vh] flex items-center py-8 md:py-12 overflow-hidden bg-background">
         
-        {/* Hero image - positioned to the right */}
+        {/* Dark overlay for mobile - ensures text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/60 md:hidden z-[1]" />
+        
+        {/* Hero image - mobile: centered background, desktop: positioned right */}
         <img
           src={beautyHeroNoBg}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute pointer-events-none z-0 hidden md:block"
+          className="absolute pointer-events-none z-0 block"
           loading="eager"
           style={{ 
             top: '0cm',
@@ -192,19 +195,36 @@ const Hero = () => {
             height: '100%'
           }}
         />
+        
+        {/* Mobile: centered image as background */}
+        <img
+          src={beautyHeroNoBg}
+          alt="Professionel makeup artist – BeautyBoosters"
+          className="absolute pointer-events-none z-0 md:hidden"
+          loading="eager"
+          style={{ 
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) scale(1.2)',
+            maxWidth: 'none',
+            width: 'auto',
+            height: '100%',
+            opacity: 0.95
+          }}
+        />
 
         <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold">
+          <div className="max-w-2xl text-center md:text-left">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold text-foreground drop-shadow-sm">
               Professionelle artister direkte til døren.
             </h1>
             
-            <p className="mt-4 text-lg md:text-xl text-muted-foreground">
+            <p className="mt-4 text-lg md:text-xl text-foreground/90 md:text-muted-foreground drop-shadow-sm">
               Book en professionel makeup artist eller hår stylist til dit hjem
             </p>
 
             {/* Search Widget */}
-            <Card className="mt-8 md:mt-10 bg-card/95 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+            <Card className="mt-8 md:mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-3 sm:space-y-4">
                   <div>
