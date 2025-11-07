@@ -176,8 +176,11 @@ const Hero = () => {
   return (
       <section className="relative isolate min-h-[80vh] md:min-h-[85vh] flex items-center py-8 md:py-12 overflow-hidden bg-background">
         
-        {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/30 z-[1]" />
+        {/* Dark overlay for mobile - ensures text readability */}
+        <div className="absolute inset-0 bg-background/60 md:hidden z-[1]" />
+        
+        {/* Gradient overlay for desktop */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/30 hidden md:block z-[1]" />
         
         
         {/* Hero image - mobile: centered background, desktop: positioned right */}
