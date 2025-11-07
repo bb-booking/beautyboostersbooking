@@ -215,7 +215,7 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
           <div className="max-w-2xl text-center md:text-left">
-            <h1 className="font-inter text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight tracking-wide animate-fade-in font-semibold text-foreground drop-shadow-sm">
+            <h1 className="font-inter text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-snug tracking-tight animate-fade-in font-medium text-foreground drop-shadow-sm max-w-xl md:max-w-none">
               Professionelle artister direkte til døren.
             </h1>
 
