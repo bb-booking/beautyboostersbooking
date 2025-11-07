@@ -207,7 +207,7 @@ const Hero = () => {
           className="absolute pointer-events-none z-0 md:hidden"
           loading="eager"
           style={{ 
-            top: 'calc(50% - 2cm)',
+            top: 'calc(50% - 3cm)',
             left: '50%',
             transform: 'translate(-50%, -50%) scale(1.2)',
             maxWidth: 'none',
