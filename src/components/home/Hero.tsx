@@ -215,13 +215,9 @@ const Hero = () => {
 
         <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
           <div className="max-w-2xl text-center md:text-left">
-            <h1 className="font-inter text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide animate-fade-in font-semibold text-foreground drop-shadow-sm">
+            <h1 className="font-inter text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight tracking-wide animate-fade-in font-semibold text-foreground drop-shadow-sm">
               Professionelle artister direkte til døren.
             </h1>
-            
-            <p className="mt-4 text-lg md:text-xl text-foreground/90 md:text-muted-foreground drop-shadow-sm">
-              Book en professionel makeup artist eller hår stylist til dit hjem
-            </p>
 
             {/* Search Widget */}
             <Card className="mt-8 md:mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
