@@ -192,7 +192,7 @@ const Hero = () => {
           style={{ 
             top: '0cm',
             right: 'calc(-10% - 22cm)',
-            transform: 'scale(1.62)',
+            transform: 'scale(1.8)',
             transformOrigin: 'center right',
             maxWidth: 'none',
             width: 'auto',
@@ -209,7 +209,7 @@ const Hero = () => {
           style={{ 
             top: 'calc(50% - 2.5cm)',
             left: '50%',
-            transform: 'translate(-50%, -50%) scale(1.08)',
+            transform: 'translate(-50%, -50%) scale(0.94)',
             maxWidth: 'none',
             width: 'auto',
             height: '100%',
