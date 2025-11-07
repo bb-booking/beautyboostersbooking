@@ -183,11 +183,11 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/30 hidden md:block z-[1]" />
         
         
-        {/* Hero image - mobile: centered background, desktop: positioned right */}
+        {/* Hero image - desktop only: positioned right */}
         <img
           src={beautyHeroNoBg}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute pointer-events-none z-0 block"
+          className="absolute pointer-events-none z-0 hidden md:block"
           loading="eager"
           style={{ 
             top: '0cm',
