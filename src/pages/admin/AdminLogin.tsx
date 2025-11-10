@@ -24,7 +24,7 @@ export default function AdminLogin() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session && isMounted) {
-        navigate("/admin", { replace: true });
+        navigate("/admin/dashboard", { replace: true });
       }
     };
     
@@ -97,7 +97,7 @@ export default function AdminLogin() {
         }
         console.log("✅ Admin access confirmed, navigating...");
         toast({ title: "Logget ind" });
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
         const redirectUrl = `${window.location.origin}/admin`;
         const { error } = await supabase.auth.signUp({
