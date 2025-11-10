@@ -141,7 +141,7 @@ const Header = () => {
             <DropdownMenuContent align="end" className="z-50">
               <DropdownMenuLabel>Navigation</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <Link to="/book"><DropdownMenuItem><Calendar className="mr-2 h-4 w-4" /> Book nu</DropdownMenuItem></Link>
+              <Link to="/address"><DropdownMenuItem><Calendar className="mr-2 h-4 w-4" /> Book nu</DropdownMenuItem></Link>
               <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> Se services</DropdownMenuItem></Link>
               <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Vores Boosters</DropdownMenuItem></Link>
               <Link to="/giftcards"><DropdownMenuItem><Gift className="mr-2 h-4 w-4" /> Køb gavekort</DropdownMenuItem></Link>
@@ -184,7 +184,7 @@ const Header = () => {
                 </form>
 
                 <nav className="grid gap-3">
-                  <Link to="/book" className="text-foreground hover:underline font-medium">Book nu</Link>
+                  <Link to="/address" className="text-foreground hover:underline font-medium">Book nu</Link>
                   <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                   <Link to="/giftcards" className="text-foreground hover:underline">Køb gavekort</Link>

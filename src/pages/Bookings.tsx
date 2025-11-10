@@ -170,7 +170,7 @@ const Bookings = () => {
           <h1 className="text-3xl font-bold">Mine Bookinger</h1>
           <p className="text-muted-foreground">Oversigt over dine aftaler og behandlinger</p>
         </div>
-        <Link to="/stylists">
+        <Link to="/address">
           <Button>
             <Calendar className="h-4 w-4 mr-2" />
             Book Nu
