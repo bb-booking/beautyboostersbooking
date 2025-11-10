@@ -470,12 +470,56 @@ const Services = () => {
     );
   }
 
+  // Generate JSON-LD structured data for Google
+  const generateStructuredData = () => {
+    const baseUrl = window.location.origin;
+    
+    return {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Beauty Boosters",
+      "description": "Professionelle beauty services til døren - makeup, hårstyling, bryllup, events og erhverv",
+      "url": baseUrl,
+      "telephone": "+45-XXXXXXXX",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "København",
+        "addressCountry": "DK"
+      },
+      "priceRange": "499-8999 DKK",
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Beauty Services",
+        "itemListElement": filteredServices.map((service, index) => ({
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": service.name,
+            "description": service.description,
+            "category": service.category,
+            "provider": {
+              "@type": "LocalBusiness",
+              "name": "Beauty Boosters"
+            }
+          },
+          "price": service.price > 0 ? service.price : undefined,
+          "priceCurrency": "DKK",
+          "availability": "https://schema.org/InStock",
+          "validFrom": new Date().toISOString()
+        }))
+      }
+    };
+  };
+
   return (
     <>
       <Helmet>
         <title>Vælg beauty service – dato og tid | BeautyBoosters</title>
         <meta name="description" content="Book en beauty service til døren. Vælg behandling, dato og tidspunkt – nemt og hurtigt." />
         <link rel="canonical" href={`${window.location.origin}/services`} />
+        <script type="application/ld+json">
+          {JSON.stringify(generateStructuredData())}
+        </script>
       </Helmet>
       <div className="container mx-auto px-4 py-8 pb-32">
         <div className="mb-8">
