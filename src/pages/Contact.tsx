@@ -105,16 +105,36 @@ const Contact = () => {
           <div className="mt-12 text-center">
             <Card>
               <CardHeader>
-                <CardTitle>Åbningstider</CardTitle>
+                <CardTitle>Åbningstider (telefonisk)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between max-w-md mx-auto">
-                  <span className="font-medium">Man - Fre:</span>
+                  <span className="font-medium">Mandag:</span>
                   <span className="text-muted-foreground">09:00 - 17:00</span>
                 </div>
                 <div className="flex justify-between max-w-md mx-auto">
-                  <span className="font-medium">Lør - Søn:</span>
-                  <span className="text-muted-foreground">10:00 - 15:00</span>
+                  <span className="font-medium">Tirsdag:</span>
+                  <span className="text-muted-foreground">09:00 - 17:00</span>
+                </div>
+                <div className="flex justify-between max-w-md mx-auto">
+                  <span className="font-medium">Onsdag:</span>
+                  <span className="text-muted-foreground">09:00 - 17:00</span>
+                </div>
+                <div className="flex justify-between max-w-md mx-auto">
+                  <span className="font-medium">Torsdag:</span>
+                  <span className="text-muted-foreground">09:00 - 17:00</span>
+                </div>
+                <div className="flex justify-between max-w-md mx-auto">
+                  <span className="font-medium">Fredag:</span>
+                  <span className="text-muted-foreground">09:00 - 17:00</span>
+                </div>
+                <div className="flex justify-between max-w-md mx-auto">
+                  <span className="font-medium">Lørdag:</span>
+                  <span className="text-muted-foreground">09:00 - 16:00</span>
+                </div>
+                <div className="flex justify-between max-w-md mx-auto">
+                  <span className="font-medium">Søndag:</span>
+                  <span className="text-muted-foreground">09:00 - 16:00</span>
                 </div>
               </CardContent>
             </Card>
