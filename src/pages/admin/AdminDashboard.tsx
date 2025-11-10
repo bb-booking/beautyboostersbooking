@@ -6,6 +6,7 @@ import { MessageSquare, Users, Calendar, TrendingUp, DollarSign, Briefcase, Aler
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { da } from "date-fns/locale";
+import { Link } from "react-router-dom";
 
 interface DashboardStats {
   totalRevenue: number;
@@ -198,24 +199,28 @@ const AdminDashboard = () => {
       icon: DollarSign,
       color: "text-green-600",
       badge: "denne måned",
+      link: "/admin/finance",
     },
     {
       title: "Aktive bookings",
       value: stats.activeBookings,
       icon: Calendar,
       color: "text-blue-600",
+      link: "/admin/bookings",
     },
     {
       title: "Åbne jobs",
       value: stats.openJobs,
       icon: Briefcase,
       color: "text-orange-600",
+      link: "/admin/jobs",
     },
     {
       title: "Aktive boosters",
       value: stats.activeBoosters,
       icon: Users,
       color: "text-purple-600",
+      link: "/admin/boosters",
     },
     {
       title: "Nye forespørgsler",
@@ -223,12 +228,14 @@ const AdminDashboard = () => {
       icon: MessageSquare,
       color: "text-pink-600",
       badge: stats.newInquiries > 0 ? "kræver handling" : undefined,
+      link: "/admin/inquiries",
     },
     {
       title: "Ubetalte fakturaer",
       value: stats.unpaidInvoices,
       icon: AlertCircle,
       color: "text-red-600",
+      link: "/admin/finance",
     },
   ];
 
@@ -279,24 +286,26 @@ const AdminDashboard = () => {
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{stat.value}</div>
-                {stat.badge && (
-                  <Badge variant="secondary" className="text-xs">
-                    {stat.badge}
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <Link key={index} to={stat.link}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  {stat.badge && (
+                    <Badge variant="secondary" className="text-xs">
+                      {stat.badge}
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -341,100 +350,106 @@ const AdminDashboard = () => {
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Seneste bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentBookings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Ingen bookings endnu</p>
-              ) : (
-                recentBookings.map((booking) => (
-                  <div key={booking.id} className="flex justify-between items-start border-b pb-2 last:border-0">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{booking.customer_name}</p>
-                      <p className="text-xs text-muted-foreground">{booking.service_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(booking.booking_date), 'd. MMM', { locale: da })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold">{booking.amount.toLocaleString('da-DK')} kr</p>
-                      <Badge variant={getStatusBadge(booking.status).variant} className="text-xs mt-1">
-                        {getStatusBadge(booking.status).label}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Seneste jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentJobs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Ingen jobs endnu</p>
-              ) : (
-                recentJobs.map((job) => (
-                  <div key={job.id} className="border-b pb-2 last:border-0">
-                    <div className="flex justify-between items-start">
+        <Link to="/admin/bookings">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Seneste bookings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {recentBookings.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ingen bookings endnu</p>
+                ) : (
+                  recentBookings.map((booking) => (
+                    <div key={booking.id} className="flex justify-between items-start border-b pb-2 last:border-0">
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{job.title}</p>
+                        <p className="text-sm font-medium">{booking.customer_name}</p>
+                        <p className="text-xs text-muted-foreground">{booking.service_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(job.date_needed), 'd. MMM', { locale: da })}
+                          {format(new Date(booking.booking_date), 'd. MMM', { locale: da })}
                         </p>
                       </div>
-                      <Badge variant={getStatusBadge(job.status).variant} className="text-xs">
-                        {getStatusBadge(job.status).label}
-                      </Badge>
-                    </div>
-                    {job.boosters_needed > 1 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {job.boosters_needed} boosters søges
-                      </p>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Seneste forespørgsler</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentInquiries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Ingen forespørgsler endnu</p>
-              ) : (
-                recentInquiries.map((inquiry) => (
-                  <div key={inquiry.id} className="border-b pb-2 last:border-0">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{inquiry.navn}</p>
-                        <p className="text-xs text-muted-foreground">{inquiry.service_id}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(inquiry.created_at), 'd. MMM', { locale: da })}
-                        </p>
+                      <div className="text-right">
+                        <p className="text-sm font-bold">{booking.amount.toLocaleString('da-DK')} kr</p>
+                        <Badge variant={getStatusBadge(booking.status).variant} className="text-xs mt-1">
+                          {getStatusBadge(booking.status).label}
+                        </Badge>
                       </div>
-                      <Badge variant={getStatusBadge(inquiry.status).variant} className="text-xs">
-                        {getStatusBadge(inquiry.status).label}
-                      </Badge>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/admin/jobs">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Seneste jobs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {recentJobs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ingen jobs endnu</p>
+                ) : (
+                  recentJobs.map((job) => (
+                    <div key={job.id} className="border-b pb-2 last:border-0">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{job.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(job.date_needed), 'd. MMM', { locale: da })}
+                          </p>
+                        </div>
+                        <Badge variant={getStatusBadge(job.status).variant} className="text-xs">
+                          {getStatusBadge(job.status).label}
+                        </Badge>
+                      </div>
+                      {job.boosters_needed > 1 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {job.boosters_needed} boosters søges
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/admin/inquiries">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Seneste forespørgsler</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {recentInquiries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ingen forespørgsler endnu</p>
+                ) : (
+                  recentInquiries.map((inquiry) => (
+                    <div key={inquiry.id} className="border-b pb-2 last:border-0">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{inquiry.navn}</p>
+                          <p className="text-xs text-muted-foreground">{inquiry.service_id}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(inquiry.created_at), 'd. MMM', { locale: da })}
+                          </p>
+                        </div>
+                        <Badge variant={getStatusBadge(inquiry.status).variant} className="text-xs">
+                          {getStatusBadge(inquiry.status).label}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Action Items */}
