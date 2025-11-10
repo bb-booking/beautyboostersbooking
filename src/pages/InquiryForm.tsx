@@ -16,6 +16,7 @@ const InquiryForm = () => {
   const serviceId = searchParams.get('service');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [clientType, setClientType] = useState<'privat' | 'virksomhed'>('privat');
   const [formData, setFormData] = useState({
     navn: "",
     email: "",
@@ -146,6 +147,35 @@ const InquiryForm = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Kunde type */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Kundetype</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  type="button"
+                  variant={clientType === 'privat' ? 'default' : 'outline'}
+                  onClick={() => setClientType('privat')}
+                  className="h-auto py-4"
+                >
+                  <div className="text-center">
+                    <div className="font-semibold">Privat</div>
+                    <div className="text-xs mt-1 opacity-80">Bryllup, makeup, hår</div>
+                  </div>
+                </Button>
+                <Button
+                  type="button"
+                  variant={clientType === 'virksomhed' ? 'default' : 'outline'}
+                  onClick={() => setClientType('virksomhed')}
+                  className="h-auto py-4"
+                >
+                  <div className="text-center">
+                    <div className="font-semibold">Virksomhed</div>
+                    <div className="text-xs mt-1 opacity-80">Events, produktion, film</div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+
             {/* Kontaktoplysninger */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Kontaktoplysninger</h3>
@@ -202,18 +232,34 @@ const InquiryForm = () => {
               <h3 className="text-lg font-semibold">Projektdetaljer</h3>
               
               <div>
-                <Label htmlFor="projektType">Type projekt</Label>
+                <Label htmlFor="projektType">
+                  {clientType === 'privat' ? 'Vælg service' : 'Vælg projekttype'}
+                </Label>
                 <Select value={formData.projektType} onValueChange={(value) => handleInputChange("projektType", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Vælg projekttype" />
+                    <SelectValue placeholder={clientType === 'privat' ? 'Vælg service' : 'Vælg projekttype'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="film-tv">Film/TV</SelectItem>
-                    <SelectItem value="teater">Teater</SelectItem>
-                    <SelectItem value="shoot-reklame">Shoot/Reklame</SelectItem>
-                    <SelectItem value="event">Event</SelectItem>
-                    <SelectItem value="bryllup">Bryllup</SelectItem>
-                    <SelectItem value="andet">Andet</SelectItem>
+                    {clientType === 'privat' ? (
+                      <>
+                        <SelectItem value="bryllup">Bryllup</SelectItem>
+                        <SelectItem value="makeup">Makeup</SelectItem>
+                        <SelectItem value="har">Hår</SelectItem>
+                        <SelectItem value="makeup-har">Makeup & Hår</SelectItem>
+                        <SelectItem value="sfx">SFX Makeup</SelectItem>
+                        <SelectItem value="andet">Andet</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="film-tv">Film/TV</SelectItem>
+                        <SelectItem value="teater">Teater</SelectItem>
+                        <SelectItem value="shoot-reklame">Shoot/Reklame</SelectItem>
+                        <SelectItem value="event">Event</SelectItem>
+                        <SelectItem value="mode-show">Mode show</SelectItem>
+                        <SelectItem value="koncert">Koncert</SelectItem>
+                        <SelectItem value="andet">Andet</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
