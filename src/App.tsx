@@ -97,6 +97,7 @@ const App = () => (
                   <Route path="/admin/reset-password" element={<AdminResetPassword />} />
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
+                    <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="inquiries" element={<AdminInquiries />} />
                     <Route path="jobs" element={<AdminJobs />} />
                     <Route path="calendar" element={<AdminCalendar />} />
