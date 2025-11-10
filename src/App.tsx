@@ -14,6 +14,7 @@ import Services from "./pages/Services";
 import Address from "./pages/Address";
 import InquiryForm from "./pages/InquiryForm";
 import Stylists from "./pages/Stylists";
+import Contact from "./pages/Contact";
 import StylistDetail from "./pages/StylistDetail";
 import AnnaG from "./pages/stylists/AnnaG";
 import Angelica from "./pages/stylists/Angelica";
@@ -74,6 +75,7 @@ const App = () => (
                   <Route path="/services" element={<Services />} />
                   <Route path="/address" element={<Address />} />
                   <Route path="/inquiry" element={<InquiryForm />} />
+                  <Route path="/contact" element={<Contact />} />
                   <Route path="/stylists" element={<Stylists />} />
                   <Route path="/stylist/anna-g" element={<AnnaG />} />
                   <Route path="/stylist/angelica" element={<Angelica />} />

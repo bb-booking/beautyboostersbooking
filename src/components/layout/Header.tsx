@@ -149,7 +149,7 @@ const Header = () => {
               
               <DropdownMenuSeparator />
               
-              <Link to="/#kontakt"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> Kontakt</DropdownMenuItem></Link>
+              <Link to="/contact"><DropdownMenuItem><Info className="mr-2 h-4 w-4" /> Kontakt</DropdownMenuItem></Link>
               <Link to="/#download-app"><DropdownMenuItem><Download className="mr-2 h-4 w-4" /> Download app</DropdownMenuItem></Link>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Sprog</DropdownMenuLabel>
@@ -189,7 +189,7 @@ const Header = () => {
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                   <Link to="/giftcards" className="text-foreground hover:underline">Køb gavekort</Link>
                   
-                  <Link to="/#kontakt" className="text-foreground hover:underline">Kontakt</Link>
+                  <Link to="/contact" className="text-foreground hover:underline">Kontakt</Link>
                   <Link to="/#download-app" className="text-foreground hover:underline">Download app</Link>
                   <div className="pt-2">
                     <div className="text-xs text-muted-foreground">Sprog</div>
