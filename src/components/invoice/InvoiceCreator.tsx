@@ -42,13 +42,15 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
   const [invoiceData, setInvoiceData] = useState({
     customerName: job.client_name || "",
     customerEmail: job.client_email || "",
+    cvr: "",
     amount: job.hourly_rate,
     description: `Beauty service: ${job.service_type} - ${job.location}`,
-    paymentTerms: 'net14' // Default to 14 days
+    paymentTerms: 'net14', // Default to 14 days
+    invoiceDate: new Date().toISOString().split('T')[0] // Today
   });
 
   const createInvoice = async () => {
-    if (!invoiceData.customerName || !invoiceData.amount) {
+    if (!invoiceData.customerName || !invoiceData.amount || !invoiceData.cvr) {
       toast.error('Udfyld venligst alle påkrævede felter');
       return;
     }
@@ -178,6 +180,19 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
                 />
               </div>
               <div>
+                <Label htmlFor="cvr">CVR nummer *</Label>
+                <Input
+                  id="cvr"
+                  value={invoiceData.cvr}
+                  onChange={(e) => setInvoiceData(prev => ({ ...prev, cvr: e.target.value }))}
+                  placeholder="12345678"
+                  maxLength={8}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="customerEmail">Kunde email</Label>
                 <Input
                   id="customerEmail"
@@ -185,6 +200,15 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
                   value={invoiceData.customerEmail}
                   onChange={(e) => setInvoiceData(prev => ({ ...prev, customerEmail: e.target.value }))}
                   placeholder="faktura@firma.dk"
+                />
+              </div>
+              <div>
+                <Label htmlFor="invoiceDate">Faktura dato</Label>
+                <Input
+                  id="invoiceDate"
+                  type="date"
+                  value={invoiceData.invoiceDate}
+                  onChange={(e) => setInvoiceData(prev => ({ ...prev, invoiceDate: e.target.value }))}
                 />
               </div>
             </div>
@@ -288,7 +312,7 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
             </Button>
             <Button 
               onClick={createInvoice} 
-              disabled={loading || !invoiceData.customerName || !invoiceData.amount}
+              disabled={loading || !invoiceData.customerName || !invoiceData.amount || !invoiceData.cvr}
             >
               {loading ? (
                 <>
