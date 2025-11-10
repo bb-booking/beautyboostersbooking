@@ -17,7 +17,9 @@ import {
   Building,
   CheckCircle,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Check,
+  Loader2
 } from "lucide-react";
 
 interface InvoiceCreatorProps {
@@ -39,6 +41,8 @@ interface InvoiceCreatorProps {
 const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verifyingCVR, setVerifyingCVR] = useState(false);
+  const [cvrVerified, setCvrVerified] = useState(false);
   const [invoiceData, setInvoiceData] = useState({
     customerName: job.client_name || "",
     customerEmail: job.client_email || "",
@@ -52,6 +56,11 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
   const createInvoice = async () => {
     if (!invoiceData.customerName || !invoiceData.amount || !invoiceData.cvr) {
       toast.error('Udfyld venligst alle påkrævede felter');
+      return;
+    }
+
+    if (!cvrVerified) {
+      toast.error('CVR-nummer skal verificeres før faktura kan sendes');
       return;
     }
 
@@ -104,6 +113,51 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
 
   const calculateGross = (netAmount: number) => {
     return Math.round(netAmount * 1.25 * 100) / 100; // Net + 25% VAT
+  };
+
+  const verifyCVR = async () => {
+    const cvr = invoiceData.cvr.trim();
+    
+    if (!cvr || cvr.length !== 8 || !/^\d{8}$/.test(cvr)) {
+      toast.error('CVR-nummer skal være 8 cifre');
+      return;
+    }
+
+    setVerifyingCVR(true);
+    setCvrVerified(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-cvr', {
+        body: { cvr }
+      });
+
+      if (error) {
+        console.error('CVR verification error:', error);
+        throw new Error(error.message || 'Kunne ikke verificere CVR-nummer');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      console.log('CVR data:', data);
+      
+      // Update customer name with verified company name
+      setInvoiceData(prev => ({
+        ...prev,
+        customerName: data.name
+      }));
+      
+      setCvrVerified(true);
+      toast.success(`✓ Verificeret: ${data.name}`);
+      
+    } catch (error: any) {
+      console.error('Error verifying CVR:', error);
+      toast.error(error.message || 'Kunne ikke verificere CVR-nummer');
+      setCvrVerified(false);
+    } finally {
+      setVerifyingCVR(false);
+    }
   };
 
   if (job.client_type !== 'virksomhed') {
@@ -181,13 +235,40 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
               </div>
               <div>
                 <Label htmlFor="cvr">CVR nummer *</Label>
-                <Input
-                  id="cvr"
-                  value={invoiceData.cvr}
-                  onChange={(e) => setInvoiceData(prev => ({ ...prev, cvr: e.target.value }))}
-                  placeholder="12345678"
-                  maxLength={8}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="cvr"
+                    value={invoiceData.cvr}
+                    onChange={(e) => {
+                      setInvoiceData(prev => ({ ...prev, cvr: e.target.value }));
+                      setCvrVerified(false);
+                    }}
+                    placeholder="12345678"
+                    maxLength={8}
+                    className={cvrVerified ? "border-green-500" : ""}
+                  />
+                  <Button
+                    type="button"
+                    variant={cvrVerified ? "outline" : "default"}
+                    onClick={verifyCVR}
+                    disabled={verifyingCVR || !invoiceData.cvr || invoiceData.cvr.length !== 8}
+                    className="shrink-0"
+                  >
+                    {verifyingCVR ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : cvrVerified ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      'Verificer'
+                    )}
+                  </Button>
+                </div>
+                {cvrVerified && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
+                    CVR verificeret
+                  </p>
+                )}
               </div>
             </div>
 
@@ -312,7 +393,7 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
             </Button>
             <Button 
               onClick={createInvoice} 
-              disabled={loading || !invoiceData.customerName || !invoiceData.amount || !invoiceData.cvr}
+              disabled={loading || !invoiceData.customerName || !invoiceData.amount || !invoiceData.cvr || !cvrVerified}
             >
               {loading ? (
                 <>
