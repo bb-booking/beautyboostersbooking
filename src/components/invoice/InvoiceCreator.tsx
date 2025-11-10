@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -43,7 +44,7 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
     customerEmail: job.client_email || "",
     amount: job.hourly_rate,
     description: `Beauty service: ${job.service_type} - ${job.location}`,
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 14 days from now
+    paymentTerms: 'net14' // Default to 14 days
   });
 
   const createInvoice = async () => {
@@ -56,6 +57,10 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
     try {
       console.log('Sending invoice request for job:', job.id);
       
+      // Calculate due date based on payment terms
+      const daysToAdd = invoiceData.paymentTerms === 'net8' ? 8 : invoiceData.paymentTerms === 'net14' ? 14 : 30;
+      const dueDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
       const { data, error } = await supabase.functions.invoke('economic-invoice', {
         body: {
           jobId: job.id,
@@ -63,7 +68,7 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
           customerEmail: invoiceData.customerEmail,
           amount: invoiceData.amount,
           description: invoiceData.description,
-          dueDate: invoiceData.dueDate
+          dueDate: dueDate
         }
       });
 
@@ -91,12 +96,12 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
     }
   };
 
-  const calculateVAT = (amount: number) => {
-    return Math.round(amount * 0.25 * 100) / 100; // 25% VAT
+  const calculateVAT = (netAmount: number) => {
+    return Math.round(netAmount * 0.25 * 100) / 100; // 25% VAT
   };
 
-  const calculateNet = (amount: number) => {
-    return Math.round(amount * 0.8 * 100) / 100; // Amount excluding VAT
+  const calculateGross = (netAmount: number) => {
+    return Math.round(netAmount * 1.25 * 100) / 100; // Net + 25% VAT
   };
 
   if (job.client_type !== 'virksomhed') {
@@ -186,7 +191,7 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="amount">Beløb (inkl. moms) *</Label>
+                <Label htmlFor="amount">Beløb (eks. moms) *</Label>
                 <div className="relative">
                   <Input
                     id="amount"
@@ -203,13 +208,20 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
                 </div>
               </div>
               <div>
-                <Label htmlFor="dueDate">Forfaldsdato</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={invoiceData.dueDate}
-                  onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
-                />
+                <Label htmlFor="paymentTerms">Forfaldsdato</Label>
+                <Select 
+                  value={invoiceData.paymentTerms} 
+                  onValueChange={(value) => setInvoiceData(prev => ({ ...prev, paymentTerms: value }))}
+                >
+                  <SelectTrigger id="paymentTerms">
+                    <SelectValue placeholder="Vælg betalingsbetingelser" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="net8">Netto 8 dage</SelectItem>
+                    <SelectItem value="net14">Netto 14 dage</SelectItem>
+                    <SelectItem value="net30">Netto 30 dage</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -235,8 +247,8 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Beløb ex. moms:</span>
-                    <span className="font-medium">{calculateNet(invoiceData.amount).toFixed(2)} DKK</span>
+                    <span>Beløb eks. moms:</span>
+                    <span className="font-medium">{invoiceData.amount.toFixed(2)} DKK</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Moms (25%):</span>
@@ -244,8 +256,8 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-medium">
-                      <span>Total:</span>
-                      <span>{invoiceData.amount.toFixed(2)} DKK</span>
+                      <span>Total (inkl. moms):</span>
+                      <span>{calculateGross(invoiceData.amount).toFixed(2)} DKK</span>
                     </div>
                   </div>
                 </CardContent>
