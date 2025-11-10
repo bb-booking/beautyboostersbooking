@@ -1477,6 +1477,69 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_products: {
+        Row: {
+          compare_at_price: number | null
+          created_at: string
+          description: string | null
+          id: string
+          images: Json | null
+          last_synced_at: string
+          price: number
+          product_type: string | null
+          shopify_handle: string | null
+          shopify_product_id: number
+          shopify_url: string | null
+          status: string
+          sync_status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          variants: Json | null
+          vendor: string | null
+        }
+        Insert: {
+          compare_at_price?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          last_synced_at?: string
+          price: number
+          product_type?: string | null
+          shopify_handle?: string | null
+          shopify_product_id: number
+          shopify_url?: string | null
+          status?: string
+          sync_status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          variants?: Json | null
+          vendor?: string | null
+        }
+        Update: {
+          compare_at_price?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          last_synced_at?: string
+          price?: number
+          product_type?: string | null
+          shopify_handle?: string | null
+          shopify_product_id?: number
+          shopify_url?: string | null
+          status?: string
+          sync_status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          variants?: Json | null
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       shopify_webhook_logs: {
         Row: {
           created_at: string
