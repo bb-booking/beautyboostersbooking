@@ -33,6 +33,7 @@ const adminItems = [
   { title: "Forespørgsler", url: "/admin/inquiries", icon: MessageSquare },
   { title: "Jobs", url: "/admin/jobs", icon: Calendar },
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
+  { title: "Booster Ansøgninger", url: "/admin/booster-applications", icon: Users },
   { title: "Kalender", url: "/admin/calendar", icon: CalendarDays },
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
   { title: "Beskeder", url: "/admin/messages", icon: MessageSquare },

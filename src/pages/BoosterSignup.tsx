@@ -118,15 +118,43 @@ const BoosterSignup = () => {
     
     try {
       const redirectUrl = `${window.location.origin}/booster/login`;
-      const { error } = await supabase.auth.signUp({
+      const { data: authData, error: signupError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: { emailRedirectTo: redirectUrl }
       });
-      if (error) throw error;
+      if (signupError) throw signupError;
 
-      // Markér at brugeren skal have booster-rolle ved første login
-      localStorage.setItem('pending_role', 'booster');
+      // Create booster application (pending admin approval)
+      if (authData.user) {
+        const { error: appError } = await supabase
+          .from('booster_applications')
+          .insert([{
+            user_id: authData.user.id,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            skills: formData.skills,
+            business_type: formData.businessType,
+            cvr_number: formData.cvrNumber,
+            cpr_number: formData.cprNumber,
+            address: formData.address,
+            city: formData.city,
+            latitude: formData.latitude || null,
+            longitude: formData.longitude || null,
+            work_radius: formData.workRadius,
+            primary_transport: formData.primaryTransport,
+            education: formData.education as any,
+            years_experience: formData.yearsExperience,
+            portfolio_links: formData.portfolioLinks,
+            status: 'pending'
+          }]);
+
+        if (appError) {
+          console.error('Error creating booster application:', appError);
+          throw new Error('Kunne ikke oprette ansøgning');
+        }
+      }
 
       toast({
         title: "Ansøgning sendt!",

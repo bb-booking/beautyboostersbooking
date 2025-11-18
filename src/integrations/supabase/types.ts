@@ -197,6 +197,87 @@ export type Database = {
         }
         Relationships: []
       }
+      booster_applications: {
+        Row: {
+          address: string | null
+          business_type: string | null
+          city: string | null
+          cpr_number: string | null
+          created_at: string
+          cvr_number: string | null
+          education: Json | null
+          email: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          phone: string | null
+          portfolio_links: string | null
+          primary_transport: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          skills: string[]
+          status: string
+          updated_at: string
+          user_id: string | null
+          work_radius: number | null
+          years_experience: number | null
+        }
+        Insert: {
+          address?: string | null
+          business_type?: string | null
+          city?: string | null
+          cpr_number?: string | null
+          created_at?: string
+          cvr_number?: string | null
+          education?: Json | null
+          email: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          phone?: string | null
+          portfolio_links?: string | null
+          primary_transport?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          skills?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          work_radius?: number | null
+          years_experience?: number | null
+        }
+        Update: {
+          address?: string | null
+          business_type?: string | null
+          city?: string | null
+          cpr_number?: string | null
+          created_at?: string
+          cvr_number?: string | null
+          education?: Json | null
+          email?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          phone?: string | null
+          portfolio_links?: string | null
+          primary_transport?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          skills?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          work_radius?: number | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
       booster_availability: {
         Row: {
           booster_id: string | null

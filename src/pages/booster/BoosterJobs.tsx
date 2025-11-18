@@ -53,20 +53,43 @@ export default function BoosterJobs() {
 
   const handleApplyForJob = async (jobId: string) => {
     try {
-      const { error } = await supabase
-        .from('job_applications')
-        .insert({
-          job_id: jobId,
-          booster_id: 'current-booster-id', // Would be from auth context
-          message: 'Jeg er interesseret i dette job.'
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Fejl",
+          description: "Du skal være logget ind for at ansøge",
+          variant: "destructive",
         });
+        return;
+      }
+
+      // Call edge function to process application
+      const { data, error } = await supabase.functions.invoke('process-job-application', {
+        body: {
+          job_id: jobId,
+          booster_id: user.id,
+          message: 'Jeg er interesseret i dette job.'
+        }
+      });
 
       if (error) throw error;
 
-      toast({
-        title: "Ansøgning sendt",
-        description: "Din ansøgning er blevet sendt til kunden",
-      });
+      if (data.success) {
+        toast({
+          title: data.auto_assigned ? "🎉 Job tildelt!" : "Ansøgning sendt",
+          description: data.message,
+        });
+        
+        // Refresh jobs list
+        fetchAvailableJobs();
+      } else {
+        toast({
+          title: "Info",
+          description: data.message,
+          variant: "default",
+        });
+      }
     } catch (error) {
       console.error('Error applying for job:', error);
       toast({
