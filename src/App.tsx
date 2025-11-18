@@ -35,6 +35,7 @@ import AdminJobs from "./pages/admin/AdminJobs";
 import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminBoosters from "./pages/admin/AdminBoosters";
+import AdminBoosterApplications from "./pages/admin/AdminBoosterApplications";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -104,6 +105,7 @@ const App = () => (
                     <Route path="bookings" element={<AdminBookings />} />
                     <Route path="finance" element={<AdminFinance />} />
                     <Route path="boosters" element={<AdminBoosters />} />
+                    <Route path="booster-applications" element={<AdminBoosterApplications />} />
                     <Route path="messages" element={<AdminMessages />} />
                     <Route path="discount-codes" element={<AdminDiscountCodes />} />
                     <Route path="settings" element={<AdminSettings />} />
