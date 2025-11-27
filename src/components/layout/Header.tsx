@@ -249,8 +249,8 @@ const Header = () => {
     </header>
     
     {/* Mobile announcement bar - light colored bar with tagline */}
-    <div className="md:hidden bg-[hsl(30,30%,85%)] py-2.5 text-center">
-      <p className="text-xs font-semibold tracking-[0.15em] uppercase text-foreground/90">
+    <div className="md:hidden bg-[hsl(30,30%,85%)] py-2 text-center">
+      <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-foreground/90">
         Professionelle artister direkte til døren
       </p>
     </div>

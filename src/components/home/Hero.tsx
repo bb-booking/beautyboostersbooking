@@ -260,22 +260,22 @@ const Hero = () => {
         </div>
 
         {/* MOBILE LAYOUT */}
-        <div className="md:hidden container relative z-10 mx-auto px-4 flex flex-col">
+        <div className="md:hidden container relative z-10 mx-auto px-4 pt-0 flex flex-col">
           {/* Image + Search box wrapper */}
-          <div className="relative min-h-[50vh] flex flex-col justify-end">
-            {/* Dark overlay for mobile - ensures text readability */}
+          <div className="relative min-h-[55vh] flex flex-col justify-end -mt-4">
+            {/* Dark overlay for mobile - covers entire image */}
             <div className="absolute inset-0 bg-background/60 z-[1]" />
             
-            {/* Mobile background image - zoomed in centered */}
+            {/* Mobile background image - zoomed in, positioned at top */}
             <img
               src={beautyHeroNoBg}
               alt="Professionel makeup artist – BeautyBoosters"
               className="absolute pointer-events-none z-0"
               loading="eager"
               style={{ 
-                top: 'calc(50% - 2.5cm)',
+                top: '0',
                 left: '50%',
-                transform: 'translate(-50%, -50%) scale(0.94)',
+                transform: 'translateX(-50%) scale(0.94)',
                 maxWidth: 'none',
                 width: 'auto',
                 height: '100%',
