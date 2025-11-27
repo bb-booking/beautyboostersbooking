@@ -51,6 +51,7 @@ const Header = () => {
   };
 
   return (
+    <>
     <header className="border-b bg-primary backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center">
@@ -246,6 +247,14 @@ const Header = () => {
         </div>
       </div>
     </header>
+    
+    {/* Mobile announcement bar - light colored bar with tagline */}
+    <div className="md:hidden bg-[hsl(30,30%,85%)] py-2.5 text-center">
+      <p className="text-xs font-semibold tracking-[0.15em] uppercase text-foreground/90">
+        Professionelle artister direkte til døren
+      </p>
+    </div>
+    </>
   );
 };
 

@@ -327,12 +327,6 @@ const Hero = () => {
               </CardContent>
             </Card>
           </div>
-
-          {/* Heading BELOW the image */}
-          <h1 className="mt-6 text-center font-inter text-3xl sm:text-4xl leading-snug tracking-tight animate-fade-in text-foreground">
-            <span className="font-extrabold block">Professionelle artister</span>
-            <span className="font-normal block">direkte til døren</span>
-          </h1>
         </div>
       </section>
   );
