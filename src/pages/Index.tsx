@@ -17,7 +17,7 @@ const Index = () => {
       <Hero />
       
       {/* Content after hero */}
-      <div className="container mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12">
+      <div className="container mx-auto px-4 md:px-8 lg:px-12 py-4 md:py-12 -mt-12 md:mt-0">
         {/* Secondary CTA */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 max-w-2xl mx-auto justify-center">
           <Button variant="outline" size="lg" className="h-12 text-base px-6 py-3" asChild>
