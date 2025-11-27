@@ -273,7 +273,7 @@ const Hero = () => {
               className="absolute pointer-events-none z-0"
               loading="eager"
               style={{ 
-                top: '0',
+                top: '-3cm',
                 left: '50%',
                 transform: 'translateX(-50%) scale(0.94)',
                 maxWidth: 'none',
