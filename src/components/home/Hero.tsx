@@ -263,15 +263,25 @@ const Hero = () => {
         <div className="md:hidden container relative z-10 mx-auto px-4 flex flex-col">
           {/* Image + Search box wrapper */}
           <div className="relative min-h-[50vh] flex flex-col justify-end">
-            {/* Mobile background image */}
+            {/* Dark overlay for mobile - ensures text readability */}
+            <div className="absolute inset-0 bg-background/60 z-[1]" />
+            
+            {/* Mobile background image - zoomed in centered */}
             <img
               src={beautyHeroNoBg}
               alt="Professionel makeup artist – BeautyBoosters"
-              className="absolute inset-0 w-full h-full object-contain object-top pointer-events-none"
+              className="absolute pointer-events-none z-0"
               loading="eager"
+              style={{ 
+                top: 'calc(50% - 2.5cm)',
+                left: '50%',
+                transform: 'translate(-50%, -50%) scale(0.94)',
+                maxWidth: 'none',
+                width: 'auto',
+                height: '100%',
+                opacity: 0.95
+              }}
             />
-            {/* Gradient overlay at bottom for readability */}
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/80 to-transparent" />
             
             {/* Search Widget at bottom of image */}
             <Card className="relative z-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
