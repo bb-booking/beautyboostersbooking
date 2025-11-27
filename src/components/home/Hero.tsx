@@ -176,6 +176,9 @@ const Hero = () => {
   return (
       <section className="relative isolate min-h-[80vh] md:min-h-[85vh] flex items-center py-8 md:py-12 overflow-hidden bg-background">
         
+        {/* Dark overlay for mobile - ensures text readability */}
+        <div className="absolute inset-0 bg-background/60 md:hidden z-[1]" />
+        
         {/* Gradient overlay for desktop */}
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/30 hidden md:block z-[1]" />
         
@@ -195,28 +198,35 @@ const Hero = () => {
             height: '100%'
           }}
         />
+        
+        {/* Mobile: centered image as background */}
+        <img
+          src={beautyHeroNoBg}
+          alt="Professionel makeup artist – BeautyBoosters"
+          className="absolute pointer-events-none z-0 md:hidden"
+          loading="eager"
+          style={{ 
+            top: 'calc(50% - 2.5cm)',
+            left: '50%',
+            transform: 'translate(-50%, -50%) scale(0.94)',
+            maxWidth: 'none',
+            width: 'auto',
+            height: '100%',
+            opacity: 0.95
+          }}
+        />
 
         <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
-          {/* Mobile: flex-col with image first, then content */}
           <div className="flex flex-col md:block max-w-2xl text-center md:text-left">
-            
-            {/* Mobile hero image - shown in document flow on mobile only */}
-            <div className="md:hidden flex justify-center mb-6">
-              <img
-                src={beautyHeroNoBg}
-                alt="Professionel makeup artist – BeautyBoosters"
-                className="w-auto h-[280px] sm:h-[320px] object-contain"
-                loading="eager"
-              />
-            </div>
 
-            <h1 className="font-inter text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-snug tracking-tight animate-fade-in text-foreground drop-shadow-sm">
+            {/* Heading - order-2 on mobile (shows after search), order-none on desktop */}
+            <h1 className="order-2 md:order-none mt-6 md:mt-0 font-inter text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-snug tracking-tight animate-fade-in text-foreground drop-shadow-sm">
               <span className="font-extrabold block">Professionelle artister</span>
               <span className="font-normal block">direkte til døren</span>
             </h1>
 
-            {/* Search Widget */}
-            <Card className="mt-8 md:mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+            {/* Search Widget - order-1 on mobile (shows first), order-none on desktop */}
+            <Card className="order-1 md:order-none mt-0 md:mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-3 sm:space-y-4">
                   <div>
