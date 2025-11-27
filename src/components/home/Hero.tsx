@@ -176,9 +176,6 @@ const Hero = () => {
   return (
       <section className="relative isolate min-h-[80vh] md:min-h-[85vh] flex items-center py-8 md:py-12 overflow-hidden bg-background">
         
-        {/* Dark overlay for mobile - ensures text readability */}
-        <div className="absolute inset-0 bg-background/60 md:hidden z-[1]" />
-        
         {/* Gradient overlay for desktop */}
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/30 hidden md:block z-[1]" />
         
@@ -198,37 +195,18 @@ const Hero = () => {
             height: '100%'
           }}
         />
-        
-        {/* Mobile: centered image as background */}
-        <img
-          src={beautyHeroNoBg}
-          alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute pointer-events-none z-0 md:hidden"
-          loading="eager"
-          style={{ 
-            top: 'calc(50% - 2.5cm)',
-            left: '50%',
-            transform: 'translate(-50%, -50%) scale(0.94)',
-            maxWidth: 'none',
-            width: 'auto',
-            height: '100%',
-            opacity: 0.95
-          }}
-        />
 
-        <div className="container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
-          <div className="flex flex-col md:block max-w-2xl text-center md:text-left">
-
-            {/* Heading - order-2 on mobile (shows after search), order-none on desktop */}
-            <h1 className="order-2 md:order-none mt-6 md:mt-0 font-inter text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-snug tracking-tight animate-fade-in text-foreground drop-shadow-sm">
+        {/* DESKTOP LAYOUT */}
+        <div className="hidden md:block container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
+          <div className="max-w-2xl text-left">
+            <h1 className="font-inter text-5xl lg:text-6xl leading-snug tracking-tight animate-fade-in text-foreground drop-shadow-sm">
               <span className="font-extrabold block">Professionelle artister</span>
               <span className="font-normal block">direkte til døren</span>
             </h1>
 
-            {/* Search Widget - order-1 on mobile (shows first), order-none on desktop */}
-            <Card className="order-1 md:order-none mt-0 md:mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-3 sm:space-y-4">
+            <Card className="mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+              <CardContent className="p-6">
+                <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                     <div className="relative">
@@ -239,14 +217,12 @@ const Hero = () => {
                         onFocus={() => setShowLocationSuggestions(true)}
                         onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-                        className="h-10 sm:h-12 text-foreground text-sm sm:text-base"
+                        className="h-12 text-foreground text-base"
                       />
                       {showLocationSuggestions && (
                         <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
                           {locationOptions
-                            .filter((opt) =>
-                              opt.toLowerCase().includes(searchData.location.toLowerCase())
-                            )
+                            .filter((opt) => opt.toLowerCase().includes(searchData.location.toLowerCase()))
                             .slice(0, 8)
                             .map((opt) => (
                               <div
@@ -265,39 +241,98 @@ const Hero = () => {
                       )}
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={getCurrentLocation}
-                      disabled={isLoadingLocation}
-                      className="h-10 sm:h-12 text-sm sm:text-base sm:w-auto"
-                    >
+                  <div className="flex gap-3">
+                    <Button variant="outline" type="button" onClick={getCurrentLocation} disabled={isLoadingLocation} className="h-12">
                       {isLoadingLocation ? (
-                        <>
-                          <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />
-                          Finder lokation...
-                        </>
+                        <><div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />Finder lokation...</>
                       ) : (
-                        <>
-                          <MapPin className="mr-2 h-4 w-4" />
-                          Brug nuværende lokation
-                        </>
+                        <><MapPin className="mr-2 h-4 w-4" />Brug nuværende lokation</>
                       )}
                     </Button>
-
-                    <Button className="h-10 sm:h-12 text-sm sm:text-base w-full sm:flex-1" onClick={handleSearch}>
-                      <Search className="mr-2 h-4 w-4" />
-                      Vælg service
+                    <Button className="h-12 flex-1" onClick={handleSearch}>
+                      <Search className="mr-2 h-4 w-4" />Vælg service
                     </Button>
                   </div>
-
                 </div>
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* MOBILE LAYOUT */}
+        <div className="md:hidden container relative z-10 mx-auto px-4 flex flex-col">
+          {/* Image + Search box wrapper */}
+          <div className="relative min-h-[50vh] flex flex-col justify-end">
+            {/* Mobile background image */}
+            <img
+              src={beautyHeroNoBg}
+              alt="Professionel makeup artist – BeautyBoosters"
+              className="absolute inset-0 w-full h-full object-contain object-top pointer-events-none"
+              loading="eager"
+            />
+            {/* Gradient overlay at bottom for readability */}
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/80 to-transparent" />
+            
+            {/* Search Widget at bottom of image */}
+            <Card className="relative z-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
+                    <div className="relative">
+                      <Input
+                        placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
+                        value={searchData.location}
+                        onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
+                        onFocus={() => setShowLocationSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
+                        className="h-10 text-foreground text-sm"
+                      />
+                      {showLocationSuggestions && (
+                        <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
+                          {locationOptions
+                            .filter((opt) => opt.toLowerCase().includes(searchData.location.toLowerCase()))
+                            .slice(0, 8)
+                            .map((opt) => (
+                              <div
+                                key={opt}
+                                className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setSearchData((prev) => ({ ...prev, location: opt }));
+                                  setShowLocationSuggestions(false);
+                                }}
+                              >
+                                {opt}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" type="button" onClick={getCurrentLocation} disabled={isLoadingLocation} className="h-10 text-sm">
+                      {isLoadingLocation ? (
+                        <><div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />Finder lokation...</>
+                      ) : (
+                        <><MapPin className="mr-2 h-4 w-4" />Brug nuværende lokation</>
+                      )}
+                    </Button>
+                    <Button className="h-10 text-sm w-full" onClick={handleSearch}>
+                      <Search className="mr-2 h-4 w-4" />Vælg service
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Heading BELOW the image */}
+          <h1 className="mt-6 text-center font-inter text-3xl sm:text-4xl leading-snug tracking-tight animate-fade-in text-foreground">
+            <span className="font-extrabold block">Professionelle artister</span>
+            <span className="font-normal block">direkte til døren</span>
+          </h1>
         </div>
       </section>
   );
