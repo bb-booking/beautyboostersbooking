@@ -211,7 +211,7 @@ const Hero = () => {
                     <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                     <div className="relative">
                       <Input
-                        placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
+                        placeholder="Skriv adresse (fx. Nybrogade 24, 1203)"
                         value={searchData.location}
                         onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
                         onFocus={() => setShowLocationSuggestions(true)}
@@ -291,7 +291,7 @@ const Hero = () => {
                     <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
                     <div className="relative">
                       <Input
-                        placeholder="Skriv adresse (fx. Husumgade 1, 2200 København N)"
+                        placeholder="Skriv adresse (fx. Nybrogade 24, 1203)"
                         value={searchData.location}
                         onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
                         onFocus={() => setShowLocationSuggestions(true)}
