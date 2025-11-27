@@ -275,7 +275,7 @@ const Hero = () => {
               style={{ 
                 top: '-3cm',
                 left: '50%',
-                transform: 'translateX(-50%) scale(0.94)',
+                transform: 'translateX(-50%) scale(1.05)',
                 maxWidth: 'none',
                 width: 'auto',
                 height: '100%',
@@ -283,8 +283,8 @@ const Hero = () => {
               }}
             />
             
-            {/* Search Widget at bottom of image */}
-            <Card className="relative z-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
+            {/* Search Widget at bottom of image - moved up */}
+            <Card className="relative z-10 mb-4 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
               <CardContent className="p-4">
                 <div className="space-y-3">
                   <div>
