@@ -262,7 +262,7 @@ const Hero = () => {
         {/* MOBILE LAYOUT */}
         <div className="md:hidden container relative z-10 mx-auto px-4 pt-0 flex flex-col">
           {/* Dark overlay for mobile - covers entire mobile section */}
-          <div className="absolute -top-[2.5cm] bottom-0 -left-4 -right-4 bg-background/60 z-[1] pointer-events-none" />
+          <div className="absolute -top-[2.8cm] bottom-0 -left-4 -right-4 bg-background/60 z-[1] pointer-events-none" />
           
           {/* Image + Search box wrapper */}
           <div className="relative min-h-[55vh] flex flex-col justify-end -mt-4">
