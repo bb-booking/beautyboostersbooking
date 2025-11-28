@@ -138,11 +138,7 @@ export default function AssignBoostersDialog({
       if (copy[b.id]) {
         delete copy[b.id];
       } else {
-        const currentCount = Object.keys(copy).length;
-        const totalNeeded = (desiredCount ?? 0) + alreadyAssignedIds.length;
-        if (typeof desiredCount === "number" && desiredCount > 0 && currentCount >= totalNeeded) {
-          return copy;
-        }
+        // No limit - users can select as many boosters as they want
         copy[b.id] = b;
       }
       return copy;
@@ -236,17 +232,14 @@ export default function AssignBoostersDialog({
             <DialogFooter>
               <div className="flex-1 text-sm text-muted-foreground">
                 {typeof desiredCount === 'number' && desiredCount > 0
-                  ? `Valgt: ${selectedList.length} af ${desiredCount + alreadyAssignedIds.length} (${alreadyAssignedIds.length} allerede tildelt)`
+                  ? `Valgt: ${selectedList.length} (minimum ${desiredCount} ønsket, ${alreadyAssignedIds.length} allerede tildelt)`
                   : `Valgt: ${selectedList.length}`
                 }
               </div>
               <Button variant="outline" onClick={() => setManualMode(false)}>Tilbage</Button>
               <Button 
                 onClick={handleConfirm} 
-                disabled={typeof desiredCount === 'number' && desiredCount > 0 
-                  ? selectedList.length !== (desiredCount + alreadyAssignedIds.length)
-                  : selectedList.length === 0
-                }
+                disabled={selectedList.length === 0}
               >
                 Bekræft valg
               </Button>
