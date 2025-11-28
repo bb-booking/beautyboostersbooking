@@ -74,40 +74,59 @@ export default function AssignBoostersDialog({
 
   useEffect(() => {
     if (!open) return;
-    let mounted = true;
-    (async () => {
+    
+    const fetchBoosters = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
+        console.log('Fetching boosters...');
         const { data, error } = await supabase
           .from("booster_profiles")
           .select("id, name, portfolio_image_url, location, rating, review_count, specialties, is_available")
           .eq("is_available", true);
-        if (error) throw error;
-        let list = (data || []) as any[];
-        if (primaryBoosterId) list = list.filter((b) => b.id !== primaryBoosterId);
-        // Only apply specialty filter for manual selection, not for auto-assign
-        // This ensures auto-assign can send requests to all available boosters
-        // Simple sort: highest rating, then reviews
-        list.sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)) || (Number(b.review_count || 0) - Number(a.review_count || 0)));
-        if (mounted) {
-          setBoosters(list as BoosterOption[]);
-          // Pre-select already assigned boosters
-          const preSelected: Record<string, BoosterOption> = {};
-          list.forEach((b: any) => {
-            if (alreadyAssignedIds.includes(b.id)) {
-              preSelected[b.id] = b as BoosterOption;
-            }
-          });
-          setSelected(preSelected);
+        
+        console.log('Boosters response:', { hasData: !!data, dataLength: data?.length, hasError: !!error });
+        
+        if (error) {
+          console.error("Boosters fetch error:", error);
+          setBoosters([]);
+          return;
         }
+        
+        let list = (data || []) as any[];
+        
+        // Filter out primary booster
+        if (primaryBoosterId) {
+          list = list.filter((b) => b.id !== primaryBoosterId);
+        }
+        
+        // Sort by rating and reviews
+        list.sort((a, b) => 
+          (Number(b.rating || 0) - Number(a.rating || 0)) || 
+          (Number(b.review_count || 0) - Number(a.review_count || 0))
+        );
+        
+        console.log('Setting boosters:', list.length);
+        setBoosters(list as BoosterOption[]);
+        
+        // Pre-select already assigned boosters
+        const preSelected: Record<string, BoosterOption> = {};
+        list.forEach((b: any) => {
+          if (alreadyAssignedIds.includes(b.id)) {
+            preSelected[b.id] = b as BoosterOption;
+          }
+        });
+        setSelected(preSelected);
+        
       } catch (e) {
-        console.error("Failed to load boosters", e);
-        if (mounted) setBoosters([]);
+        console.error("Failed to load boosters:", e);
+        setBoosters([]);
       } finally {
-        if (mounted) setLoading(false);
+        console.log('Setting loading to false');
+        setLoading(false);
       }
-    })();
-    return () => { mounted = false; };
+    };
+    
+    fetchBoosters();
   }, [open, primaryBoosterId, alreadyAssignedIds]);
 
   useEffect(() => {
@@ -115,6 +134,7 @@ export default function AssignBoostersDialog({
       setManualMode(false);
       setSelected({});
       setSearch("");
+      setLoading(false); // Clear loading state when dialog closes
     }
   }, [open]);
 
