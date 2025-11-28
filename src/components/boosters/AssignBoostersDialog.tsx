@@ -85,7 +85,8 @@ export default function AssignBoostersDialog({
         if (error) throw error;
         let list = (data || []) as any[];
         if (primaryBoosterId) list = list.filter((b) => b.id !== primaryBoosterId);
-        if (specialtyFilter) list = list.filter((b) => (b.specialties || []).includes(specialtyFilter));
+        // Only apply specialty filter for manual selection, not for auto-assign
+        // This ensures auto-assign can send requests to all available boosters
         // Simple sort: highest rating, then reviews
         list.sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)) || (Number(b.review_count || 0) - Number(a.review_count || 0)));
         if (mounted) {
@@ -107,7 +108,7 @@ export default function AssignBoostersDialog({
       }
     })();
     return () => { mounted = false; };
-  }, [open, primaryBoosterId, specialtyFilter, alreadyAssignedIds]);
+  }, [open, primaryBoosterId, alreadyAssignedIds]);
 
   useEffect(() => {
     if (!open) {
