@@ -62,6 +62,9 @@ const Booking = () => {
   const { boosterId } = useParams();
   const { items: cartItems, removeFromCart, getTotalPrice, getTotalDuration } = useCart();
   
+  // Check if we're in calendar-first mode (from "Se ledige tider")
+  const viewCalendarFirst = searchParams.get('view') === 'calendar';
+  
   // Get service ID from URL or determine from booster specialties
   const [determinedServiceId, setDeterminedServiceId] = useState<string>(searchParams.get('service') || '');
   const serviceId = determinedServiceId;
@@ -70,6 +73,8 @@ const Booking = () => {
   const [service, setService] = useState<Service | null>(null);
   const [boosterServices, setBoosterServices] = useState<Service[]>([]);
   const [showServiceSelection, setShowServiceSelection] = useState(false);
+  const [showCalendarFirst, setShowCalendarFirst] = useState(viewCalendarFirst);
+  const [calendarTimeSelected, setCalendarTimeSelected] = useState(false);
   const [specificBooster, setSpecificBooster] = useState<Booster | null>(null);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
   const [selectedCounts, setSelectedCounts] = useState<{people: number; boosters: number; extraHours?: number} | null>(null);
@@ -166,12 +171,15 @@ const Booking = () => {
   useEffect(() => {
     if (specificBooster && boosterId) {
       loadBoosterServices();
-      // If no service selected, show service selection
-      if (!searchParams.get('service') && !determinedServiceId) {
+      // If in calendar-first mode, don't show service selection yet
+      if (showCalendarFirst) {
+        setShowServiceSelection(false);
+      } else if (!searchParams.get('service') && !determinedServiceId) {
+        // If no service selected and not calendar-first, show service selection
         setShowServiceSelection(true);
       }
     }
-  }, [specificBooster, boosterId, searchParams]);
+  }, [specificBooster, boosterId, searchParams, showCalendarFirst]);
 
   useEffect(() => {
     if (serviceId) {
@@ -652,6 +660,15 @@ const Booking = () => {
     setDeterminedServiceId(selectedService.id);
     setService(selectedService);
     setShowServiceSelection(false);
+    setShowCalendarFirst(false);
+    setCalendarTimeSelected(false);
+  };
+
+  const handleCalendarTimeConfirm = () => {
+    if (selectedDate && selectedTime) {
+      setCalendarTimeSelected(true);
+      setShowServiceSelection(true);
+    }
   };
 
   if (loading || (boosterId && (loadingSpecificBooster || !specificBooster))) {
@@ -666,8 +683,8 @@ const Booking = () => {
     );
   }
 
-  // Show service selection for booster-specific booking
-  if (boosterId && showServiceSelection && boosterServices.length > 0) {
+  // Show calendar first when coming from "Se ledige tider"
+  if (boosterId && showCalendarFirst && !calendarTimeSelected && specificBooster) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Link to="/stylists" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
@@ -675,13 +692,114 @@ const Booking = () => {
           Tilbage til Boosters
         </Link>
         <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            {specificBooster.portfolio_image_url && (
+              <img 
+                src={specificBooster.portfolio_image_url} 
+                alt={specificBooster.name}
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1">
+                Ledige tider hos {specificBooster.name}
+              </h1>
+              <p className="text-muted-foreground flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                {specificBooster.location}
+                <span className="mx-2">•</span>
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                {specificBooster.rating} ({specificBooster.review_count} anmeldelser)
+              </p>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Vælg dato og tidspunkt
+              </CardTitle>
+              <CardDescription>
+                Vælg hvornår du ønsker din behandling
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Dato</Label>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                    className="rounded-md border"
+                    locale={da}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Tidspunkt</Label>
+                  <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto pr-2">
+                    {timeSlots.map((time) => (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedTime(time)}
+                        className="w-full"
+                      >
+                        {time}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {selectedDate && selectedTime && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Valgt tid: <span className="font-medium text-foreground">{format(selectedDate, "PPP", { locale: da })} kl. {selectedTime}</span>
+                  </p>
+                  <Button onClick={handleCalendarTimeConfirm} className="w-full">
+                    Fortsæt til valg af service
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Show service selection for booster-specific booking (after calendar in calendar-first mode)
+  if (boosterId && showServiceSelection && boosterServices.length > 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <button 
+          onClick={() => {
+            if (calendarTimeSelected) {
+              setCalendarTimeSelected(false);
+              setShowServiceSelection(false);
+            } else {
+              navigate('/stylists');
+            }
+          }}
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {calendarTimeSelected ? 'Tilbage til kalender' : 'Tilbage til Boosters'}
+        </button>
+        <div className="space-y-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-2">
               Vælg service hos {specificBooster?.name}
             </h1>
-            <p className="text-muted-foreground">
-              Vælg den service du ønsker at booke
-            </p>
+            {calendarTimeSelected && selectedDate && selectedTime && (
+              <p className="text-muted-foreground">
+                Valgt tid: {format(selectedDate, "PPP", { locale: da })} kl. {selectedTime}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
