@@ -232,6 +232,7 @@ const Booking = () => {
     
     const allServices = getAllServices();
     const specialtyMap: { [key: string]: string[] } = {
+      // Original mappings
       'Makeup': ['1', '3', '5', '6', '8', '9', '10', '11', '12', '13', '14', '16', '20'],
       'Hår': ['2', '3', '5', '7', '8', '9', '10', '11', '12', '13', '20'],
       'Spraytan': ['4'],
@@ -241,7 +242,11 @@ const Booking = () => {
       'Konfirmation': ['5'],
       'Børn': ['17'],
       'Shoot/Reklame': ['20'],
-      'SFX': ['20']
+      'SFX': ['20'],
+      // Database specialty names
+      'Makeup artist': ['1', '3', '5', '6', '8', '9', '10', '11', '12', '13', '14', '16', '20'],
+      'Hårstylist': ['2', '3', '5', '7', '8', '9', '10', '11', '12', '13', '20'],
+      'Frisør': ['2', '3', '5', '7', '8', '9', '10', '11', '12', '13', '20'],
     };
     
     // Get all service IDs that match booster specialties
@@ -928,7 +933,35 @@ const Booking = () => {
   }
 
   // Show service selection for booster-specific booking (after calendar in calendar-first mode)
-  if (boosterId && showServiceSelection && boosterServices.length > 0) {
+  if (boosterId && showServiceSelection && specificBooster) {
+    // If services not loaded yet, show loading
+    if (boosterServices.length === 0) {
+      return (
+        <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+          <div className="container mx-auto px-4 py-8">
+            <button 
+              onClick={() => {
+                if (calendarTimeSelected) {
+                  setCalendarTimeSelected(false);
+                  setShowServiceSelection(false);
+                } else {
+                  navigate('/stylists');
+                }
+              }}
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {calendarTimeSelected ? 'Tilbage til kalender' : 'Tilbage til Boosters'}
+            </button>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4" />
+              <p className="text-muted-foreground">Henter services...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
         <div className="container mx-auto px-4 py-8">
@@ -952,7 +985,7 @@ const Booking = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                  Vælg service hos {specificBooster?.name}
+                  Vælg service hos {specificBooster.name}
                 </h1>
                 <p className="text-muted-foreground">
                   Vælg den service du ønsker at booke
