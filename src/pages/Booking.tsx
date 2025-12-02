@@ -15,6 +15,9 @@ import { ArrowLeft, Clock, MapPin, User, Star, Send, CalendarIcon } from "lucide
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/contexts/CartContext";
+import { BookingSummary } from "@/components/booking/BookingSummary";
+import { BoosterAssignment } from "@/components/booking/BoosterAssignment";
 
 interface Service {
   id: string;
@@ -57,6 +60,7 @@ const Booking = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { boosterId } = useParams();
+  const { items: cartItems, removeFromCart, getTotalPrice, getTotalDuration } = useCart();
   
   // Get service ID from URL or determine from booster specialties
   const [determinedServiceId, setDeterminedServiceId] = useState<string>(searchParams.get('service') || '');
@@ -79,6 +83,7 @@ const Booking = () => {
   const [showFallback, setShowFallback] = useState(false);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [boosterAssignments, setBoosterAssignments] = useState<Map<number, Booster[]>>(new Map());
 
   // Generate time slots in 30-minute intervals from 06:00-23:00
   const generateTimeSlots = () => {
@@ -442,6 +447,73 @@ const Booking = () => {
     });
   };
 
+  const handleAutoAssignBoosters = () => {
+    if (availableBoosters.length === 0) {
+      toast.error("Ingen tilgængelige boosters");
+      return;
+    }
+
+    const newAssignments = new Map<number, Booster[]>();
+    let boosterIndex = 0;
+
+    cartItems.forEach((item, serviceIndex) => {
+      const assigned: Booster[] = [];
+      for (let i = 0; i < item.boosters; i++) {
+        if (boosterIndex < availableBoosters.length) {
+          assigned.push(availableBoosters[boosterIndex % availableBoosters.length]);
+          boosterIndex++;
+        }
+      }
+      newAssignments.set(serviceIndex, assigned);
+    });
+
+    setBoosterAssignments(newAssignments);
+    toast.success("Boosters tildelt automatisk!");
+  };
+
+  const handleManualAssignBooster = (serviceIndex: number, booster: Booster) => {
+    const currentAssignments = boosterAssignments.get(serviceIndex) || [];
+    const item = cartItems[serviceIndex];
+
+    if (currentAssignments.length >= item.boosters) {
+      toast.error(`Alle boosters er allerede tildelt til denne service`);
+      return;
+    }
+
+    if (currentAssignments.some(b => b.id === booster.id)) {
+      toast.error("Denne booster er allerede valgt til denne service");
+      return;
+    }
+
+    const newAssignments = new Map(boosterAssignments);
+    newAssignments.set(serviceIndex, [...currentAssignments, booster]);
+    setBoosterAssignments(newAssignments);
+    toast.success(`${booster.name} tildelt!`);
+  };
+
+  const handleProceedToCheckout = () => {
+    // Check if all services have assigned boosters
+    const allAssigned = cartItems.every((item, index) => {
+      const assigned = boosterAssignments.get(index) || [];
+      return assigned.length >= item.boosters;
+    });
+
+    if (!allAssigned) {
+      toast.error("Tildel venligst boosters til alle services før du fortsætter");
+      return;
+    }
+
+    navigate('/checkout', {
+      state: {
+        cartItems,
+        boosterAssignments: Array.from(boosterAssignments.entries()),
+        selectedDate,
+        selectedTime,
+        bookingDetails
+      }
+    });
+  };
+
   const handleSendRequest = async () => {
     if (!selectedDate || !selectedTime || !service || !specificBooster) {
       toast.error("Vælg venligst dato, tid og service");
@@ -562,7 +634,7 @@ const Booking = () => {
         {/* Header */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2 leading-tight break-words">
-            {boosterId && specificBooster ? `Book ${specificBooster.name}` : `Book ${service.name}`}
+            {boosterId && specificBooster ? `Book ${specificBooster.name}` : 'Vælg dato og tid'}
           </h1>
           <p className="text-muted-foreground">
             {bookingDetails?.location?.address ? (
@@ -572,6 +644,16 @@ const Booking = () => {
             )}
           </p>
         </div>
+
+        {/* Booking Summary - Show cart items */}
+        {!boosterId && cartItems.length > 0 && (
+          <BookingSummary
+            items={cartItems}
+            onRemoveItem={removeFromCart}
+            totalPrice={getTotalPrice()}
+            totalDuration={getTotalDuration()}
+          />
+        )}
 
         {/* Date & Time Selection - Compact Layout */}
         <Card>
@@ -697,8 +779,33 @@ const Booking = () => {
           </Card>
         )}
 
-        {/* Available Boosters - Only for non-booster-specific bookings */}
-        {!boosterId && selectedDate && selectedTime && (
+        {/* Booster Assignment - Only for non-booster-specific bookings */}
+        {!boosterId && selectedDate && selectedTime && cartItems.length > 0 && (
+          <BoosterAssignment
+            items={cartItems}
+            availableBoosters={availableBoosters}
+            loading={loadingBoosters}
+            onAutoAssign={handleAutoAssignBoosters}
+            onManualAssign={handleManualAssignBooster}
+            assignments={boosterAssignments}
+          />
+        )}
+
+        {/* Proceed to checkout button */}
+        {!boosterId && selectedDate && selectedTime && cartItems.length > 0 && (
+          <div className="flex justify-end">
+            <Button
+              size="lg"
+              onClick={handleProceedToCheckout}
+              className="gap-2"
+            >
+              Fortsæt til betaling
+            </Button>
+          </div>
+        )}
+
+        {/* Old booster list - keeping for fallback */}
+        {!boosterId && selectedDate && selectedTime && cartItems.length === 0 && (
           <div>
             <h2 className="text-2xl font-semibold mb-6">
               {loadingBoosters ? 'Søger ledige tider...' : 
