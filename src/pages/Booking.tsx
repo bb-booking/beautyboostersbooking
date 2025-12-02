@@ -828,35 +828,33 @@ const Booking = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                   {/* Date Selection */}
-                  <div>
+                  <div className="flex-shrink-0">
                     <Label className="text-sm font-semibold mb-3 block">Dato</Label>
-                    <div className="rounded-xl border bg-card p-4 shadow-sm">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => {
-                          setSelectedDate(date);
-                          setSelectedTime("");
-                        }}
-                        disabled={(date) => {
-                          const dateStr = format(date, 'yyyy-MM-dd');
-                          return isBefore(date, startOfDay(new Date())) || !availableDates.has(dateStr);
-                        }}
-                        className="rounded-md pointer-events-auto"
-                        locale={da}
-                        modifiers={{
-                          available: (date) => availableDates.has(format(date, 'yyyy-MM-dd'))
-                        }}
-                        modifiersStyles={{
-                          available: { 
-                            fontWeight: 'bold',
-                            backgroundColor: 'hsl(var(--primary) / 0.1)'
-                          }
-                        }}
-                      />
-                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        setSelectedDate(date);
+                        setSelectedTime("");
+                      }}
+                      disabled={(date) => {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        return isBefore(date, startOfDay(new Date())) || !availableDates.has(dateStr);
+                      }}
+                      className="rounded-xl border bg-card p-3 pointer-events-auto"
+                      locale={da}
+                      modifiers={{
+                        available: (date) => availableDates.has(format(date, 'yyyy-MM-dd'))
+                      }}
+                      modifiersStyles={{
+                        available: { 
+                          fontWeight: 'bold',
+                          backgroundColor: 'hsl(var(--primary) / 0.1)'
+                        }
+                      }}
+                    />
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                       <span className="w-3 h-3 rounded bg-primary/10 inline-block" />
                       Markerede datoer har ledige tider
@@ -864,42 +862,40 @@ const Booking = () => {
                   </div>
                   
                   {/* Time Selection */}
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <Label className="text-sm font-semibold mb-3 block">Tidspunkt</Label>
                     {!selectedDate ? (
-                      <div className="rounded-xl border bg-muted/50 p-8 text-center">
-                        <CalendarIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <div className="rounded-xl border bg-muted/30 p-8 text-center h-[280px] flex flex-col items-center justify-center">
+                        <CalendarIcon className="h-10 w-10 text-muted-foreground mb-3" />
                         <p className="text-muted-foreground">
                           Vælg en dato for at se ledige tidspunkter
                         </p>
                       </div>
                     ) : availableTimesForSelectedDate.length === 0 ? (
-                      <div className="rounded-xl border bg-muted/50 p-8 text-center">
-                        <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <div className="rounded-xl border bg-muted/30 p-8 text-center h-[280px] flex flex-col items-center justify-center">
+                        <Clock className="h-10 w-10 text-muted-foreground mb-3" />
                         <p className="text-muted-foreground">
                           Ingen ledige tider på denne dato
                         </p>
                       </div>
                     ) : (
-                      <div className="rounded-xl border bg-card p-4 shadow-sm">
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[320px] overflow-y-auto pr-1">
-                          {availableTimesForSelectedDate.map((time) => (
-                            <Button
-                              key={time}
-                              variant={selectedTime === time ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setSelectedTime(time)}
-                              className={cn(
-                                "w-full transition-all",
-                                selectedTime === time 
-                                  ? "ring-2 ring-primary ring-offset-2" 
-                                  : "hover:bg-primary/10 hover:border-primary"
-                              )}
-                            >
-                              {time}
-                            </Button>
-                          ))}
-                        </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[320px] overflow-y-auto">
+                        {availableTimesForSelectedDate.map((time) => (
+                          <Button
+                            key={time}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedTime(time)}
+                            className={cn(
+                              "transition-all",
+                              selectedTime === time 
+                                ? "ring-2 ring-primary ring-offset-2" 
+                                : "hover:bg-primary/10 hover:border-primary"
+                            )}
+                          >
+                            {time}
+                          </Button>
+                        ))}
                       </div>
                     )}
                   </div>
