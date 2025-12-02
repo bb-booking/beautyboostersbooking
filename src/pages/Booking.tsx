@@ -64,6 +64,8 @@ const Booking = () => {
   
   // Check if we're in calendar-first mode (from "Se ledige tider")
   const viewCalendarFirst = searchParams.get('view') === 'calendar';
+  // Check if we're in edit mode (from checkout "Rediger booking")
+  const isEditMode = searchParams.get('edit') === 'true';
   
   // Get service ID from URL or determine from booster specialties
   const [determinedServiceId, setDeterminedServiceId] = useState<string>(searchParams.get('service') || '');
@@ -176,15 +178,19 @@ const Booking = () => {
   useEffect(() => {
     if (specificBooster && boosterId) {
       loadBoosterServices();
-      // If in calendar-first mode, don't show service selection yet
-      if (showCalendarFirst) {
+      // If in edit mode from checkout, show service selection directly
+      if (isEditMode) {
+        setShowServiceSelection(true);
+        setShowCalendarFirst(false);
+      } else if (showCalendarFirst) {
+        // If in calendar-first mode, don't show service selection yet
         setShowServiceSelection(false);
       } else if (!searchParams.get('service') && !determinedServiceId) {
         // If no service selected and not calendar-first, show service selection
         setShowServiceSelection(true);
       }
     }
-  }, [specificBooster, boosterId, searchParams, showCalendarFirst]);
+  }, [specificBooster, boosterId, searchParams, showCalendarFirst, isEditMode]);
 
   useEffect(() => {
     if (serviceId) {

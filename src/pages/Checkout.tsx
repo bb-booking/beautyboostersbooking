@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard, Check } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard, Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -273,6 +273,26 @@ export default function Checkout() {
       sessionStorage.setItem('appendMode', '1');
     } catch {}
     navigate('/services');
+  };
+
+  // Navigate back to edit the booking (change service, date, time)
+  const handleEditBooking = () => {
+    try {
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : {};
+      
+      const newDetails = {
+        ...details,
+        boosterId: booster.id,
+        date: (selectedDate || booking.date),
+        time: selectedTime,
+        editMode: true, // Flag to indicate we're editing
+      };
+      sessionStorage.setItem('bookingDetails', JSON.stringify(newDetails));
+    } catch {}
+    
+    // Navigate back to booking page with booster context to allow service selection
+    navigate(`/booking?booster=${booster.id}&edit=true`);
   };
 
   // Direct booking handler - creates confirmed booking without payment approval
@@ -619,14 +639,31 @@ export default function Checkout() {
               <Separator />
 
               {/* Service controls */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Service:</span>
+                  <span className="font-medium">Valgt service:</span>
                   <span className="truncate max-w-[60%] text-right">{service.name}</span>
                 </div>
+                
+                {/* Edit booking button - prominent */}
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  onClick={handleEditBooking}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Rediger booking (ændre service, dato, tid)
+                </Button>
+                
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleAppendService}>Tilføj service</Button>
-                  <Button variant="destructive" size="sm" onClick={() => navigate('/services')}>Fjern service</Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={handleAppendService}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Tilføj ekstra service
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/services')}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Fjern
+                  </Button>
                 </div>
               </div>
 
