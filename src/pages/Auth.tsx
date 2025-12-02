@@ -17,10 +17,10 @@ export default function Auth() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate("/");
+      if (session) navigate("/customer/dashboard");
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/");
+      if (session) navigate("/customer/dashboard");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -33,7 +33,7 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast({ title: "Logget ind" });
-        navigate("/");
+        navigate("/customer/dashboard");
       } else {
         const redirectUrl = `${window.location.origin}/`;
         const { error } = await supabase.auth.signUp({
