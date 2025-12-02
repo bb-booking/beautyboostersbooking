@@ -33,12 +33,18 @@ const Header = () => {
   ];
 
   const [loggedIn, setLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  
   // Track auth state to toggle Login/Logout
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setLoggedIn(!!session);
+      setUserEmail(session?.user?.email || null);
     });
-    supabase.auth.getSession().then(({ data: { session } }) => setLoggedIn(!!session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoggedIn(!!session);
+      setUserEmail(session?.user?.email || null);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -144,6 +150,9 @@ const Header = () => {
               <DropdownMenuSeparator />
               <Link to="/address"><DropdownMenuItem><Calendar className="mr-2 h-4 w-4" /> Book nu</DropdownMenuItem></Link>
               <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> Se services</DropdownMenuItem></Link>
+              {loggedIn && (
+                <Link to="/customer/dashboard"><DropdownMenuItem><User className="mr-2 h-4 w-4" /> Min konto</DropdownMenuItem></Link>
+              )}
               <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Vores Boosters</DropdownMenuItem></Link>
               <Link to="/giftcards"><DropdownMenuItem><Gift className="mr-2 h-4 w-4" /> Køb gavekort</DropdownMenuItem></Link>
               <Link to="/booster-signup"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Bliv Booster</DropdownMenuItem></Link>
@@ -187,6 +196,9 @@ const Header = () => {
                 <nav className="grid gap-3">
                   <Link to="/address" className="text-foreground hover:underline font-medium">Book nu</Link>
                   <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
+                  {loggedIn && (
+                    <Link to="/customer/dashboard" className="text-foreground hover:underline">Min konto</Link>
+                  )}
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                   <Link to="/giftcards" className="text-foreground hover:underline">Køb gavekort</Link>
                   
@@ -208,11 +220,24 @@ const Header = () => {
                 </div>
 
                 <div>
-                  <AuthModal 
-                    trigger={
-                      <Button className="w-full">Log Ind</Button>
-                    }
-                  />
+                  {loggedIn ? (
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        navigate("/");
+                      }}
+                    >
+                      Log ud
+                    </Button>
+                  ) : (
+                    <AuthModal 
+                      trigger={
+                        <Button className="w-full">Log Ind</Button>
+                      }
+                    />
+                  )}
                 </div>
               </div>
             </SheetContent>
@@ -222,18 +247,29 @@ const Header = () => {
         {/* Desktop actions */}
         <div className="hidden md:flex items-center space-x-4">
           {loggedIn ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary-foreground hover:text-background hover:bg-background/10"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                navigate("/");
-              }}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Log ud
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary-foreground hover:text-background hover:bg-background/10"
+                onClick={() => navigate("/customer/dashboard")}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Min konto
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary-foreground hover:text-background hover:bg-background/10"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  navigate("/");
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Log ud
+              </Button>
+            </>
           ) : (
             <AuthModal 
               trigger={
