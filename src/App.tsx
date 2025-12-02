@@ -59,84 +59,91 @@ import InstallApp from "./pages/InstallApp";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 const queryClient = new QueryClient();
  
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <CartProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <HelmetProvider>
-          <BrowserRouter>
-            <div className="min-h-screen bg-background break-words">
-              <Header />
-              <main>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/book" element={<BookingLanding />} />
-                  <Route path="/services" element={<Services />} />
-                  <Route path="/address" element={<Address />} />
-                  <Route path="/inquiry" element={<InquiryForm />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/stylists" element={<Stylists />} />
-                  <Route path="/stylist/anna-g" element={<AnnaG />} />
-                  <Route path="/stylist/angelica" element={<Angelica />} />
-                  <Route path="/stylist/:id" element={<StylistDetail />} />
-                  <Route path="/book/:boosterId" element={<Booking />} />
-                  <Route path="/booking" element={<Booking />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/confirmation" element={<Confirmation />} />
-                  <Route path="/booking-confirmation" element={<BookingConfirmation />} />
-                  <Route path="/bookings" element={<Bookings />} />
-                  <Route path="/booster-signup" element={<BoosterSignup />} />
-                  
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/giftcards" element={<GiftCards />} />
-                  <Route path="/install" element={<InstallApp />} />
-                  <Route path="/booster/login" element={<BoosterLogin />} />
-                  {/* Admin routes */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/admin/reset-password" element={<AdminResetPassword />} />
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="inquiries" element={<AdminInquiries />} />
-                    <Route path="jobs" element={<AdminJobs />} />
-                    <Route path="calendar" element={<AdminCalendar />} />
-                    <Route path="bookings" element={<AdminBookings />} />
-                    <Route path="finance" element={<AdminFinance />} />
-                    <Route path="boosters" element={<AdminBoosters />} />
-                    <Route path="booster-applications" element={<AdminBoosterApplications />} />
-                    <Route path="messages" element={<AdminMessages />} />
-                    <Route path="discount-codes" element={<AdminDiscountCodes />} />
-                    <Route path="settings" element={<AdminSettings />} />
-                  </Route>
-                  {/* Booster routes */}
-                  <Route path="/booster" element={<BoosterLayout />}>
-                    <Route index element={<BoosterCalendar />} />
-                    <Route path="dashboard" element={<BoosterDashboard />} />
-                    <Route path="requests" element={<BoosterBookingRequests />} />
-                    <Route path="jobs" element={<BoosterJobs />} />
-                    <Route path="calendar" element={<BoosterCalendar />} />
-                    <Route path="portfolio" element={<BoosterPortfolio />} />
-                    <Route path="skills" element={<BoosterSkills />} />
-                    <Route path="profile" element={<BoosterProfile />} />
-                    <Route path="finance" element={<BoosterFinance />} />
-                    <Route path="messages" element={<BoosterMessages />} />
-                    <Route path="settings" element={<BoosterSettings />} />
-                    <Route path="reviews" element={<BoosterReviews />} />
-                  </Route>
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-              <SiteFooter />
-              <ChatWidget />
-            </div>
-          </BrowserRouter>
-        </HelmetProvider>
-      </TooltipProvider>
-    </CartProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const location = window.location.pathname;
+  const isAdminRoute = location.startsWith('/admin');
+  const isBoosterRoute = location.startsWith('/booster');
+  const showPublicHeader = !isAdminRoute && !isBoosterRoute;
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <HelmetProvider>
+            <BrowserRouter>
+              <div className="min-h-screen bg-background break-words">
+                {showPublicHeader && <Header />}
+                <main>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/book" element={<BookingLanding />} />
+                    <Route path="/services" element={<Services />} />
+                    <Route path="/address" element={<Address />} />
+                    <Route path="/inquiry" element={<InquiryForm />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/stylists" element={<Stylists />} />
+                    <Route path="/stylist/anna-g" element={<AnnaG />} />
+                    <Route path="/stylist/angelica" element={<Angelica />} />
+                    <Route path="/stylist/:id" element={<StylistDetail />} />
+                    <Route path="/book/:boosterId" element={<Booking />} />
+                    <Route path="/booking" element={<Booking />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/confirmation" element={<Confirmation />} />
+                    <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+                    <Route path="/bookings" element={<Bookings />} />
+                    <Route path="/booster-signup" element={<BoosterSignup />} />
+                    
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/giftcards" element={<GiftCards />} />
+                    <Route path="/install" element={<InstallApp />} />
+                    <Route path="/booster/login" element={<BoosterLogin />} />
+                    {/* Admin routes */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/reset-password" element={<AdminResetPassword />} />
+                    <Route path="/admin" element={<AdminLayout />}>
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="inquiries" element={<AdminInquiries />} />
+                      <Route path="jobs" element={<AdminJobs />} />
+                      <Route path="calendar" element={<AdminCalendar />} />
+                      <Route path="bookings" element={<AdminBookings />} />
+                      <Route path="finance" element={<AdminFinance />} />
+                      <Route path="boosters" element={<AdminBoosters />} />
+                      <Route path="booster-applications" element={<AdminBoosterApplications />} />
+                      <Route path="messages" element={<AdminMessages />} />
+                      <Route path="discount-codes" element={<AdminDiscountCodes />} />
+                      <Route path="settings" element={<AdminSettings />} />
+                    </Route>
+                    {/* Booster routes */}
+                    <Route path="/booster" element={<BoosterLayout />}>
+                      <Route index element={<BoosterCalendar />} />
+                      <Route path="dashboard" element={<BoosterDashboard />} />
+                      <Route path="requests" element={<BoosterBookingRequests />} />
+                      <Route path="jobs" element={<BoosterJobs />} />
+                      <Route path="calendar" element={<BoosterCalendar />} />
+                      <Route path="portfolio" element={<BoosterPortfolio />} />
+                      <Route path="skills" element={<BoosterSkills />} />
+                      <Route path="profile" element={<BoosterProfile />} />
+                      <Route path="finance" element={<BoosterFinance />} />
+                      <Route path="messages" element={<BoosterMessages />} />
+                      <Route path="settings" element={<BoosterSettings />} />
+                      <Route path="reviews" element={<BoosterReviews />} />
+                    </Route>
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                {showPublicHeader && <SiteFooter />}
+                {showPublicHeader && <ChatWidget />}
+              </div>
+            </BrowserRouter>
+          </HelmetProvider>
+        </TooltipProvider>
+      </CartProvider>
+    </QueryClientProvider>
+  );
+};
  
 export default App;

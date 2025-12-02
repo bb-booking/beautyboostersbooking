@@ -101,7 +101,7 @@ export function BoosterSidebar() {
   }
 
   return (
-    <Sidebar className={state === "collapsed" ? "w-14" : "w-60"}>
+    <Sidebar className={state === "collapsed" ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Beauty Boosters</SidebarGroupLabel>
