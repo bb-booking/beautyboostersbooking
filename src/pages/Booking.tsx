@@ -475,22 +475,6 @@ const Booking = () => {
   };
 
   const findNextAvailableTime = async () => {
-    if (cartItems.length === 0) {
-      toast.error("Ingen services valgt");
-      return;
-    }
-
-    // Get all assigned booster IDs
-    const assignedBoosterIds = new Set<string>();
-    boosterAssignments.forEach((boosters) => {
-      boosters.forEach((b) => assignedBoosterIds.add(b.id));
-    });
-
-    if (assignedBoosterIds.size === 0) {
-      toast.error("Tildel boosters først");
-      return;
-    }
-
     setLoadingBoosters(true);
 
     try {
@@ -498,10 +482,43 @@ const Booking = () => {
       const searchDate = selectedDate || new Date();
       const endDate = addDays(searchDate, 14);
 
+      // Get service categories to filter boosters
+      const serviceCategories = cartItems.length > 0 
+        ? cartItems.map(item => item.category)
+        : [service?.category || 'Makeup'];
+
+      // Fetch boosters matching service categories
+      const { data: boosters, error: boosterError } = await supabase
+        .from('booster_profiles')
+        .select('id, specialties')
+        .eq('is_available', true);
+
+      if (boosterError) throw boosterError;
+
+      // Filter boosters by specialties matching services
+      const matchingBoosterIds = boosters
+        ?.filter(b => {
+          // Check if booster has any matching specialty
+          return serviceCategories.some(category => {
+            if (category.includes('Makeup')) return b.specialties.includes('Makeup');
+            if (category.includes('Hår')) return b.specialties.includes('Hår');
+            if (category === 'Spraytan') return b.specialties.includes('Spraytan');
+            if (category.includes('Bryllup')) return b.specialties.includes('Bryllup');
+            return true; // Default to true if no specific match
+          });
+        })
+        .map(b => b.id) || [];
+
+      if (matchingBoosterIds.length === 0) {
+        toast.error("Ingen matchende boosters fundet for dine valgte services");
+        return;
+      }
+
+      // Find available time slots
       const { data, error } = await supabase
         .from('booster_availability')
         .select('*')
-        .in('booster_id', Array.from(assignedBoosterIds))
+        .in('booster_id', matchingBoosterIds)
         .eq('status', 'available')
         .gte('date', format(searchDate, 'yyyy-MM-dd'))
         .lte('date', format(endDate, 'yyyy-MM-dd'))
@@ -512,7 +529,7 @@ const Booking = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Find the first slot that works for all boosters
+        // Find the first slot
         const firstSlot = data[0];
         setSelectedDate(new Date(firstSlot.date));
         setSelectedTime(firstSlot.start_time.substring(0, 5)); // Convert HH:MM:SS to HH:MM
@@ -522,7 +539,7 @@ const Booking = () => {
         const tomorrow = addDays(searchDate, 1);
         setSelectedDate(tomorrow);
         setSelectedTime("09:00");
-        toast.info("Ingen registrerede ledige tider fundet. Prøv at tildele andre boosters eller send en forespørgsel.");
+        toast.info("Ingen registrerede ledige tider fundet. Vælg dato og tid manuelt.");
       }
     } catch (error) {
       console.error('Error finding available time:', error);
@@ -762,7 +779,7 @@ const Booking = () => {
                   variant="outline" 
                   className="w-full"
                   onClick={findNextAvailableTime}
-                  disabled={loadingBoosters || cartItems.length === 0}
+                  disabled={loadingBoosters}
                 >
                   {loadingBoosters ? "Søger..." : "Vis næste ledige tider"}
                 </Button>
