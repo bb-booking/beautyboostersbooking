@@ -28,9 +28,22 @@ import {
   Eye,
   EyeOff,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  GripVertical
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  DndContext, 
+  DragOverlay, 
+  useSensor, 
+  useSensors, 
+  PointerSensor, 
+  closestCenter, 
+  DragEndEvent, 
+  DragStartEvent 
+} from '@dnd-kit/core';
+import { DraggableBooking } from '@/components/calendar/DraggableBooking';
+import { DroppableTimeSlot } from '@/components/calendar/DroppableTimeSlot';
 
 interface BoosterProfile {
   id: string;
@@ -78,6 +91,16 @@ const AdminCalendar = () => {
   const [specialtyFilter, setSpecialtyFilter] = useState<string>("all");
   const [selectedBoosters, setSelectedBoosters] = useState<string[]>([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
+  
+  // Drag and drop
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const locations = ["København", "Aarhus", "Odense", "Aalborg", "Esbjerg", "Randers", "Kolding", "Horsens"];
 
@@ -249,6 +272,39 @@ const AdminCalendar = () => {
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    // Parse IDs: availability-{availabilityId}
+    const availabilityId = (active.id as string).replace('availability-', '');
+    const newBoosterId = (over.id as string).replace('booster-', '').split('-')[0];
+
+    try {
+      // Update the booster_availability record
+      const { error } = await supabase
+        .from('booster_availability')
+        .update({ booster_id: newBoosterId })
+        .eq('id', availabilityId);
+
+      if (error) throw error;
+
+      toast.success('Booking flyttet til ny booster');
+      fetchAvailability();
+    } catch (error) {
+      console.error('Error moving booking:', error);
+      toast.error('Kunne ikke flytte booking');
+    }
+  };
+
   const getUniqueSpecialties = () => {
     const allSpecialties = boosters.flatMap(b => b.specialties);
     return [...new Set(allSpecialties)];
@@ -295,8 +351,20 @@ const AdminCalendar = () => {
   }
 
   const daysToShow = getDaysToShow();
+  const activeAvailability = activeId 
+    ? availability.find(a => `availability-${a.id}` === activeId)
+    : null;
+  const activeJob = activeAvailability?.job_id 
+    ? getJobForAvailability(activeAvailability.job_id)
+    : null;
 
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Kalender Oversigt</h2>
@@ -493,53 +561,36 @@ const AdminCalendar = () => {
                       <div key={`time-${timeSlot}`} className="p-2 border-b border-r text-sm font-medium bg-muted/50 sticky left-0 z-10">
                         {timeSlot}
                       </div>
-                      {filteredBoosters.map(booster => {
+                       {filteredBoosters.map(booster => {
                         const dayAvailability = getBoosterAvailabilityForDate(booster.id, selectedDate);
                         const slotAvailability = dayAvailability.find(avail => 
                           isTimeInSlot(timeSlot, avail.start_time, avail.end_time)
                         );
                         
                         return (
-                          <div key={`${booster.id}-${timeSlot}`} className="p-2 border-b border-r min-h-12">
+                          <DroppableTimeSlot 
+                            key={`${booster.id}-${timeSlot}`}
+                            boosterId={booster.id}
+                            timeSlot={timeSlot}
+                            date={selectedDate}
+                          >
                             {slotAvailability && isTimeInSlot(timeSlot, slotAvailability.start_time, slotAvailability.end_time) && (
                               timeSlot === slotAvailability.start_time.slice(0, 5) ? (
-                                <div className="text-xs">
-                                  <Badge 
-                                    className={`w-full ${getStatusColor(slotAvailability.status)} flex items-center gap-1 mb-1`}
-                                  >
-                                    {getStatusIcon(slotAvailability.status)}
-                                    <span className="truncate">
-                                      {slotAvailability.start_time.slice(0, 5)}-{slotAvailability.end_time.slice(0, 5)}
-                                    </span>
-                                  </Badge>
-                                  {slotAvailability.job_id && (
-                                    (() => {
-                                      const job = getJobForAvailability(slotAvailability.job_id);
-                                      return job ? (
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                          <div className="font-medium truncate">{job.title}</div>
-                                          {job.client_name && (
-                                            <div className="truncate">{job.client_name}</div>
-                                          )}
-                                          <div className="flex items-center gap-1 truncate">
-                                            <MapPin className="h-3 w-3" />
-                                            {job.location}
-                                          </div>
-                                        </div>
-                                      ) : null;
-                                    })()
-                                  )}
-                                  {slotAvailability.notes && (
-                                    <div className="text-xs text-muted-foreground mt-1 truncate">
-                                      {slotAvailability.notes}
-                                    </div>
-                                  )}
-                                </div>
+                                <DraggableBooking
+                                  availabilityId={slotAvailability.id}
+                                  status={slotAvailability.status}
+                                  startTime={slotAvailability.start_time}
+                                  endTime={slotAvailability.end_time}
+                                  job={getJobForAvailability(slotAvailability.job_id)}
+                                  notes={slotAvailability.notes}
+                                  getStatusColor={getStatusColor}
+                                  getStatusIcon={getStatusIcon}
+                                />
                               ) : (
                                 <div className={`h-full ${getStatusColor(slotAvailability.status)} opacity-30`}></div>
                               )
                             )}
-                          </div>
+                          </DroppableTimeSlot>
                         );
                       })}
                     </>
@@ -595,33 +646,28 @@ const AdminCalendar = () => {
                       const dayAvailability = getBoosterAvailabilityForDate(booster.id, day);
                       
                       return (
-                        <div key={day.toISOString()} className="p-2 min-h-20 border rounded bg-background">
+                        <DroppableTimeSlot
+                          key={day.toISOString()}
+                          boosterId={booster.id}
+                          timeSlot="full-day"
+                          date={day}
+                        >
                           {dayAvailability.length > 0 ? (
                             <div className="space-y-1">
                               {dayAvailability.map(avail => {
                                 const job = getJobForAvailability(avail.job_id);
                                 return (
-                                  <div key={avail.id} className="text-xs">
-                                    <Badge 
-                                      className={`w-full text-xs ${getStatusColor(avail.status)} flex items-center gap-1`}
-                                    >
-                                      {getStatusIcon(avail.status)}
-                                      <span className="truncate">
-                                        {avail.start_time.slice(0, 5)}-{avail.end_time.slice(0, 5)}
-                                      </span>
-                                    </Badge>
-                                    {job && (
-                                      <div className="mt-1 text-muted-foreground">
-                                        <div className="font-medium truncate">{job.title}</div>
-                                        {job.client_name && (
-                                          <div className="truncate">{job.client_name}</div>
-                                        )}
-                                      </div>
-                                    )}
-                                    {avail.notes && (
-                                      <div className="text-muted-foreground truncate">{avail.notes}</div>
-                                    )}
-                                  </div>
+                                  <DraggableBooking
+                                    key={avail.id}
+                                    availabilityId={avail.id}
+                                    status={avail.status}
+                                    startTime={avail.start_time}
+                                    endTime={avail.end_time}
+                                    job={job}
+                                    notes={avail.notes}
+                                    getStatusColor={getStatusColor}
+                                    getStatusIcon={getStatusIcon}
+                                  />
                                 );
                               })}
                             </div>
@@ -630,7 +676,7 @@ const AdminCalendar = () => {
                               Ingen data
                             </div>
                           )}
-                        </div>
+                        </DroppableTimeSlot>
                       );
                     })}
                   </div>
@@ -686,7 +732,25 @@ const AdminCalendar = () => {
           </CardContent>
         </Card>
       )}
+      
+      <DragOverlay>
+        {activeId && activeAvailability ? (
+          <div className="bg-background p-2 rounded shadow-lg border">
+            <DraggableBooking
+              availabilityId={activeAvailability.id}
+              status={activeAvailability.status}
+              startTime={activeAvailability.start_time}
+              endTime={activeAvailability.end_time}
+              job={activeJob}
+              notes={activeAvailability.notes}
+              getStatusColor={getStatusColor}
+              getStatusIcon={getStatusIcon}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </div>
+    </DndContext>
   );
 };
 
