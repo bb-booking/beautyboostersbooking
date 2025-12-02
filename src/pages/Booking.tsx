@@ -690,6 +690,33 @@ const Booking = () => {
   };
 
   const handleSelectService = (selectedService: Service) => {
+    // If coming from calendar-first flow with a selected time from availability,
+    // go directly to checkout for instant booking (no approval needed)
+    if (calendarTimeSelected && specificBooster && selectedDate && selectedTime) {
+      const booking = {
+        service: selectedService.name,
+        date: selectedDate,
+        time: selectedTime,
+        booster: specificBooster.name,
+        boosterId: specificBooster.id,
+        duration: selectedService.duration,
+        price: selectedService.price,
+        location: bookingDetails?.location?.address || ''
+      };
+
+      navigate('/checkout', { 
+        state: { 
+          booking, 
+          booster: specificBooster, 
+          service: selectedService, 
+          bookingDetails, 
+          counts: { people: 1, boosters: 1 },
+          isDirectBooking: true // Flag for direct booking from available slot
+        } 
+      });
+      return;
+    }
+
     setDeterminedServiceId(selectedService.id);
     setService(selectedService);
     setShowServiceSelection(false);

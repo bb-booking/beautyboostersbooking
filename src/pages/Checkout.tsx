@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard, Check } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { booking, booster, service, bookingDetails, counts } = location.state || {};
+  const { booking, booster, service, bookingDetails, counts, isDirectBooking } = location.state || {};
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -275,7 +275,104 @@ export default function Checkout() {
     navigate('/services');
   };
 
+  // Direct booking handler - creates confirmed booking without payment approval
+  const handleDirectBooking = async () => {
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
+      toast.error('Udfyld venligst alle påkrævede felter');
+      return;
+    }
+    
+    if (!agreedToTerms) {
+      toast.error('Du skal acceptere handelsbetingelserne for at fortsætte');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      const bookingDate = selectedDate || booking.date;
+      const formattedDate = bookingDate instanceof Date 
+        ? bookingDate.toISOString().split('T')[0] 
+        : new Date(bookingDate).toISOString().split('T')[0];
+
+      // Create confirmed booking directly
+      const { data: bookingData, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          customer_name: customerInfo.name,
+          customer_email: customerInfo.email,
+          customer_phone: customerInfo.phone,
+          service_name: service.name,
+          booster_id: booster.id,
+          booster_name: booster.name,
+          booking_date: formattedDate,
+          booking_time: selectedTime,
+          location: addressQuery,
+          special_requests: customerInfo.specialRequests,
+          discount_code: appliedCode,
+          discount_amount: discount,
+          amount: Math.max(0, service.price - discount),
+          status: 'confirmed', // Directly confirmed since time was available
+          booster_status: 'accepted', // Auto-accepted since booster marked as available
+          duration_hours: service.duration,
+          cancellation_policy_accepted: true
+        })
+        .select()
+        .single();
+
+      if (bookingError) throw bookingError;
+
+      // Update booster_availability to mark the slot as booked
+      const { error: availError } = await supabase
+        .from('booster_availability')
+        .update({ 
+          status: 'booked',
+          notes: JSON.stringify({
+            booking_id: bookingData.id,
+            customer_name: customerInfo.name,
+            service: service.name
+          })
+        })
+        .eq('booster_id', booster.id)
+        .eq('date', formattedDate)
+        .lte('start_time', selectedTime)
+        .gte('end_time', selectedTime);
+
+      if (availError) {
+        console.error('Could not update availability:', availError);
+        // Non-blocking - booking is still valid
+      }
+
+      toast.success('Booking bekræftet!');
+      
+      navigate('/confirmation', {
+        state: {
+          booking: {
+            ...booking,
+            id: bookingData.id,
+            date: bookingDate,
+            time: selectedTime
+          },
+          booster,
+          customerInfo,
+          isDirectBooking: true
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Direct booking error:', error);
+      toast.error(error.message || 'Der opstod en fejl under booking');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handlePayment = async () => {
+    // If this is a direct booking from available slot, use handleDirectBooking
+    if (isDirectBooking) {
+      return handleDirectBooking();
+    }
+
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       toast.error('Udfyld venligst alle påkrævede felter');
       return;
@@ -342,14 +439,33 @@ export default function Checkout() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Bekræft din booking</h1>
+        <div className="flex items-center gap-3 mb-8">
+          <h1 className="text-3xl font-bold">Bekræft din booking</h1>
+          {isDirectBooking && (
+            <Badge className="bg-green-500 text-white hover:bg-green-600">
+              Direkte booking
+            </Badge>
+          )}
+        </div>
+        
+        {isDirectBooking && (
+          <div className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+            <p className="text-sm text-green-800 dark:text-green-200">
+              <strong>Ledig tid valgt!</strong> Denne tid er ledig i {booster.name}s kalender og vil blive bekræftet med det samme.
+            </p>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Booking Summary */}
           <Card>
             <CardHeader>
               <CardTitle>Booking oversigt</CardTitle>
-              <CardDescription>Redigér dato/tid og adresse inden betaling</CardDescription>
+              <CardDescription>
+                {isDirectBooking 
+                  ? 'Tjek dine oplysninger - bookingen bekræftes med det samme' 
+                  : 'Redigér dato/tid og adresse inden betaling'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {/* Top-oversigt */}
@@ -376,11 +492,13 @@ export default function Checkout() {
                   {extraBoosters.map((b) => (
                     <Badge key={b.id} variant="outline">{b.name}</Badge>
                   ))}
-                  <div className="ml-auto">
-                    <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
-                      Vælg/administrér ekstra booster(s)
-                    </Button>
-                  </div>
+                  {!isDirectBooking && (
+                    <div className="ml-auto">
+                      <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
+                        Vælg/administrér ekstra booster(s)
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -391,6 +509,7 @@ export default function Checkout() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
+                      disabled={isDirectBooking}
                       className={cn(
                         "w-full justify-start text-left font-normal",
                         !selectedDate && "text-muted-foreground"
@@ -418,10 +537,14 @@ export default function Checkout() {
               {/* Time */}
               <div className="space-y-2">
                 <Label>Tidspunkt</Label>
-                <Select value={selectedTime} onValueChange={(v) => {
-                  setSelectedTime(v);
-                  setLocalBooking((prev: any) => ({ ...prev, time: v }));
-                }}>
+                <Select 
+                  value={selectedTime} 
+                  onValueChange={(v) => {
+                    setSelectedTime(v);
+                    setLocalBooking((prev: any) => ({ ...prev, time: v }));
+                  }}
+                  disabled={isDirectBooking}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Vælg tidspunkt" />
                   </SelectTrigger>
@@ -621,13 +744,22 @@ export default function Checkout() {
               </div>
               
               <Button 
-                className="w-full" 
+                className={cn("w-full", isDirectBooking && "bg-green-600 hover:bg-green-700")}
                 size="lg" 
                 onClick={handlePayment}
                 disabled={isProcessing}
               >
-                <CreditCard className="mr-2 h-4 w-4" />
-                {isProcessing ? 'Behandler...' : 'Reservér og betal'}
+                {isDirectBooking ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {isProcessing ? 'Bekræfter...' : 'Bekræft booking'}
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    {isProcessing ? 'Behandler...' : 'Reservér og betal'}
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
