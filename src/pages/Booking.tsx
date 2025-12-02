@@ -176,6 +176,9 @@ const Booking = () => {
   useEffect(() => {
     if (serviceId) {
       fetchService();
+    } else {
+      // No serviceId, stop loading
+      setLoading(false);
     }
   }, [serviceId]);
 
@@ -651,7 +654,7 @@ const Booking = () => {
     setShowServiceSelection(false);
   };
 
-  if (loading || (boosterId && loadingSpecificBooster)) {
+  if (loading || (boosterId && (loadingSpecificBooster || !specificBooster))) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-8 w-48 mb-6" />
@@ -667,9 +670,9 @@ const Booking = () => {
   if (boosterId && showServiceSelection && boosterServices.length > 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Link to={`/stylist/${boosterId}`} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
+        <Link to="/stylists" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" />
-          Tilbage til Booster
+          Tilbage til Boosters
         </Link>
         <div className="space-y-6">
           <div>
@@ -723,9 +726,9 @@ const Booking = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link to={boosterId ? `/stylist/${boosterId}` : "/services"} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
+      <Link to={boosterId ? "/stylists" : "/services"} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-4 w-4" />
-        {boosterId ? 'Tilbage til Booster' : 'Tilbage til Services'}
+        {boosterId ? 'Tilbage til Boosters' : 'Tilbage til Services'}
       </Link>
 
       <div className="space-y-8">
