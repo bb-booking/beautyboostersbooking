@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, MapPin, Star, User, CheckCircle2 } from "lucide-react";
+import { Wand2, MapPin, Star, CheckCircle2, X } from "lucide-react";
 import { CartItem } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -26,6 +26,7 @@ interface BoosterAssignmentProps {
   loading: boolean;
   onAutoAssign: () => void;
   onManualAssign: (serviceIndex: number, booster: Booster) => void;
+  onRemoveBooster: (serviceIndex: number, boosterIndex: number) => void;
   assignments: Map<number, Booster[]>;
 }
 
@@ -35,6 +36,7 @@ export const BoosterAssignment = ({
   loading,
   onAutoAssign,
   onManualAssign,
+  onRemoveBooster,
   assignments
 }: BoosterAssignmentProps) => {
   const [selectedServiceIndex, setSelectedServiceIndex] = useState(0);
@@ -144,6 +146,17 @@ export const BoosterAssignment = ({
                                 {booster.location}
                               </p>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                onRemoveBooster(serviceIndex, idx);
+                                toast.success(`${booster.name} fjernet`);
+                              }}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         ))}
                       </div>

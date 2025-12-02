@@ -355,74 +355,44 @@ const Booking = () => {
     setShowFallback(false);
     
     try {
-      // Get service category to filter boosters
+      // Fetch real boosters from database
+      const { data, error } = await supabase
+        .from('booster_profiles')
+        .select('*')
+        .eq('is_available', true)
+        .order('rating', { ascending: false });
+
+      if (error) throw error;
+
+      // Filter based on service category
       const serviceCategory = service?.category || '';
       const serviceName = service?.name || '';
       
-      // Filter boosters based on service type
-      let filteredBoosters: Booster[] = [];
+      let filteredBoosters = data || [];
       
+      // Special filtering for specific services
       if (serviceName.toLowerCase().includes('spraytan') || serviceCategory === 'Spraytan') {
-        // Only Josephine O for spraytan
-        filteredBoosters = [
-          {
-            id: 'ef8feb8b-b471-4c75-a729-6b569c296e75',
-            name: 'Josephine O',
-            specialties: ['Spraytan'],
-            hourly_rate: 499,
-            portfolio_image_url: '/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png',
-            location: 'København',
-            rating: 4.9,
-            review_count: 89,
-            years_experience: 3,
-            bio: 'Specialist i spraytan med fokus på naturlige nuancer'
-          }
-        ];
-      } else {
-        // For other services, include makeup artists
-        filteredBoosters = [
-          {
-            id: 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
-            name: 'Sarah Nielsen',
-            specialties: ['Makeup', 'Bryllup', 'Event'],
-            hourly_rate: 1999,
-            portfolio_image_url: '/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png',
-            location: 'København N',
-            rating: 4.8,
-            review_count: 127,
-            years_experience: 5,
-            bio: 'Professionel makeup artist med speciale i bryllups- og event makeup'
-          },
-          {
-            id: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
-            name: 'Maria Andersen',
-            specialties: ['Makeup', 'Hår', 'Fashion'],
-            hourly_rate: 1100,
-            portfolio_image_url: '/lovable-uploads/abbb29f7-ab5c-498e-b6d4-df1c1ed999fc.png',
-            location: 'Frederiksberg',
-            rating: 4.9,
-            review_count: 89,
-            years_experience: 7,
-            bio: 'Erfaren artist med fokus på moderne trends og personlig stil'
-          }
-        ];
+        filteredBoosters = filteredBoosters.filter(b => 
+          b.specialties.includes('Spraytan')
+        );
+      } else if (serviceCategory.includes('Makeup')) {
+        filteredBoosters = filteredBoosters.filter(b => 
+          b.specialties.includes('Makeup') || b.specialties.includes('Hår')
+        );
       }
 
-      // Mock nearby boosters for fallback (with same filtering)
-      const mockNearbyBoosters = filteredBoosters;
-
-      // Simulate checking availability
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       if (filteredBoosters.length === 0) {
         setShowFallback(true);
-        setNearbyBoosters(mockNearbyBoosters);
+        setNearbyBoosters(data || []);
       } else {
         setAvailableBoosters(filteredBoosters);
       }
     } catch (error) {
       console.error('Error fetching boosters:', error);
       toast.error("Kunne ikke hente tilgængelige boosters");
+      setShowFallback(true);
     } finally {
       setLoadingBoosters(false);
     }
@@ -447,6 +417,16 @@ const Booking = () => {
     });
   };
 
+  const handleRemoveBooster = (serviceIndex: number, boosterIndex: number) => {
+    const newAssignments = new Map(boosterAssignments);
+    const currentAssignments = newAssignments.get(serviceIndex) || [];
+    newAssignments.set(
+      serviceIndex,
+      currentAssignments.filter((_, i) => i !== boosterIndex)
+    );
+    setBoosterAssignments(newAssignments);
+  };
+
   const handleAutoAssignBoosters = () => {
     if (availableBoosters.length === 0) {
       toast.error("Ingen tilgængelige boosters");
@@ -460,11 +440,14 @@ const Booking = () => {
       const assigned: Booster[] = [];
       for (let i = 0; i < item.boosters; i++) {
         if (boosterIndex < availableBoosters.length) {
+          // Use modulo to cycle through available boosters if needed
           assigned.push(availableBoosters[boosterIndex % availableBoosters.length]);
           boosterIndex++;
         }
       }
-      newAssignments.set(serviceIndex, assigned);
+      if (assigned.length > 0) {
+        newAssignments.set(serviceIndex, assigned);
+      }
     });
 
     setBoosterAssignments(newAssignments);
@@ -787,6 +770,7 @@ const Booking = () => {
             loading={loadingBoosters}
             onAutoAssign={handleAutoAssignBoosters}
             onManualAssign={handleManualAssignBooster}
+            onRemoveBooster={handleRemoveBooster}
             assignments={boosterAssignments}
           />
         )}
