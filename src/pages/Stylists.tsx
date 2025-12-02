@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MapPin, Clock, Bike, Store } from "lucide-react";
+import { Star, MapPin, Clock, Bike, Store, Heart, Calendar } from "lucide-react";
+import { toast } from "sonner";
 import { boosterImageOverrides } from "@/data/boosterImages";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -25,6 +26,12 @@ interface Booster {
   is_available: boolean;
 }
 
+interface BoosterAvailability {
+  boosterId: string;
+  availableSlots: number;
+  nextAvailable: string | null;
+}
+
 const Stylists = () => {
   const [boosters, setBoosters] = useState<Booster[]>([]);
   const [filteredBoosters, setFilteredBoosters] = useState<Booster[]>([]);
@@ -32,9 +39,20 @@ const Stylists = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [specialtyFilter, setSpecialtyFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [userId, setUserId] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<Map<string, BoosterAvailability>>(new Map());
 
   useEffect(() => {
-    fetchBoosters();
+    const initializePage = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+      await fetchBoosters();
+      if (user?.id) {
+        await fetchFavorites(user.id);
+      }
+    };
+    initializePage();
   }, []);
 
   useEffect(() => {
@@ -50,10 +68,101 @@ const Stylists = () => {
 
       if (error) throw error;
       setBoosters(data || []);
+      
+      // Fetch availability for all boosters
+      if (data) {
+        await fetchAvailability(data.map(b => b.id));
+      }
     } catch (error) {
       console.error('Error fetching boosters:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFavorites = async (uid: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_favorites')
+        .select('booster_id')
+        .eq('user_id', uid);
+
+      if (error) throw error;
+      setFavorites(new Set(data?.map(f => f.booster_id) || []));
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
+
+  const fetchAvailability = async (boosterIds: string[]) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('booster_availability')
+        .select('booster_id, date, status')
+        .in('booster_id', boosterIds)
+        .gte('date', today)
+        .lte('date', nextWeek)
+        .eq('status', 'available');
+
+      if (error) throw error;
+
+      const availabilityMap = new Map<string, BoosterAvailability>();
+      boosterIds.forEach(id => {
+        const slots = data?.filter(a => a.booster_id === id) || [];
+        const nextAvailable = slots.length > 0 ? slots[0].date : null;
+        availabilityMap.set(id, {
+          boosterId: id,
+          availableSlots: slots.length,
+          nextAvailable
+        });
+      });
+
+      setAvailability(availabilityMap);
+    } catch (error) {
+      console.error('Error fetching availability:', error);
+    }
+  };
+
+  const toggleFavorite = async (boosterId: string) => {
+    if (!userId) {
+      toast.error('Log ind for at gemme favoritter');
+      return;
+    }
+
+    const isFavorite = favorites.has(boosterId);
+
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('customer_favorites')
+          .delete()
+          .eq('user_id', userId)
+          .eq('booster_id', boosterId);
+
+        if (error) throw error;
+
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(boosterId);
+          return newSet;
+        });
+        toast.success('Fjernet fra favoritter');
+      } else {
+        const { error } = await supabase
+          .from('customer_favorites')
+          .insert({ user_id: userId, booster_id: boosterId });
+
+        if (error) throw error;
+
+        setFavorites(prev => new Set(prev).add(boosterId));
+        toast.success('Tilføjet til favoritter');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error('Kunne ikke opdatere favorit');
     }
   };
 
@@ -180,8 +289,21 @@ const Stylists = () => {
                   e.currentTarget.src = '/placeholder.svg';
                 }}
               />
+              <button
+                onClick={() => toggleFavorite(booster.id)}
+                className="absolute top-2 right-2 p-2 rounded-full bg-background/80 hover:bg-background transition-colors"
+                aria-label={favorites.has(booster.id) ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
+              >
+                <Heart
+                  className={`h-5 w-5 ${
+                    favorites.has(booster.id)
+                      ? 'fill-red-500 text-red-500'
+                      : 'text-muted-foreground'
+                  }`}
+                />
+              </button>
               {!booster.is_available && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 left-2">
                   <Badge variant="secondary">Ikke tilgængelig</Badge>
                 </div>
               )}
@@ -245,6 +367,28 @@ const Stylists = () => {
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                 {booster.bio}
               </p>
+              
+              {/* Availability indicator */}
+              {availability.has(booster.id) && (
+                <div className="mb-4 p-2 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      {availability.get(booster.id)!.availableSlots > 0 ? (
+                        <>
+                          <span className="text-foreground font-medium">
+                            {availability.get(booster.id)!.availableSlots} ledige tider
+                          </span>
+                          {' '}denne uge
+                        </>
+                      ) : (
+                        'Ingen ledige tider denne uge'
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Link to={(() => { const n = booster.name.toLowerCase(); return n.includes('anna g') ? '/stylist/anna-g' : (n.includes('angelica') || n.includes('angelika')) ? '/stylist/angelica' : `/stylist/${booster.id}`; })()} className="flex-1">
                   <Button size="sm" variant="outline" className="w-full">
