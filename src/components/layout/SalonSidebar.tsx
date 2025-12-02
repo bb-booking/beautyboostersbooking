@@ -33,7 +33,7 @@ export function SalonSidebar() {
     isActive(path) ? "bg-primary text-primary-foreground" : "hover:bg-accent hover:text-accent-foreground"
 
   return (
-    <Sidebar className={state === "collapsed" ? "w-14" : "w-60"}>
+    <Sidebar className={state === "collapsed" ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Salon</SidebarGroupLabel>

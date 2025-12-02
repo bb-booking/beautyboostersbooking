@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   MessageSquare, 
@@ -24,7 +24,6 @@ import {
   SidebarMenuBadge,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,6 +44,7 @@ export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const isActive = (path: string) => {
@@ -164,10 +164,16 @@ export function AdminSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Button variant="ghost" className="w-full justify-start p-0 h-auto">
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      navigate("/admin/login");
+                    }}
+                    className="w-full justify-start hover:bg-muted/50 flex items-center"
+                  >
                     <LogOut className="h-4 w-4" />
                     {!collapsed && <span className="ml-2">Log ud</span>}
-                  </Button>
+                  </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

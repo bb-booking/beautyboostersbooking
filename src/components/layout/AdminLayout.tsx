@@ -3,6 +3,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -98,9 +100,22 @@ export function AdminLayout() {
         <AdminSidebar />
         
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b bg-background px-4">
-            <SidebarTrigger className="mr-4" />
-            <h1 className="text-lg font-semibold">Beauty Boosters Admin</h1>
+          <header className="h-14 flex items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center">
+              <SidebarTrigger className="mr-4" />
+              <h1 className="text-lg font-semibold">Beauty Boosters Admin</h1>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/admin/login");
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Log ud
+            </Button>
           </header>
           
           <main className="flex-1 p-6 break-words">
