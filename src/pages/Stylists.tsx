@@ -389,15 +389,22 @@ const Stylists = () => {
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Link to={(() => { const n = booster.name.toLowerCase(); return n.includes('anna g') ? '/stylist/anna-g' : (n.includes('angelica') || n.includes('angelika')) ? '/stylist/angelica' : `/stylist/${booster.id}`; })()} className="flex-1">
-                  <Button size="sm" variant="outline" className="w-full">
-                    Se profil
-                  </Button>
-                </Link>
-                <Link to={`/booking?booster=${booster.id}`} className="flex-1">
-                  <Button size="sm" className="w-full">
-                    Book nu
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Link to={(() => { const n = booster.name.toLowerCase(); return n.includes('anna g') ? '/stylist/anna-g' : (n.includes('angelica') || n.includes('angelika')) ? '/stylist/angelica' : `/stylist/${booster.id}`; })()} className="flex-1">
+                    <Button size="sm" variant="outline" className="w-full">
+                      Se profil
+                    </Button>
+                  </Link>
+                  <Link to={`/booking?booster=${booster.id}`} className="flex-1">
+                    <Button size="sm" className="w-full">
+                      Book nu
+                    </Button>
+                  </Link>
+                </div>
+                <Link to={`/booking?booster=${booster.id}&view=calendar`} className="block">
+                  <Button size="sm" variant="secondary" className="w-full">
+                    Se ledige tider
                   </Button>
                 </Link>
               </div>
