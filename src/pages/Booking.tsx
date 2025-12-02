@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BoosterAssignment } from "@/components/booking/BoosterAssignment";
+import { LocationBubble } from "@/components/booking/LocationBubble";
 
 interface Service {
   id: string;
@@ -1093,18 +1094,24 @@ const Booking = () => {
       </Link>
 
       <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2 leading-tight break-words">
+        {/* Header with Location Bubble */}
+        <div className="space-y-4">
+          <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words">
             {boosterId && specificBooster ? `Book ${specificBooster.name}` : 'Vælg dato og tid'}
           </h1>
-          <p className="text-muted-foreground">
-            {bookingDetails?.location?.address ? (
-              `${bookingDetails.location.address}, ${bookingDetails.location.postalCode} ${bookingDetails.location.city}`
-            ) : (
-              'Lokation specificeres under booking processen'
-            )}
-          </p>
+          <LocationBubble
+            onLocationChange={(address, postalCode, city) => {
+              setBookingDetails(prev => ({
+                ...prev,
+                serviceId: prev?.serviceId || '',
+                location: { address, postalCode, city }
+              }));
+            }}
+            initialAddress={bookingDetails?.location?.address ? 
+              `${bookingDetails.location.address}, ${bookingDetails.location.postalCode} ${bookingDetails.location.city}` : 
+              undefined
+            }
+          />
         </div>
 
         {/* Booking Summary - Show cart items */}

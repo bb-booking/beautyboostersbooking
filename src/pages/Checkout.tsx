@@ -66,6 +66,31 @@ export default function Checkout() {
     return `${hour.toString().padStart(2, '0')}:${minute}`;
   });
 
+  // Auto-load saved address for logged-in customers
+  useEffect(() => {
+    const loadSavedAddress = async () => {
+      // Only load if no address is set
+      if (addressQuery) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: addresses } = await supabase
+        .from("customer_addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .limit(1);
+      
+      if (addresses && addresses.length > 0) {
+        const defaultAddr = addresses[0];
+        const fullAddress = `${defaultAddr.address}, ${defaultAddr.postal_code} ${defaultAddr.city}`;
+        setAddressQuery(fullAddress);
+      }
+    };
+    loadSavedAddress();
+  }, []);
+
   useEffect(() => {
     try {
       // @ts-ignore
