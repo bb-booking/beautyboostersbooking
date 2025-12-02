@@ -19,6 +19,7 @@ import {
   Settings,
   Heart
 } from "lucide-react";
+import { BookingRatingDialog } from "@/components/booking/BookingRatingDialog";
 
 interface Booking {
   id: string;
@@ -29,6 +30,7 @@ interface Booking {
   amount: number;
   status: string;
   booster_name?: string;
+  booster_id?: string;
   created_at: string;
 }
 
@@ -47,6 +49,8 @@ const CustomerDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -91,8 +95,18 @@ const CustomerDashboard = () => {
   };
 
   const fetchSavedAddresses = async (userId: string) => {
-    // Mock data for now - we'll create this table later
-    setSavedAddresses([]);
+    try {
+      const { data, error } = await supabase
+        .from('customer_addresses')
+        .select('*')
+        .eq('user_id', userId)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      setSavedAddresses(data || []);
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -133,6 +147,11 @@ const CustomerDashboard = () => {
     }));
     navigate('/services');
     toast.success('Genbestil din tidligere booking');
+  };
+
+  const handleOpenRating = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setRatingDialogOpen(true);
   };
 
   if (loading) {
@@ -181,7 +200,7 @@ const CustomerDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/stylists')}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/customer/favorites')}>
           <CardContent className="p-6 text-center">
             <Heart className="h-8 w-8 mx-auto mb-2 text-primary" />
             <h3 className="font-medium">Mine favoritter</h3>
@@ -189,7 +208,7 @@ const CustomerDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/customer/addresses')}>
           <CardContent className="p-6 text-center">
             <Home className="h-8 w-8 mx-auto mb-2 text-primary" />
             <h3 className="font-medium">Mine adresser</h3>
@@ -324,6 +343,16 @@ const CustomerDashboard = () => {
                         <div className="text-right mr-4">
                           <div className="font-semibold">{booking.amount} kr</div>
                         </div>
+                        {booking.status === 'completed' && booking.booster_id && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleOpenRating(booking)}
+                          >
+                            <Star className="h-4 w-4 mr-1" />
+                            Bedøm
+                          </Button>
+                        )}
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -340,6 +369,17 @@ const CustomerDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      {selectedBooking && (
+        <BookingRatingDialog
+          open={ratingDialogOpen}
+          onOpenChange={setRatingDialogOpen}
+          bookingId={selectedBooking.id}
+          boosterId={selectedBooking.booster_id || ""}
+          boosterName={selectedBooking.booster_name || "Booster"}
+          onSuccess={() => fetchBookings(user!.email!)}
+        />
+      )}
     </div>
   );
 };
