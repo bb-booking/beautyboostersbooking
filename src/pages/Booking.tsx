@@ -474,6 +474,64 @@ const Booking = () => {
     toast.success(`${booster.name} tildelt!`);
   };
 
+  const findNextAvailableTime = async () => {
+    if (cartItems.length === 0) {
+      toast.error("Ingen services valgt");
+      return;
+    }
+
+    // Get all assigned booster IDs
+    const assignedBoosterIds = new Set<string>();
+    boosterAssignments.forEach((boosters) => {
+      boosters.forEach((b) => assignedBoosterIds.add(b.id));
+    });
+
+    if (assignedBoosterIds.size === 0) {
+      toast.error("Tildel boosters først");
+      return;
+    }
+
+    setLoadingBoosters(true);
+
+    try {
+      // Search for available slots for the next 14 days
+      const searchDate = selectedDate || new Date();
+      const endDate = addDays(searchDate, 14);
+
+      const { data, error } = await supabase
+        .from('booster_availability')
+        .select('*')
+        .in('booster_id', Array.from(assignedBoosterIds))
+        .eq('status', 'available')
+        .gte('date', format(searchDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'))
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true })
+        .limit(20);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Find the first slot that works for all boosters
+        const firstSlot = data[0];
+        setSelectedDate(new Date(firstSlot.date));
+        setSelectedTime(firstSlot.start_time.substring(0, 5)); // Convert HH:MM:SS to HH:MM
+        toast.success(`Fundet ledig tid: ${format(new Date(firstSlot.date), 'd. MMMM', { locale: da })} kl. ${firstSlot.start_time.substring(0, 5)}`);
+      } else {
+        // If no availability found in database, suggest next day at 09:00
+        const tomorrow = addDays(searchDate, 1);
+        setSelectedDate(tomorrow);
+        setSelectedTime("09:00");
+        toast.info("Ingen registrerede ledige tider fundet. Prøv at tildele andre boosters eller send en forespørgsel.");
+      }
+    } catch (error) {
+      console.error('Error finding available time:', error);
+      toast.error("Kunne ikke finde ledige tider");
+    } finally {
+      setLoadingBoosters(false);
+    }
+  };
+
   const handleProceedToCheckout = () => {
     // Check if all services have assigned boosters
     const allAssigned = cartItems.every((item, index) => {
@@ -703,15 +761,10 @@ const Booking = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {
-                    // Show next available times close to requested time
-                    const tomorrow = addDays(new Date(), 1);
-                    setSelectedDate(tomorrow);
-                    setSelectedTime("09:00");
-                    toast.success("Viser næste ledige tider");
-                  }}
+                  onClick={findNextAvailableTime}
+                  disabled={loadingBoosters || cartItems.length === 0}
                 >
-                  Vis næste ledige tider
+                  {loadingBoosters ? "Søger..." : "Vis næste ledige tider"}
                 </Button>
               </div>
             </div>
