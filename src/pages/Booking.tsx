@@ -89,6 +89,10 @@ const Booking = () => {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
   const [boosterAssignments, setBoosterAssignments] = useState<Map<number, Booster[]>>(new Map());
+  
+  // Availability state
+  const [boosterAvailability, setBoosterAvailability] = useState<{date: string; start_time: string; end_time: string; status: string}[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   // Generate time slots in 30-minute intervals from 06:00-23:00
   const generateTimeSlots = () => {
@@ -133,6 +137,7 @@ const Booking = () => {
   useEffect(() => {
     if (boosterId) {
       fetchSpecificBooster();
+      fetchBoosterAvailability();
     }
     
     // Get booking details from sessionStorage or create default
@@ -330,6 +335,29 @@ const Booking = () => {
       toast.error("Kunne ikke hente booster information");
     } finally {
       setLoadingSpecificBooster(false);
+    }
+  };
+
+  const fetchBoosterAvailability = async () => {
+    if (!boosterId) return;
+    
+    setLoadingAvailability(true);
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data, error } = await supabase
+        .from('booster_availability')
+        .select('date, start_time, end_time, status')
+        .eq('booster_id', boosterId)
+        .eq('status', 'available')
+        .gte('date', today)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      setBoosterAvailability(data || []);
+    } catch (error) {
+      console.error('Error fetching availability:', error);
+    } finally {
+      setLoadingAvailability(false);
     }
   };
 
@@ -683,90 +711,221 @@ const Booking = () => {
     );
   }
 
+  // Get available dates from availability data
+  const getAvailableDates = (): Set<string> => {
+    const dates = new Set<string>();
+    boosterAvailability.forEach(slot => {
+      dates.add(slot.date);
+    });
+    return dates;
+  };
+
+  // Get available time slots for a specific date
+  const getAvailableTimesForDate = (date: Date): string[] => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const slots = boosterAvailability.filter(slot => slot.date === dateStr);
+    
+    const availableTimes: string[] = [];
+    slots.forEach(slot => {
+      const startHour = parseInt(slot.start_time.split(':')[0]);
+      const startMin = parseInt(slot.start_time.split(':')[1]);
+      const endHour = parseInt(slot.end_time.split(':')[0]);
+      const endMin = parseInt(slot.end_time.split(':')[1]);
+      
+      // Generate 30-minute slots between start and end time
+      let currentHour = startHour;
+      let currentMin = startMin;
+      
+      while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
+        const timeStr = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
+        availableTimes.push(timeStr);
+        
+        currentMin += 30;
+        if (currentMin >= 60) {
+          currentMin = 0;
+          currentHour++;
+        }
+      }
+    });
+    
+    return availableTimes;
+  };
+
+  const availableDates = getAvailableDates();
+  const availableTimesForSelectedDate = selectedDate ? getAvailableTimesForDate(selectedDate) : [];
+  const hasAvailability = boosterAvailability.length > 0;
+
   // Show calendar first when coming from "Se ledige tider"
   if (boosterId && showCalendarFirst && !calendarTimeSelected && specificBooster) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Link to="/stylists" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
-          <ArrowLeft className="h-4 w-4" />
-          Tilbage til Boosters
-        </Link>
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4 py-8">
+          <Link to="/stylists" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            Tilbage til Boosters
+          </Link>
+          
+          {/* Booster Header */}
+          <div className="flex items-center gap-4 mb-8">
             {specificBooster.portfolio_image_url && (
               <img 
                 src={specificBooster.portfolio_image_url} 
                 alt={specificBooster.name}
-                className="w-16 h-16 rounded-full object-cover"
+                className="w-20 h-20 rounded-full object-cover ring-4 ring-primary/20 shadow-lg"
               />
             )}
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-1">
                 Ledige tider hos {specificBooster.name}
               </h1>
-              <p className="text-muted-foreground flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                {specificBooster.location}
-                <span className="mx-2">•</span>
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                {specificBooster.rating} ({specificBooster.review_count} anmeldelser)
+              <p className="text-muted-foreground flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {specificBooster.location}
+                </span>
+                <span className="hidden sm:inline mx-2">•</span>
+                <span className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  {specificBooster.rating} ({specificBooster.review_count} anmeldelser)
+                </span>
               </p>
             </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Vælg dato og tidspunkt
-              </CardTitle>
-              <CardDescription>
-                Vælg hvornår du ønsker din behandling
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Dato</Label>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                    className="rounded-md border"
-                    locale={da}
-                  />
+          {loadingAvailability ? (
+            <Card className="border-0 shadow-xl">
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  <p className="text-muted-foreground">Henter ledige tider...</p>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Tidspunkt</Label>
-                  <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto pr-2">
-                    {timeSlots.map((time) => (
-                      <Button
-                        key={time}
-                        variant={selectedTime === time ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedTime(time)}
-                        className="w-full"
-                      >
-                        {time}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              {selectedDate && selectedTime && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Valgt tid: <span className="font-medium text-foreground">{format(selectedDate, "PPP", { locale: da })} kl. {selectedTime}</span>
+              </CardContent>
+            </Card>
+          ) : !hasAvailability ? (
+            <Card className="border-0 shadow-xl">
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Ingen ledige tider</h3>
+                  <p className="text-muted-foreground mb-6">
+                    {specificBooster.name} har ingen ledige tider i øjeblikket.
                   </p>
-                  <Button onClick={handleCalendarTimeConfirm} className="w-full">
-                    Fortsæt til valg af service
+                  <Button asChild variant="outline">
+                    <Link to="/stylists">Se andre boosters</Link>
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Vælg dato og tidspunkt
+                </CardTitle>
+                <CardDescription>
+                  Vælg hvornår du ønsker din behandling
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Date Selection */}
+                  <div>
+                    <Label className="text-sm font-semibold mb-3 block">Dato</Label>
+                    <div className="rounded-xl border bg-card p-4 shadow-sm">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          setSelectedDate(date);
+                          setSelectedTime("");
+                        }}
+                        disabled={(date) => {
+                          const dateStr = format(date, 'yyyy-MM-dd');
+                          return isBefore(date, startOfDay(new Date())) || !availableDates.has(dateStr);
+                        }}
+                        className="rounded-md pointer-events-auto"
+                        locale={da}
+                        modifiers={{
+                          available: (date) => availableDates.has(format(date, 'yyyy-MM-dd'))
+                        }}
+                        modifiersStyles={{
+                          available: { 
+                            fontWeight: 'bold',
+                            backgroundColor: 'hsl(var(--primary) / 0.1)'
+                          }
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                      <span className="w-3 h-3 rounded bg-primary/10 inline-block" />
+                      Markerede datoer har ledige tider
+                    </p>
+                  </div>
+                  
+                  {/* Time Selection */}
+                  <div>
+                    <Label className="text-sm font-semibold mb-3 block">Tidspunkt</Label>
+                    {!selectedDate ? (
+                      <div className="rounded-xl border bg-muted/50 p-8 text-center">
+                        <CalendarIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-muted-foreground">
+                          Vælg en dato for at se ledige tidspunkter
+                        </p>
+                      </div>
+                    ) : availableTimesForSelectedDate.length === 0 ? (
+                      <div className="rounded-xl border bg-muted/50 p-8 text-center">
+                        <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-muted-foreground">
+                          Ingen ledige tider på denne dato
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border bg-card p-4 shadow-sm">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[320px] overflow-y-auto pr-1">
+                          {availableTimesForSelectedDate.map((time) => (
+                            <Button
+                              key={time}
+                              variant={selectedTime === time ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedTime(time)}
+                              className={cn(
+                                "w-full transition-all",
+                                selectedTime === time 
+                                  ? "ring-2 ring-primary ring-offset-2" 
+                                  : "hover:bg-primary/10 hover:border-primary"
+                              )}
+                            >
+                              {time}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Selection Summary & Continue */}
+                <div className={cn(
+                  "mt-8 pt-6 border-t transition-all duration-300",
+                  selectedDate && selectedTime ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-primary/5 rounded-xl p-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Valgt tidspunkt</p>
+                      <p className="font-semibold text-lg">
+                        {selectedDate && format(selectedDate, "EEEE d. MMMM yyyy", { locale: da })} kl. {selectedTime}
+                      </p>
+                    </div>
+                    <Button onClick={handleCalendarTimeConfirm} size="lg" className="w-full sm:w-auto">
+                      Fortsæt til valg af service
+                      <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
@@ -775,49 +934,71 @@ const Booking = () => {
   // Show service selection for booster-specific booking (after calendar in calendar-first mode)
   if (boosterId && showServiceSelection && boosterServices.length > 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <button 
-          onClick={() => {
-            if (calendarTimeSelected) {
-              setCalendarTimeSelected(false);
-              setShowServiceSelection(false);
-            } else {
-              navigate('/stylists');
-            }
-          }}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {calendarTimeSelected ? 'Tilbage til kalender' : 'Tilbage til Boosters'}
-        </button>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
-              Vælg service hos {specificBooster?.name}
-            </h1>
-            {calendarTimeSelected && selectedDate && selectedTime && (
-              <p className="text-muted-foreground">
-                Valgt tid: {format(selectedDate, "PPP", { locale: da })} kl. {selectedTime}
-              </p>
-            )}
-          </div>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4 py-8">
+          <button 
+            onClick={() => {
+              if (calendarTimeSelected) {
+                setCalendarTimeSelected(false);
+                setShowServiceSelection(false);
+              } else {
+                navigate('/stylists');
+              }
+            }}
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {calendarTimeSelected ? 'Tilbage til kalender' : 'Tilbage til Boosters'}
+          </button>
+          
+          <div className="space-y-6">
+            {/* Header with selected time */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">
+                  Vælg service hos {specificBooster?.name}
+                </h1>
+                <p className="text-muted-foreground">
+                  Vælg den service du ønsker at booke
+                </p>
+              </div>
+              {calendarTimeSelected && selectedDate && selectedTime && (
+                <div className="bg-primary/10 rounded-xl px-4 py-3 border border-primary/20">
+                  <p className="text-xs text-muted-foreground">Valgt tidspunkt</p>
+                  <p className="font-semibold">
+                    {format(selectedDate, "d. MMMM yyyy", { locale: da })} kl. {selectedTime}
+                  </p>
+                </div>
+              )}
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {boosterServices.map((svc) => (
-              <Card key={svc.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleSelectService(svc)}>
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-lg mb-2">{svc.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{svc.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold">{svc.price} kr</span>
-                    <Badge variant="outline">{svc.duration} timer</Badge>
-                  </div>
-                  <Button className="w-full mt-4">
-                    Vælg service
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {/* Services Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {boosterServices.map((svc) => (
+                <Card 
+                  key={svc.id} 
+                  className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 bg-card"
+                  onClick={() => handleSelectService(svc)}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{svc.name}</h3>
+                      <Badge variant="secondary" className="shrink-0">
+                        {svc.duration} {svc.duration === 1 ? 'time' : 'timer'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{svc.description}</p>
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <span className="text-2xl font-bold text-primary">{svc.price} kr</span>
+                      <Button size="sm" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        Vælg
+                        <ArrowLeft className="h-3 w-3 ml-1 rotate-180" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
