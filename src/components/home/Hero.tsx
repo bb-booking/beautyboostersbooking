@@ -174,7 +174,7 @@ const Hero = () => {
       </video>
 
       {/* Light overlay for readability */}
-      <div className="absolute inset-0 bg-white/50 z-[2]" />
+      <div className="absolute inset-0 bg-white/30 z-[2]" />
 
       {/* Fallback image - shows when video not loaded */}
       {!videoLoaded && (
@@ -184,8 +184,8 @@ const Hero = () => {
           className="absolute pointer-events-none z-[1]"
           style={{ 
             top: '0',
-            right: '-3cm',
-            transform: 'scale(0.5)',
+            right: '-6cm',
+            transform: 'scale(0.7)',
             transformOrigin: 'top right',
             maxWidth: 'none',
             width: 'auto',
