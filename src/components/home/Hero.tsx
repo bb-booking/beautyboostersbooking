@@ -184,7 +184,7 @@ const Hero = () => {
           className="absolute pointer-events-none z-[1]"
           style={{ 
             top: '0',
-            right: '-10cm',
+            right: '-13cm',
             transform: 'scale(0.7)',
             transformOrigin: 'top right',
             maxWidth: 'none',
@@ -213,8 +213,8 @@ const Hero = () => {
           PROFESSIONELLE ARTISTER TIL DØREN
         </p>
 
-        {/* Address Search - shown when no address is set */}
-        {!hasAddress && (
+        {/* Address Search - shown when not logged in */}
+        {!isLoggedIn && (
           <div className="mt-8 md:mt-10 animate-fade-in max-w-md mx-auto" style={{ animationDelay: '0.3s' }}>
             <form onSubmit={handleSearchSubmit} className="relative">
               <div className="relative">
@@ -274,21 +274,6 @@ const Hero = () => {
           </div>
         )}
 
-        {/* Trust indicators */}
-        <div className="mt-12 md:mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-10 text-sm animate-fade-in text-foreground/60" style={{ animationDelay: '0.6s' }}>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">⭐</span>
-            <span className="font-medium">4.9/5 stjerner</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">✓</span>
-            <span className="font-medium">500+ artister</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🏠</span>
-            <span className="font-medium">Hele Danmark</span>
-          </div>
-        </div>
       </div>
 
       {/* Scroll indicator */}
