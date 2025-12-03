@@ -24,6 +24,42 @@ const Hero = () => {
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [hasPrefilledAddress, setHasPrefilledAddress] = useState(false);
+
+  // Load address from bookingDetails - check immediately and after a delay for async LocationBubble
+  useEffect(() => {
+    const loadAddressFromStorage = () => {
+      try {
+        const stored = sessionStorage.getItem("bookingDetails");
+        if (stored) {
+          const details = JSON.parse(stored);
+          if (details.location?.address && details.location?.postalCode && details.location?.city) {
+            const fullAddress = `${details.location.address}, ${details.location.postalCode} ${details.location.city}`;
+            setSearchData(prev => {
+              // Only update if current location is empty or same
+              if (!prev.location || prev.location === fullAddress) {
+                return { ...prev, location: fullAddress };
+              }
+              return prev;
+            });
+            setHasPrefilledAddress(true);
+            return true;
+          }
+        }
+      } catch {}
+      return false;
+    };
+
+    // Check immediately
+    loadAddressFromStorage();
+    
+    // Check again after LocationBubble might have loaded
+    const timer = setTimeout(() => {
+      loadAddressFromStorage();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Hero video config (trim loop)
   const VIDEO_START = 0;
@@ -162,8 +198,24 @@ const Hero = () => {
   };
 
   const handleSearch = () => {
-    const loc = searchData.location.trim();
-    if (!loc) return;
+    let loc = searchData.location.trim();
+    
+    // If no location entered, check if we have one saved in bookingDetails (from LocationBubble)
+    if (!loc) {
+      try {
+        const stored = sessionStorage.getItem("bookingDetails");
+        if (stored) {
+          const details = JSON.parse(stored);
+          if (details.location?.address && details.location?.postalCode && details.location?.city) {
+            // We already have a valid address saved, navigate directly
+            navigate('/services');
+            return;
+          }
+        }
+      } catch {}
+      return; // No address available
+    }
+    
     const parsed = parseAddressFromText(loc);
     const bookingDetails = {
       serviceId: "",
