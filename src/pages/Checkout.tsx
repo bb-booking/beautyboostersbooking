@@ -252,7 +252,6 @@ export default function Checkout() {
       setAppliedCode(data.code);
       toast.success('Rabatkode anvendt');
     } catch (e: any) {
-      console.error('Promo apply error', e);
       toast.error('Kunne ikke anvende rabatkoden');
     } finally {
       setApplyingPromo(false);
@@ -384,7 +383,6 @@ export default function Checkout() {
         .gte('end_time', selectedTime);
 
       if (availError) {
-        console.error('Could not update availability:', availError);
         // Non-blocking - booking is still valid
       }
 
@@ -405,7 +403,6 @@ export default function Checkout() {
       });
 
     } catch (error: any) {
-      console.error('Direct booking error:', error);
       toast.error(error.message || 'Der opstod en fejl under booking');
     } finally {
       setIsProcessing(false);
@@ -474,7 +471,6 @@ export default function Checkout() {
       }, 3000);
 
     } catch (error: any) {
-      console.error('Payment error:', error);
       toast.error(error.message || 'Der opstod en fejl under betalingen');
     } finally {
       setIsProcessing(false);

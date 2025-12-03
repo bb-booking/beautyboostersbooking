@@ -78,16 +78,12 @@ export default function AssignBoostersDialog({
     const fetchBoosters = async () => {
       setLoading(true);
       try {
-        console.log('Fetching boosters...');
         const { data, error } = await supabase
           .from("booster_profiles")
           .select("id, name, portfolio_image_url, location, rating, review_count, specialties, is_available")
           .eq("is_available", true);
         
-        console.log('Boosters response:', { hasData: !!data, dataLength: data?.length, hasError: !!error });
-        
         if (error) {
-          console.error("Boosters fetch error:", error);
           setBoosters([]);
           return;
         }
@@ -105,7 +101,6 @@ export default function AssignBoostersDialog({
           (Number(b.review_count || 0) - Number(a.review_count || 0))
         );
         
-        console.log('Setting boosters:', list.length);
         setBoosters(list as BoosterOption[]);
         
         // Pre-select already assigned boosters
@@ -118,10 +113,8 @@ export default function AssignBoostersDialog({
         setSelected(preSelected);
         
       } catch (e) {
-        console.error("Failed to load boosters:", e);
         setBoosters([]);
       } finally {
-        console.log('Setting loading to false');
         setLoading(false);
       }
     };

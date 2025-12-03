@@ -66,8 +66,6 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
 
     setLoading(true);
     try {
-      console.log('Sending invoice request for job:', job.id);
-      
       // Calculate due date based on payment terms
       const daysToAdd = invoiceData.paymentTerms === 'net8' ? 8 : invoiceData.paymentTerms === 'net14' ? 14 : 30;
       const dueDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -84,23 +82,18 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
       });
 
       if (error) {
-        console.error('Supabase function error:', error);
         throw new Error(error.message || 'Fejl ved kald til invoice service');
       }
 
       if (data?.error) {
-        console.error('Invoice creation error:', data.error);
         throw new Error(data.error);
       }
-
-      console.log('Invoice created successfully:', data);
       
       toast.success(`Faktura ${data.invoice.invoice_number} er sendt til e-conomic!`);
       setIsOpen(false);
       onInvoiceSent?.();
       
     } catch (error: any) {
-      console.error('Error creating invoice:', error);
       toast.error(`Fejl ved oprettelse af faktura: ${error.message}`);
     } finally {
       setLoading(false);
@@ -132,15 +125,12 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
       });
 
       if (error) {
-        console.error('CVR verification error:', error);
         throw new Error(error.message || 'Kunne ikke verificere CVR-nummer');
       }
 
       if (data.error) {
         throw new Error(data.error);
       }
-
-      console.log('CVR data:', data);
       
       // Update customer name with verified company name
       setInvoiceData(prev => ({
@@ -152,7 +142,6 @@ const InvoiceCreator = ({ job, onInvoiceSent }: InvoiceCreatorProps) => {
       toast.success(`✓ Verificeret: ${data.name}`);
       
     } catch (error: any) {
-      console.error('Error verifying CVR:', error);
       toast.error(error.message || 'Kunne ikke verificere CVR-nummer');
       setCvrVerified(false);
     } finally {
