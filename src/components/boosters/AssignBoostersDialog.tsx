@@ -69,11 +69,21 @@ export default function AssignBoostersDialog({
   const [selected, setSelected] = useState<Record<string, BoosterOption>>({});
   const [search, setSearch] = useState("");
   const [manualMode, setManualMode] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const specialtyFilter = useMemo(() => categoryToSpecialty(serviceCategory), [serviceCategory]);
+  
+  // Memoize alreadyAssignedIds to prevent unnecessary re-renders
+  const assignedIdsKey = useMemo(() => alreadyAssignedIds.join(','), [alreadyAssignedIds]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setHasFetched(false);
+      return;
+    }
+    
+    // Prevent multiple fetches when dialog is open
+    if (hasFetched) return;
     
     const fetchBoosters = async () => {
       setLoading(true);
@@ -105,12 +115,14 @@ export default function AssignBoostersDialog({
         
         // Pre-select already assigned boosters
         const preSelected: Record<string, BoosterOption> = {};
+        const assignedIds = assignedIdsKey.split(',').filter(Boolean);
         list.forEach((b: any) => {
-          if (alreadyAssignedIds.includes(b.id)) {
+          if (assignedIds.includes(b.id)) {
             preSelected[b.id] = b as BoosterOption;
           }
         });
         setSelected(preSelected);
+        setHasFetched(true);
         
       } catch (e) {
         setBoosters([]);
@@ -120,7 +132,7 @@ export default function AssignBoostersDialog({
     };
     
     fetchBoosters();
-  }, [open, primaryBoosterId, alreadyAssignedIds]);
+  }, [open, primaryBoosterId, assignedIdsKey, hasFetched]);
 
   useEffect(() => {
     if (!open) {
@@ -142,10 +154,13 @@ export default function AssignBoostersDialog({
   }, [boosters, search]);
 
   const selectedList = useMemo(() => Object.values(selected), [selected]);
+  
+  // Memoize assigned IDs as a Set for efficient lookup
+  const assignedIdsSet = useMemo(() => new Set(alreadyAssignedIds), [assignedIdsKey]);
 
   const toggleSelect = (b: BoosterOption) => {
     // Don't allow toggling already assigned boosters
-    if (alreadyAssignedIds.includes(b.id)) return;
+    if (assignedIdsSet.has(b.id)) return;
     
     setSelected((prev) => {
       const copy = { ...prev } as Record<string, BoosterOption>;
@@ -207,7 +222,7 @@ export default function AssignBoostersDialog({
                   <div className="text-sm text-muted-foreground">Ingen boosters fundet</div>
                 ) : (
                   filtered.map((b) => {
-                    const isAlreadyAssigned = alreadyAssignedIds.includes(b.id);
+                    const isAlreadyAssigned = assignedIdsSet.has(b.id);
                     return (
                       <label key={b.id} className={`flex items-center gap-3 p-2 rounded-md ${isAlreadyAssigned ? 'bg-accent/50 cursor-not-allowed opacity-60' : 'hover:bg-accent cursor-pointer'}`}>
                         <Checkbox 
