@@ -188,18 +188,18 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors border border-border text-sm">
-          <MapPin className="h-4 w-4 text-primary" />
-          <span className="text-foreground">
+        <button className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background hover:bg-muted/80 transition-colors border border-border text-xs">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          <span className="text-foreground font-medium max-w-[200px] md:max-w-[300px] truncate">
             {loadingLocation ? (
               "Finder lokation..."
             ) : currentAddress ? (
-              <>Lokation: <span className="font-medium">{currentAddress}</span></>
+              currentAddress
             ) : (
               "Vælg lokation"
             )}
           </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
