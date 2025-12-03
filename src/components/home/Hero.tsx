@@ -48,8 +48,23 @@ const Hero = () => {
       }
     };
 
+    // Try to play video on load
+    const playVideo = async () => {
+      try {
+        await video.play();
+        setVideoLoaded(true);
+      } catch {
+        // Autoplay blocked, video will play on user interaction
+      }
+    };
+
     video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("canplay", playVideo);
+    
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("canplay", playVideo);
+    };
   }, []);
 
   const handleBookNow = () => {
@@ -87,20 +102,20 @@ const Hero = () => {
       {/* Dark overlay - only shows when video is loaded */}
       {videoLoaded && <div className="absolute inset-0 bg-black/40 z-[2]" />}
 
-      {/* Fallback image - shows when video not loaded, positioned like original */}
+      {/* Fallback image - shows when video not loaded, positioned to the right */}
       {!videoLoaded && (
         <img
           src={heroFallback}
           alt="Professionel makeup artist – BeautyBoosters"
           className="absolute pointer-events-none z-0"
           style={{ 
-            top: '-2.5cm',
-            right: '-4cm',
-            transform: 'scale(1.4)',
+            top: '50%',
+            right: '0',
+            transform: 'translateY(-50%) scale(0.9)',
             transformOrigin: 'center right',
             maxWidth: 'none',
             width: 'auto',
-            height: '110%'
+            height: '90%'
           }}
         />
       )}
