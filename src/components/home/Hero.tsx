@@ -184,7 +184,7 @@ const Hero = () => {
           className="absolute pointer-events-none z-[1]"
           style={{ 
             top: '0',
-            right: '-6cm',
+            right: '-10cm',
             transform: 'scale(0.7)',
             transformOrigin: 'top right',
             maxWidth: 'none',
