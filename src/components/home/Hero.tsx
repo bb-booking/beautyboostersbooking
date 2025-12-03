@@ -1,397 +1,156 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Zap, Users, Search, MapPin, Star, ShieldCheck, Phone } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import PopularServices from "@/components/home/PopularServices";
-import heroFallback from "@/assets/makeup-hair-hero.jpg";
-import beautyHeroNoBg from "@/assets/beauty-hero-final.png";
 
 const Hero = () => {
   const navigate = useNavigate();
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-
-  const [locationOptions, setLocationOptions] = useState<string[]>([]);
-  const [searchData, setSearchData] = useState({
-    service: "",
-    location: "",
-    date: "",
-    time: ""
-  });
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
-  const [hasPrefilledAddress, setHasPrefilledAddress] = useState(false);
-
-  // Load address from bookingDetails - check immediately and after a delay for async LocationBubble
-  useEffect(() => {
-    const loadAddressFromStorage = () => {
-      try {
-        const stored = sessionStorage.getItem("bookingDetails");
-        if (stored) {
-          const details = JSON.parse(stored);
-          if (details.location?.address && details.location?.postalCode && details.location?.city) {
-            const fullAddress = `${details.location.address}, ${details.location.postalCode} ${details.location.city}`;
-            setSearchData(prev => {
-              // Only update if current location is empty or same
-              if (!prev.location || prev.location === fullAddress) {
-                return { ...prev, location: fullAddress };
-              }
-              return prev;
-            });
-            setHasPrefilledAddress(true);
-            return true;
-          }
-        }
-      } catch {}
-      return false;
-    };
-
-    // Check immediately
-    loadAddressFromStorage();
-    
-    // Check again after LocationBubble might have loaded
-    const timer = setTimeout(() => {
-      loadAddressFromStorage();
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Hero video config (trim loop)
-  const VIDEO_START = 0;
-  const VIDEO_END = 12; // seconds – adjust if needed
-  const HERO_VIDEO = "/videos/hero.mp4";
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [hasAddress, setHasAddress] = useState(false);
 
-  // Fetch real DK addresses after 3+ chars (Dataforsyningen API)
+  // Check if address exists in bookingDetails (from LocationBubble)
   useEffect(() => {
-    const q = searchData.location.trim();
-    if (q.length < 3) {
-      setLocationOptions([]);
-      return;
-    }
-    const ctrl = new AbortController();
-    const timer = setTimeout(async () => {
-      try {
-        const url = `https://api.dataforsyningen.dk/autocomplete?q=${encodeURIComponent(q)}&type=adresse&fuzzy=true&per_side=8`;
-        const res = await fetch(url, { signal: ctrl.signal });
-        const data = await res.json();
-        const opts = (Array.isArray(data) ? data : []).map((d: any) => d.tekst || d.forslagstekst || d.adressebetegnelse).filter(Boolean);
-        setLocationOptions(opts);
-        setShowLocationSuggestions(true);
-      } catch (err) {
-        // ignore abort/network errors
-      }
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      ctrl.abort();
-    };
-  }, [searchData.location]);
-
-  // Check geolocation permission (used for "Brug nuværende lokation")
-  useEffect(() => {
-    try {
-      // @ts-ignore permissions not in all browsers
-      if (navigator?.permissions?.query) {
-        // @ts-ignore
-        navigator.permissions.query({ name: "geolocation" }).then((res: any) => {
-          setHasLocationPermission(res.state === "granted");
-        }).catch(() => {});
-      }
-    } catch {}
-  }, []);
-
-  // Persist location into bookingDetails whenever a valid address is present
-  useEffect(() => {
-    const loc = searchData.location.trim();
-    if (!loc) return;
-    const parsed = parseAddressFromText(loc);
-    if (!parsed.address || !parsed.postalCode || !parsed.city) return;
-    try {
-      const stored = sessionStorage.getItem("bookingDetails");
-      const details = stored ? JSON.parse(stored) : {};
-      details.location = { address: parsed.address, postalCode: parsed.postalCode, city: parsed.city };
-      sessionStorage.setItem("bookingDetails", JSON.stringify(details));
-    } catch {}
-  }, [searchData.location]);
-
-
-  const serviceCategories = [
-    { value: "all", label: "Alle services" },
-    { value: "Makeup & Hår", label: "Makeup & Hår" },
-    { value: "Spraytan", label: "Spraytan" },
-    { value: "Konfirmation", label: "Konfirmation" },
-    { value: "Bryllup - Brudestyling", label: "Bryllup - Brudestyling" },
-    { value: "Makeup Kurser", label: "Makeup Kurser" },
-    { value: "Event", label: "Event" },
-    { value: "Børn", label: "Børn" }
-  ];
-
-  const serviceQuickLinks = [
-    { label: "Makeup Styling", search: "Makeup Styling" },
-    { label: "Spraytan", category: "Spraytan" },
-    { label: "Hårstyling / håropsætning", search: "Hårstyling" },
-    { label: "Brudestyling", category: "Bryllup - Brudestyling" },
-    { label: "Makeup Kursus", category: "Makeup Kurser" },
-    { label: "Event makeup", category: "Event" }
-  ];
-
-  // Parse a full address string into parts
-  const parseAddressFromText = (text: string) => {
-    const m = text.match(/^(.*?),\s*(\d{4})\s+(.+)$/);
-    if (m) {
-      return { address: m[1].trim(), postalCode: m[2], city: m[3].trim() };
-    }
-    const m2 = text.match(/(.*)\s+(\d{4})\s+([^,]+)$/);
-    if (m2) {
-      return { address: m2[1].trim().replace(/,\s*$/, ""), postalCode: m2[2], city: m2[3].trim() };
-    }
-    return { address: text.trim().replace(/,\s*$/, ""), postalCode: "", city: "" };
-  };
-
-  const getCurrentLocation = async () => {
-    if (!navigator.geolocation) return;
-    setIsLoadingLocation(true);
-    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-      try {
-        let street = "", postalCode = "", city = "";
-        const endpoints = [
-          `https://api.dataforsyningen.dk/adresser/reverse?x=${coords.longitude}&y=${coords.latitude}&struktur=mini`,
-          `https://api.dataforsyningen.dk/adgangsadresser/reverse?x=${coords.longitude}&y=${coords.latitude}&struktur=mini`,
-        ];
-        for (const url of endpoints) {
-          try {
-            const r = await fetch(url);
-            if (!r.ok) continue;
-            const data = await r.json();
-            const d = Array.isArray(data) ? data[0] : data;
-            if (!d) continue;
-            const vej = d.vejnavn || d.vejstykke?.navn || d.adgangsadresse?.vejstykke?.navn || "";
-            const husnr = d.husnr || d.adgangsadresse?.husnr || "";
-            street = [vej, husnr].filter(Boolean).join(" ").trim();
-            postalCode = d.postnr || d.postnummer?.nr || d.adgangsadresse?.postnr || "";
-            city = d.postnrnavn || d.postnummer?.navn || d.adgangsadresse?.postnummernavn || "";
-            if (street && postalCode && city) break;
-          } catch {}
-        }
-        if (!street) {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}`);
-          const j = await res.json();
-          const a = j?.address || {};
-          street = [a.road, a.house_number].filter(Boolean).join(" ");
-          postalCode = a.postcode || "";
-          city = a.city || a.town || a.village || "";
-        }
-        const full = [street, [postalCode, city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-        setSearchData(prev => ({ ...prev, location: full }));
-        setShowLocationSuggestions(false);
-        setHasLocationPermission(true);
-      } finally {
-        setIsLoadingLocation(false);
-      }
-    }, () => setIsLoadingLocation(false), { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
-  };
-
-  const handleSearch = () => {
-    let loc = searchData.location.trim();
-    
-    // If no location entered, check if we have one saved in bookingDetails (from LocationBubble)
-    if (!loc) {
+    const checkAddress = () => {
       try {
         const stored = sessionStorage.getItem("bookingDetails");
         if (stored) {
           const details = JSON.parse(stored);
           if (details.location?.address && details.location?.postalCode && details.location?.city) {
-            // We already have a valid address saved, navigate directly
-            navigate('/services');
+            setHasAddress(true);
             return;
           }
         }
       } catch {}
-      return; // No address available
+      setHasAddress(false);
+    };
+
+    checkAddress();
+    
+    // Re-check periodically in case LocationBubble updates it
+    const interval = setInterval(checkAddress, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Video loop settings
+  const VIDEO_START = 0;
+  const VIDEO_END = 12;
+  const HERO_VIDEO = "/videos/hero.mp4";
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= VIDEO_END) {
+        video.currentTime = VIDEO_START;
+      }
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  }, []);
+
+  const handleBookNow = () => {
+    // If we have an address saved, go directly to services
+    if (hasAddress) {
+      navigate('/services');
+      return;
     }
     
-    const parsed = parseAddressFromText(loc);
-    const bookingDetails = {
-      serviceId: "",
-      location: { address: parsed.address, postalCode: parsed.postalCode, city: parsed.city },
-    };
-    sessionStorage.setItem("bookingDetails", JSON.stringify(bookingDetails));
-    navigate('/services');
+    // Otherwise, trigger the LocationBubble dialog by dispatching a custom event
+    // or navigate to services where they can set address
+    window.dispatchEvent(new CustomEvent('openLocationDialog'));
+    
+    // Fallback: navigate to services anyway - user can set address there or via header
+    setTimeout(() => {
+      navigate('/services');
+    }, 100);
   };
 
   return (
-      <section className="relative isolate min-h-[80vh] md:min-h-[85vh] flex items-center py-8 md:py-12 overflow-hidden bg-background">
-        
-        {/* Gradient overlay for desktop */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/30 hidden md:block z-[1]" />
-        
-        {/* Hero image - desktop only: positioned right */}
-        <img
-          src={beautyHeroNoBg}
-          alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute pointer-events-none z-0 hidden md:block"
-          loading="eager"
-          style={{ 
-            top: '0cm',
-            right: 'calc(-10% - 18cm)',
-            transform: 'scale(1.8)',
-            transformOrigin: 'center right',
-            maxWidth: 'none',
-            width: 'auto',
-            height: '100%'
-          }}
+    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
+      {/* Video Background */}
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onLoadedData={() => setVideoLoaded(true)}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+        poster="/lovable-uploads/makeup-hair-hero.jpg"
+      >
+        <source src={HERO_VIDEO} type="video/mp4" />
+      </video>
+
+      {/* Fallback background while video loads */}
+      {!videoLoaded && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url('/lovable-uploads/makeup-hair-hero.jpg')` }}
         />
+      )}
 
-        {/* DESKTOP LAYOUT */}
-        <div className="hidden md:block container relative z-10 mx-auto px-4 md:px-8 lg:px-12">
-          <div className="max-w-2xl text-left">
-            <h1 className="font-inter text-5xl lg:text-6xl leading-snug tracking-tight animate-fade-in text-foreground drop-shadow-sm">
-              <span className="font-extrabold block">Professionelle artister</span>
-              <span className="font-normal block">direkte til døren</span>
-            </h1>
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/40" />
 
-            <Card className="mt-10 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
-                    <div className="relative">
-                      <Input
-                        placeholder="Skriv adresse (fx. Nybrogade 24, 1203)"
-                        value={searchData.location}
-                        onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
-                        onFocus={() => setShowLocationSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-                        className="h-12 text-foreground text-base"
-                      />
-                      {showLocationSuggestions && (
-                        <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
-                          {locationOptions
-                            .filter((opt) => opt.toLowerCase().includes(searchData.location.toLowerCase()))
-                            .slice(0, 8)
-                            .map((opt) => (
-                              <div
-                                key={opt}
-                                className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setSearchData((prev) => ({ ...prev, location: opt }));
-                                  setShowLocationSuggestions(false);
-                                }}
-                              >
-                                {opt}
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button variant="outline" type="button" onClick={getCurrentLocation} disabled={isLoadingLocation} className="h-12">
-                      {isLoadingLocation ? (
-                        <><div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />Finder lokation...</>
-                      ) : (
-                        <><MapPin className="mr-2 h-4 w-4" />Brug nuværende lokation</>
-                      )}
-                    </Button>
-                    <Button className="h-12 flex-1" onClick={handleSearch}>
-                      <Search className="mr-2 h-4 w-4" />Vælg service
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+      {/* Content */}
+      <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
+        {/* Large Brand Typography */}
+        <h1 className="font-inter text-white leading-none tracking-tight animate-fade-in">
+          <span 
+            className="block text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-light"
+            style={{ 
+              fontWeight: 200,
+              letterSpacing: '0.02em'
+            }}
+          >
+            BEAUTYBOOSTERS
+          </span>
+        </h1>
+
+        {/* Tagline */}
+        <p className="mt-6 md:mt-8 text-lg sm:text-xl md:text-2xl text-white/90 font-medium tracking-wide animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          PROFESSIONELLE ARTISTER TIL DØREN
+        </p>
+
+        {/* CTA Button */}
+        <div className="mt-10 md:mt-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <Button 
+            onClick={handleBookNow}
+            size="lg"
+            className="h-14 px-10 text-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm transition-all duration-300 hover:scale-105"
+          >
+            Book nu
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
 
-        {/* MOBILE LAYOUT */}
-        <div className="md:hidden container relative z-10 mx-auto px-4 pt-0 flex flex-col">
-          {/* Dark overlay for mobile - extends below to cover buttons area */}
-          <div className="absolute -top-[2.8cm] -bottom-32 -left-4 -right-4 bg-background/60 z-[1] pointer-events-none" />
-          
-          {/* Image + Search box wrapper */}
-          <div className="relative min-h-[55vh] flex flex-col justify-end -mt-4">
-            
-            {/* Mobile background image - zoomed in, positioned at top */}
-            <img
-              src={beautyHeroNoBg}
-              alt="Professionel makeup artist – BeautyBoosters"
-              className="absolute pointer-events-none z-0"
-              loading="eager"
-              style={{ 
-                top: '-3cm',
-                left: '50%',
-                transform: 'translateX(-50%) scale(1.05)',
-                maxWidth: 'none',
-                width: 'auto',
-                height: '100%',
-                opacity: 0.95
-              }}
-            />
-            
-            {/* Search Widget at bottom of image - moved up */}
-            <Card className="relative z-10 mb-4 bg-card/98 backdrop-blur-md border-border/50 shadow-xl animate-enter">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-left block mb-2">Hvor skal vi komme hen?</label>
-                    <div className="relative">
-                      <Input
-                        placeholder="Skriv adresse (fx. Nybrogade 24, 1203)"
-                        value={searchData.location}
-                        onChange={(e) => { setSearchData(prev => ({...prev, location: e.target.value})); setShowLocationSuggestions(true); }}
-                        onFocus={() => setShowLocationSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-                        className="h-10 text-foreground text-sm"
-                      />
-                      {showLocationSuggestions && (
-                        <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-72 overflow-auto">
-                          {locationOptions
-                            .filter((opt) => opt.toLowerCase().includes(searchData.location.toLowerCase()))
-                            .slice(0, 8)
-                            .map((opt) => (
-                              <div
-                                key={opt}
-                                className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setSearchData((prev) => ({ ...prev, location: opt }));
-                                  setShowLocationSuggestions(false);
-                                }}
-                              >
-                                {opt}
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button variant="outline" type="button" onClick={getCurrentLocation} disabled={isLoadingLocation} className="h-10 text-sm">
-                      {isLoadingLocation ? (
-                        <><div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />Finder lokation...</>
-                      ) : (
-                        <><MapPin className="mr-2 h-4 w-4" />Brug nuværende lokation</>
-                      )}
-                    </Button>
-                    <Button className="h-10 text-sm w-full" onClick={handleSearch}>
-                      <Search className="mr-2 h-4 w-4" />Vælg service
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Trust indicators */}
+        <div className="mt-12 md:mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-10 text-white/70 text-sm animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⭐</span>
+            <span>4.9/5 stjerner</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✓</span>
+            <span>500+ artister</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏠</span>
+            <span>Hele Danmark</span>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <div className="w-6 h-10 rounded-full border-2 border-white/50 flex items-start justify-center p-2">
+          <div className="w-1 h-2 bg-white/70 rounded-full animate-pulse" />
+        </div>
+      </div>
+    </section>
   );
 };
 

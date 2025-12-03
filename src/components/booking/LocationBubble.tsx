@@ -120,6 +120,16 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     checkAuthAndLoadAddress();
   }, []);
 
+  // Listen for custom event to open dialog (triggered from Hero "Book nu" button)
+  useEffect(() => {
+    const handleOpenDialog = () => {
+      setDialogOpen(true);
+    };
+    
+    window.addEventListener('openLocationDialog', handleOpenDialog);
+    return () => window.removeEventListener('openLocationDialog', handleOpenDialog);
+  }, []);
+
   const checkAuthAndLoadAddress = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setIsLoggedIn(!!user);
