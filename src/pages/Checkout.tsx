@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { booking, booster, service, bookingDetails, counts, isDirectBooking } = location.state || {};
+  const { booking, booster, service, bookingDetails, counts, isDirectBooking, extraBoosters: initialExtraBoosters, cartItems } = location.state || {};
   
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -45,9 +45,9 @@ export default function Checkout() {
   );
   const [selectedTime, setSelectedTime] = useState<string>(booking?.time || '');
 
-  // Ekstra boosters tildeling
+  // Ekstra boosters tildeling - initialize from navigation state if available
   const [assignOpen, setAssignOpen] = useState(false);
-  const [extraBoosters, setExtraBoosters] = useState<BoosterOption[]>([]);
+  const [extraBoosters, setExtraBoosters] = useState<BoosterOption[]>(initialExtraBoosters || []);
 
   // Address editing with autocomplete + current location
   const [addressQuery, setAddressQuery] = useState<string>(
@@ -175,7 +175,7 @@ export default function Checkout() {
         <div className="max-w-md mx-auto text-center">
           <h1 className="text-2xl font-bold mb-4">Booking information mangler</h1>
           <p className="text-muted-foreground mb-6">Der opstod en fejl. Prøv igen.</p>
-          <Button onClick={() => navigate('/stylists')}>Tilbage til artister</Button>
+          <Button onClick={() => navigate('/services')}>Tilbage til services</Button>
         </div>
       </div>
     );

@@ -111,9 +111,24 @@ const ServiceCard = ({
 
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Save counts and also add to cart for the new booking flow
     try {
       sessionStorage.setItem('selectedCounts', JSON.stringify({ people, boosters, extraHours }));
     } catch {}
+    // Add to cart so the new BoosterAssignment flow is used
+    addToCart({
+      id,
+      name,
+      description,
+      basePrice: price,
+      duration,
+      category,
+      people: clientType === "virksomhed" ? 1 : people,
+      boosters,
+      finalPrice: calculatePrice(),
+      totalDuration: calculateDuration(),
+      groupPricing
+    });
     onClick();
   };
 
