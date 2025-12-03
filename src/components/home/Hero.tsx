@@ -153,8 +153,11 @@ const Hero = () => {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (addressInput.trim()) {
-      navigate('/services');
+    // Don't navigate on submit - user must select from dropdown
+    // Only show suggestions if there's input
+    if (addressInput.trim() && addressInput.length >= 2) {
+      fetchSuggestions(addressInput);
+      setShowSuggestions(true);
     }
   };
 
@@ -184,7 +187,7 @@ const Hero = () => {
           className="absolute pointer-events-none z-[1]"
           style={{ 
             top: '0',
-            right: '-13cm',
+            right: '-15cm',
             transform: 'scale(0.7)',
             transformOrigin: 'top right',
             maxWidth: 'none',
