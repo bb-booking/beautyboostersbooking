@@ -61,20 +61,13 @@ const Header = () => {
     <>
     <header className="border-b bg-primary backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
-              alt="BeautyBoosters Logo" 
-              className="h-12 w-auto mix-blend-multiply"
-            />
-          </Link>
-          
-          {/* Wolt-style location bubble - desktop */}
-          <div className="hidden md:block">
-            <LocationBubble />
-          </div>
-        </div>
+        <Link to="/" className="flex items-center">
+          <img 
+            src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
+            alt="BeautyBoosters Logo" 
+            className="h-12 w-auto mix-blend-multiply"
+          />
+        </Link>
         
         {/* Search bar in center */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4">
@@ -188,9 +181,6 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
               <div className="space-y-6 mt-6">
-                {/* Wolt-style location bubble - mobile */}
-                <LocationBubble />
-                
                 <form onSubmit={handleSearch} className="block">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -294,6 +284,13 @@ const Header = () => {
         </div>
       </div>
     </header>
+    
+    {/* Location bubble bar - below header */}
+    <div className="bg-muted/50 border-b py-1.5 px-4">
+      <div className="container mx-auto flex justify-center md:justify-start">
+        <LocationBubble />
+      </div>
+    </div>
     
     {/* Mobile announcement bar - light colored bar with tagline */}
     <div className="md:hidden bg-[hsl(30,30%,85%)] py-2 text-center">
