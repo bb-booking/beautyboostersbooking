@@ -38,7 +38,6 @@ const Services = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [clientType, setClientType] = useState("privat");
-  const [sortBy, setSortBy] = useState<"rating" | "soonest" | "nearest" | "price">("rating");
   const [loading, setLoading] = useState(true);
 
   // Availability-first: optional preselection of date/time to speed up flow
@@ -414,10 +413,6 @@ const Services = () => {
     if (categoryFilter !== "all") {
       filtered = filtered.filter(service => service.category === categoryFilter);
     }
-    // Apply sorting
-    if (sortBy === "price") {
-      filtered.sort((a, b) => a.price - b.price);
-    }
 
     setFilteredServices(filtered);
   };
@@ -545,29 +540,14 @@ const Services = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-              <div className="relative md:col-span-2">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Søg efter services..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="md:col-span-1">
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                  <SelectTrigger aria-label="Sorter efter">
-                    <SelectValue placeholder="Sorter efter" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50">
-                    <SelectItem value="rating">Bedst bedømte</SelectItem>
-                    <SelectItem value="soonest">Første ledige tid</SelectItem>
-                    <SelectItem value="nearest">Nærmeste</SelectItem>
-                    <SelectItem value="price">Pris</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Søg efter services..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
 
             <div className="flex flex-wrap gap-2">
