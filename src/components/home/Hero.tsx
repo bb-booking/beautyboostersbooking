@@ -174,7 +174,7 @@ const Hero = () => {
       </video>
 
       {/* Light overlay for readability */}
-      <div className="absolute inset-0 bg-white/30 z-[2]" />
+      <div className="absolute inset-0 bg-white/15 z-[2]" />
 
       {/* Fallback image - shows when video not loaded */}
       {!videoLoaded && (
@@ -196,15 +196,15 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-        {/* Logo/Brand Typography - smaller and black */}
+        {/* Logo/Brand Typography - BEAUTY normal, BOOSTERS bold */}
         <h1 className="font-sans leading-none tracking-tight animate-fade-in">
           <span 
-            className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-foreground"
+            className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-foreground"
             style={{ 
               letterSpacing: '-0.02em'
             }}
           >
-            BEAUTYBOOSTERS
+            <span className="font-normal">BEAUTY</span><span className="font-black">BOOSTERS</span>
           </span>
         </h1>
 
