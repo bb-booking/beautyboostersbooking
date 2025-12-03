@@ -1,17 +1,41 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MapPin, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import heroFallback from "@/assets/beauty-hero-final.png";
+import { Input } from "@/components/ui/input";
+
+interface AddressSuggestion {
+  tekst: string;
+  adresse: {
+    vejnavn: string;
+    husnr: string;
+    etage?: string;
+    dør?: string;
+    postnr: string;
+    postnrnavn: string;
+  };
+}
 
 const Hero = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [addressInput, setAddressInput] = useState("");
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Check if address exists in bookingDetails (from LocationBubble)
+  // Check if user is logged in and if address exists
   useEffect(() => {
+    const checkAuth = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkAuth();
+
     const checkAddress = () => {
       try {
         const stored = sessionStorage.getItem("bookingDetails");
@@ -27,8 +51,6 @@ const Hero = () => {
     };
 
     checkAddress();
-    
-    // Re-check periodically in case LocationBubble updates it
     const interval = setInterval(checkAddress, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -48,13 +70,12 @@ const Hero = () => {
       }
     };
 
-    // Try to play video on load
     const playVideo = async () => {
       try {
         await video.play();
         setVideoLoaded(true);
       } catch {
-        // Autoplay blocked, video will play on user interaction
+        // Autoplay blocked
       }
     };
 
@@ -67,26 +88,79 @@ const Hero = () => {
     };
   }, []);
 
+  // Fetch address suggestions from DAWA API
+  const fetchSuggestions = async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    
+    try {
+      const response = await fetch(
+        `https://api.dataforsyningen.dk/adresser/autocomplete?q=${encodeURIComponent(query)}&per_side=5`
+      );
+      const data = await response.json();
+      setSuggestions(data);
+      setShowSuggestions(data.length > 0);
+    } catch {
+      setSuggestions([]);
+    }
+  };
+
+  const handleAddressInputChange = (value: string) => {
+    setAddressInput(value);
+    fetchSuggestions(value);
+  };
+
+  const selectSuggestion = (suggestion: AddressSuggestion) => {
+    const addr = suggestion.adresse;
+    const streetAddress = `${addr.vejnavn} ${addr.husnr}${addr.etage ? ', ' + addr.etage + '.' : ''}${addr.dør ? ' ' + addr.dør : ''}`;
+    
+    // Save to sessionStorage
+    const location = {
+      address: streetAddress,
+      postalCode: addr.postnr,
+      city: addr.postnrnavn
+    };
+    
+    try {
+      const stored = sessionStorage.getItem("bookingDetails");
+      const details = stored ? JSON.parse(stored) : {};
+      details.location = location;
+      sessionStorage.setItem("bookingDetails", JSON.stringify(details));
+    } catch {}
+    
+    setAddressInput(suggestion.tekst);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setHasAddress(true);
+    
+    // Navigate to services
+    navigate('/services');
+  };
+
   const handleBookNow = () => {
-    // If we have an address saved, go directly to services
     if (hasAddress) {
       navigate('/services');
       return;
     }
     
-    // Otherwise, trigger the LocationBubble dialog by dispatching a custom event
-    // or navigate to services where they can set address
     window.dispatchEvent(new CustomEvent('openLocationDialog'));
-    
-    // Fallback: navigate to services anyway - user can set address there or via header
     setTimeout(() => {
       navigate('/services');
     }, 100);
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (addressInput.trim()) {
+      navigate('/services');
+    }
+  };
+
   return (
     <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-background">
-      {/* Video Background - only shows when loaded */}
+      {/* Video Background */}
       <video
         ref={videoRef}
         autoPlay
@@ -99,10 +173,10 @@ const Hero = () => {
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
 
-      {/* Dark overlay - only shows when video is loaded */}
-      {videoLoaded && <div className="absolute inset-0 bg-black/40 z-[2]" />}
+      {/* Light overlay for readability - shows when video is loaded */}
+      {videoLoaded && <div className="absolute inset-0 bg-white/60 z-[2]" />}
 
-      {/* Fallback image - shows when video not loaded, positioned to the right */}
+      {/* Fallback image - shows when video not loaded */}
       {!videoLoaded && (
         <img
           src={heroFallback}
@@ -122,13 +196,12 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-        {/* Large Brand Typography */}
-        <h1 className="font-inter leading-none tracking-tight animate-fade-in">
+        {/* Logo/Brand Typography - smaller and black */}
+        <h1 className="font-sans leading-none tracking-tight animate-fade-in">
           <span 
-            className={`block text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-light ${videoLoaded ? 'text-white' : 'text-foreground'}`}
+            className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-foreground"
             style={{ 
-              fontWeight: 200,
-              letterSpacing: '0.02em'
+              letterSpacing: '-0.02em'
             }}
           >
             BEAUTYBOOSTERS
@@ -136,43 +209,92 @@ const Hero = () => {
         </h1>
 
         {/* Tagline */}
-        <p className={`mt-6 md:mt-8 text-lg sm:text-xl md:text-2xl font-medium tracking-wide animate-fade-in ${videoLoaded ? 'text-white/90' : 'text-foreground/80'}`} style={{ animationDelay: '0.2s' }}>
+        <p className="mt-4 md:mt-6 text-base sm:text-lg md:text-xl font-semibold tracking-wide animate-fade-in text-foreground/80" style={{ animationDelay: '0.2s' }}>
           PROFESSIONELLE ARTISTER TIL DØREN
         </p>
 
-        {/* CTA Button */}
-        <div className="mt-10 md:mt-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <Button 
-            onClick={handleBookNow}
-            size="lg"
-            className="h-14 px-10 text-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm transition-all duration-300 hover:scale-105"
-          >
-            Book nu
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </div>
+        {/* Address Search - shown for non-logged in users without address */}
+        {!isLoggedIn && !hasAddress && (
+          <div className="mt-8 md:mt-10 animate-fade-in max-w-md mx-auto" style={{ animationDelay: '0.3s' }}>
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Indtast din adresse..."
+                  value={addressInput}
+                  onChange={(e) => handleAddressInputChange(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className="h-14 pl-12 pr-14 text-base rounded-full border-2 border-foreground/20 bg-background/95 shadow-lg focus:border-primary"
+                />
+                <Button 
+                  type="submit"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full"
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              {/* Suggestions dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-2 bg-background border-2 border-border rounded-2xl shadow-xl max-h-48 overflow-y-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className="w-full px-4 py-3 text-left text-sm hover:bg-muted transition-colors border-b last:border-b-0 first:rounded-t-2xl last:rounded-b-2xl"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectSuggestion(suggestion)}
+                    >
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        {suggestion.tekst}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </form>
+          </div>
+        )}
+
+        {/* CTA Button - shown for logged in users or those with address */}
+        {(isLoggedIn || hasAddress) && (
+          <div className="mt-10 md:mt-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <Button 
+              onClick={handleBookNow}
+              size="lg"
+              className="h-14 px-10 text-lg font-semibold rounded-full transition-all duration-300 hover:scale-105"
+            >
+              Book nu
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        )}
 
         {/* Trust indicators */}
-        <div className={`mt-12 md:mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-10 text-sm animate-fade-in ${videoLoaded ? 'text-white/70' : 'text-foreground/60'}`} style={{ animationDelay: '0.6s' }}>
+        <div className="mt-12 md:mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-10 text-sm animate-fade-in text-foreground/60" style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center gap-2">
             <span className="text-lg">⭐</span>
-            <span>4.9/5 stjerner</span>
+            <span className="font-medium">4.9/5 stjerner</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-lg">✓</span>
-            <span>500+ artister</span>
+            <span className="font-medium">500+ artister</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-lg">🏠</span>
-            <span>Hele Danmark</span>
+            <span className="font-medium">Hele Danmark</span>
           </div>
         </div>
       </div>
 
       {/* Scroll indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-10">
-        <div className={`w-6 h-10 rounded-full border-2 flex items-start justify-center p-2 ${videoLoaded ? 'border-white/50' : 'border-foreground/30'}`}>
-          <div className={`w-1 h-2 rounded-full animate-pulse ${videoLoaded ? 'bg-white/70' : 'bg-foreground/50'}`} />
+        <div className="w-6 h-10 rounded-full border-2 border-foreground/30 flex items-start justify-center p-2">
+          <div className="w-1 h-2 rounded-full bg-foreground/50 animate-pulse" />
         </div>
       </div>
     </section>
