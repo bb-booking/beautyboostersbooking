@@ -45,7 +45,6 @@ export default function AdminShopifyOrders() {
       // For now, show demo data directly
       await fetchShopifyOrders();
     } catch (error: any) {
-      console.log('Error fetching orders:', error);
       setShowSetup(true);
       setLoading(false);
     }
@@ -97,7 +96,6 @@ export default function AdminShopifyOrders() {
       
       setOrders(mockOrders);
     } catch (error: any) {
-      console.error('Error fetching Shopify orders:', error);
       toast.error('Kunne ikke hente Shopify ordrer');
     } finally {
       setLoading(false);
@@ -151,7 +149,6 @@ export default function AdminShopifyOrders() {
       toast.success('Konverteret til almindelig booking');
       fetchShopifyOrders();
     } catch (error: any) {
-      console.error('Error converting booking:', error);
       toast.error('Kunne ikke konvertere booking');
     }
   };
