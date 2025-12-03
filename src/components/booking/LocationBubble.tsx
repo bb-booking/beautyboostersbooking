@@ -58,6 +58,18 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Save address to bookingDetails sessionStorage for booking flow
+  const saveToBookingDetails = (address: string, postalCode: string, city: string) => {
+    try {
+      const stored = sessionStorage.getItem("bookingDetails");
+      const details = stored ? JSON.parse(stored) : {};
+      details.location = { address, postalCode, city };
+      sessionStorage.setItem("bookingDetails", JSON.stringify(details));
+    } catch (e) {
+      console.error("Error saving to bookingDetails:", e);
+    }
+  };
+
   // Pre-fill edit fields when dialog opens
   const handleDialogOpen = (open: boolean) => {
     if (open && currentAddressComponents) {
@@ -131,6 +143,8 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
           postalCode: defaultAddr.postal_code,
           city: defaultAddr.city,
         });
+        // Save to bookingDetails for booking flow
+        saveToBookingDetails(defaultAddr.address, defaultAddr.postal_code, defaultAddr.city);
         onLocationChange?.(defaultAddr.address, defaultAddr.postal_code, defaultAddr.city);
         return;
       }
@@ -164,6 +178,7 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
             
             setCurrentAddress(fullAddress);
             setCurrentAddressComponents({ address, postalCode: postcode, city });
+            saveToBookingDetails(address, postcode, city);
             onLocationChange?.(address, postcode, city);
           }
         } catch (error) {
@@ -188,6 +203,7 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
       postalCode: address.postal_code,
       city: address.city,
     });
+    saveToBookingDetails(address.address, address.postal_code, address.city);
     onLocationChange?.(address.address, address.postal_code, address.city);
     setDialogOpen(false);
   };
@@ -204,6 +220,7 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
       postalCode: manualPostalCode,
       city: manualCity,
     });
+    saveToBookingDetails(manualAddress, manualPostalCode, manualCity);
     onLocationChange?.(manualAddress, manualPostalCode, manualCity);
     setDialogOpen(false);
   };
