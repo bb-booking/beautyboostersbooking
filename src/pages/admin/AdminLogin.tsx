@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+
 export default function AdminLogin() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -37,65 +38,29 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🔐 Starting login attempt with:", email);
     setLoading(true);
     try {
       if (mode === "login") {
-        console.log("🔐 Attempting signInWithPassword...");
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          console.log("❌ Supabase auth error:", error);
-          throw error;
-        }
-        console.log("✅ Authentication successful, user:", data.user?.email);
+        if (error) throw error;
+        
         const user = data.user || (await supabase.auth.getUser()).data.user;
         if (!user) throw new Error("Kunne ikke hente bruger-ID");
         const userId = user.id;
-        const userEmail = (user.email || "").toLowerCase();
-        console.log("👤 User ID:", userId, "Email:", userEmail);
 
-        console.log("🔍 Checking user roles...");
-        let { data: roles, error: rolesError } = await supabase
+        // Check if user has admin role - no auto-granting, must be assigned via Supabase dashboard
+        const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", userId);
-        if (rolesError) {
-          console.log("❌ Role check error:", rolesError);
-          throw rolesError;
-        }
-        console.log("📋 Current roles:", roles);
-
-        // Bootstrap: giv admin-rolle til den autoriserede e-mail, hvis mangler
-        const authorizedAdminEmails = ["hello@beautyboosters.dk", "louise@beautyboosters.dk"];
-        const hasAdmin = roles?.some((r) => r.role === "admin");
-        const isAuthorizedEmail = authorizedAdminEmails.includes(userEmail);
-        console.log("🔐 Has admin role:", hasAdmin, "Authorized email match:", isAuthorizedEmail);
-        if (!hasAdmin && isAuthorizedEmail) {
-          console.log("➕ Adding admin role for authorized email...");
-          const { error: insertErr } = await supabase
-            .from("user_roles")
-            .insert({ user_id: userId, role: "admin" });
-          if (insertErr) {
-            console.log("❌ Admin role insert error:", insertErr);
-            throw insertErr;
-          }
-          console.log("✅ Admin role added, refetching roles...");
-          const refetch = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", userId);
-          roles = refetch.data || roles;
-          console.log("📋 Updated roles:", roles);
-        }
+        if (rolesError) throw rolesError;
 
         const isAdmin = roles?.some((r) => r.role === "admin");
-        console.log("🎯 Final admin check:", isAdmin);
         if (!isAdmin) {
-          console.log("❌ User is not admin, signing out...");
           await supabase.auth.signOut();
-          throw new Error("Denne konto har ikke admin-adgang.");
+          throw new Error("Denne konto har ikke admin-adgang. Kontakt en administrator for at få tildelt adgang.");
         }
-        console.log("✅ Admin access confirmed, navigating...");
+        
         toast({ title: "Logget ind" });
         navigate("/admin/dashboard");
       } else {
@@ -106,7 +71,7 @@ export default function AdminLogin() {
           options: { emailRedirectTo: redirectUrl },
         });
         if (error) throw error;
-        toast({ title: "Bruger oprettet", description: "Tjek din e-mail for bekræftelse." });
+        toast({ title: "Bruger oprettet", description: "Tjek din e-mail for bekræftelse. En administrator skal derefter tildele dig adgang." });
       }
     } catch (err: any) {
       toast({ title: "Fejl", description: err.message, variant: "destructive" });
