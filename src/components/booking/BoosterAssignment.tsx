@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wand2, MapPin, Star, CheckCircle2, X } from "lucide-react";
 import { CartItem } from "@/contexts/CartContext";
 import { toast } from "sonner";
@@ -40,6 +41,29 @@ export const BoosterAssignment = ({
   assignments
 }: BoosterAssignmentProps) => {
   const [selectedServiceIndex, setSelectedServiceIndex] = useState(0);
+  const [sortBy, setSortBy] = useState<"rating" | "soonest" | "nearest" | "price">("rating");
+
+  // Sort boosters based on selected criteria
+  const sortedBoosters = useMemo(() => {
+    const sorted = [...availableBoosters];
+    switch (sortBy) {
+      case "rating":
+        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case "price":
+        sorted.sort((a, b) => a.hourly_rate - b.hourly_rate);
+        break;
+      case "nearest":
+        // Could implement distance-based sorting if location data available
+        // For now, just maintain current order
+        break;
+      case "soonest":
+        // Could implement availability-based sorting
+        // For now, just maintain current order
+        break;
+    }
+    return sorted;
+  }, [availableBoosters, sortBy]);
 
   const getServiceAssignments = (serviceIndex: number) => {
     return assignments.get(serviceIndex) || [];
@@ -165,21 +189,34 @@ export const BoosterAssignment = ({
 
                   {/* Available boosters */}
                   {remainingSlots > 0 && (
-                    <div className="space-y-2">
-                      <h5 className="text-sm font-medium text-muted-foreground">
-                        Tilgængelige boosters ({availableBoosters.length}):
-                      </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-sm font-medium text-muted-foreground">
+                          Tilgængelige boosters ({sortedBoosters.length}):
+                        </h5>
+                        <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                          <SelectTrigger className="w-[180px]" aria-label="Sorter efter">
+                            <SelectValue placeholder="Sorter efter" />
+                          </SelectTrigger>
+                          <SelectContent className="z-50">
+                            <SelectItem value="rating">Bedst bedømte</SelectItem>
+                            <SelectItem value="soonest">Første ledige tid</SelectItem>
+                            <SelectItem value="nearest">Nærmeste</SelectItem>
+                            <SelectItem value="price">Pris</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       {loading ? (
                         <div className="text-center py-8 text-muted-foreground">
                           Søger efter boosters...
                         </div>
-                      ) : availableBoosters.length === 0 ? (
+                      ) : sortedBoosters.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           Ingen tilgængelige boosters på dette tidspunkt
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {availableBoosters.map((booster) => {
+                          {sortedBoosters.map((booster) => {
                             const alreadyAssigned = assigned.some(b => b.id === booster.id);
                             
                             return (
