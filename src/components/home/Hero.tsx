@@ -70,8 +70,8 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
-      {/* Video Background */}
+    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-background">
+      {/* Video Background - only shows when loaded */}
       <video
         ref={videoRef}
         autoPlay
@@ -79,27 +79,38 @@ const Hero = () => {
         loop
         playsInline
         onLoadedData={() => setVideoLoaded(true)}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-        poster={heroFallback}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 z-[1] ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
       >
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
 
-      {/* Fallback background - always visible, video overlays when loaded */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroFallback})` }}
-      />
+      {/* Dark overlay - only shows when video is loaded */}
+      {videoLoaded && <div className="absolute inset-0 bg-black/40 z-[2]" />}
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40" />
+      {/* Fallback image - shows when video not loaded, positioned like original */}
+      {!videoLoaded && (
+        <img
+          src={heroFallback}
+          alt="Professionel makeup artist – BeautyBoosters"
+          className="absolute pointer-events-none z-0"
+          style={{ 
+            top: '-2.5cm',
+            right: '-4cm',
+            transform: 'scale(1.4)',
+            transformOrigin: 'center right',
+            maxWidth: 'none',
+            width: 'auto',
+            height: '110%'
+          }}
+        />
+      )}
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
         {/* Large Brand Typography */}
-        <h1 className="font-inter text-white leading-none tracking-tight animate-fade-in">
+        <h1 className="font-inter leading-none tracking-tight animate-fade-in">
           <span 
-            className="block text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-light"
+            className={`block text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-light ${videoLoaded ? 'text-white' : 'text-foreground'}`}
             style={{ 
               fontWeight: 200,
               letterSpacing: '0.02em'
@@ -110,7 +121,7 @@ const Hero = () => {
         </h1>
 
         {/* Tagline */}
-        <p className="mt-6 md:mt-8 text-lg sm:text-xl md:text-2xl text-white/90 font-medium tracking-wide animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <p className={`mt-6 md:mt-8 text-lg sm:text-xl md:text-2xl font-medium tracking-wide animate-fade-in ${videoLoaded ? 'text-white/90' : 'text-foreground/80'}`} style={{ animationDelay: '0.2s' }}>
           PROFESSIONELLE ARTISTER TIL DØREN
         </p>
 
@@ -127,7 +138,7 @@ const Hero = () => {
         </div>
 
         {/* Trust indicators */}
-        <div className="mt-12 md:mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-10 text-white/70 text-sm animate-fade-in" style={{ animationDelay: '0.6s' }}>
+        <div className={`mt-12 md:mt-16 flex flex-wrap items-center justify-center gap-6 md:gap-10 text-sm animate-fade-in ${videoLoaded ? 'text-white/70' : 'text-foreground/60'}`} style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center gap-2">
             <span className="text-lg">⭐</span>
             <span>4.9/5 stjerner</span>
@@ -144,9 +155,9 @@ const Hero = () => {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 rounded-full border-2 border-white/50 flex items-start justify-center p-2">
-          <div className="w-1 h-2 bg-white/70 rounded-full animate-pulse" />
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-10">
+        <div className={`w-6 h-10 rounded-full border-2 flex items-start justify-center p-2 ${videoLoaded ? 'border-white/50' : 'border-foreground/30'}`}>
+          <div className={`w-1 h-2 rounded-full animate-pulse ${videoLoaded ? 'bg-white/70' : 'bg-foreground/50'}`} />
         </div>
       </div>
     </section>
