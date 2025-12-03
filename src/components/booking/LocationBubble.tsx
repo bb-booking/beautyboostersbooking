@@ -42,6 +42,11 @@ interface LocationBubbleProps {
 
 export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBubbleProps) => {
   const [currentAddress, setCurrentAddress] = useState<string>(initialAddress || "");
+  const [currentAddressComponents, setCurrentAddressComponents] = useState<{
+    address: string;
+    postalCode: string;
+    city: string;
+  } | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -52,6 +57,16 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Pre-fill edit fields when dialog opens
+  const handleDialogOpen = (open: boolean) => {
+    if (open && currentAddressComponents) {
+      setManualAddress(currentAddressComponents.address);
+      setManualPostalCode(currentAddressComponents.postalCode);
+      setManualCity(currentAddressComponents.city);
+    }
+    setDialogOpen(open);
+  };
 
   // Fetch address suggestions from DAWA API
   const fetchSuggestions = async (query: string) => {
@@ -111,6 +126,11 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
         const defaultAddr = addresses.find(a => a.is_default) || addresses[0];
         const fullAddress = `${defaultAddr.address}, ${defaultAddr.postal_code} ${defaultAddr.city}`;
         setCurrentAddress(fullAddress);
+        setCurrentAddressComponents({
+          address: defaultAddr.address,
+          postalCode: defaultAddr.postal_code,
+          city: defaultAddr.city,
+        });
         onLocationChange?.(defaultAddr.address, defaultAddr.postal_code, defaultAddr.city);
         return;
       }
@@ -143,6 +163,7 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
             const fullAddress = `${address}, ${postcode} ${city}`;
             
             setCurrentAddress(fullAddress);
+            setCurrentAddressComponents({ address, postalCode: postcode, city });
             onLocationChange?.(address, postcode, city);
           }
         } catch (error) {
@@ -162,6 +183,11 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   const selectSavedAddress = (address: SavedAddress) => {
     const fullAddress = `${address.address}, ${address.postal_code} ${address.city}`;
     setCurrentAddress(fullAddress);
+    setCurrentAddressComponents({
+      address: address.address,
+      postalCode: address.postal_code,
+      city: address.city,
+    });
     onLocationChange?.(address.address, address.postal_code, address.city);
     setDialogOpen(false);
   };
@@ -173,11 +199,13 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     }
     const fullAddress = `${manualAddress}, ${manualPostalCode} ${manualCity}`;
     setCurrentAddress(fullAddress);
+    setCurrentAddressComponents({
+      address: manualAddress,
+      postalCode: manualPostalCode,
+      city: manualCity,
+    });
     onLocationChange?.(manualAddress, manualPostalCode, manualCity);
     setDialogOpen(false);
-    setManualAddress("");
-    setManualPostalCode("");
-    setManualCity("");
   };
 
   const handleUseCurrentLocation = () => {
@@ -186,7 +214,7 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <Dialog open={dialogOpen} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild>
         <button className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background hover:bg-muted/80 transition-colors border border-border text-xs">
           <MapPin className="h-3.5 w-3.5 text-primary" />
@@ -249,7 +277,9 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
 
           {/* Manual address entry */}
           <div className="space-y-3 pt-4 border-t">
-            <Label className="text-sm font-medium">Indtast ny adresse</Label>
+            <Label className="text-sm font-medium">
+              {currentAddressComponents ? "Rediger adresse" : "Indtast ny adresse"}
+            </Label>
             <div className="relative">
               <Input
                 placeholder="Adresse (f.eks. Vestergade 12)"
