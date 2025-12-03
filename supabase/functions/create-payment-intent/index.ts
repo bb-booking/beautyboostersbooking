@@ -7,6 +7,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per hour per IP
+
+function checkRateLimit(clientIP: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(clientIP);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count };
+}
+
 // Input validation function
 function validateBookingInput(data: any): { valid: boolean; error?: string } {
   if (!data.amount || typeof data.amount !== 'number' || data.amount < 0 || data.amount > 1000000) {
@@ -35,7 +57,33 @@ serve(async (req) => {
   }
 
   try {
+    // Get client IP for rate limiting
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("cf-connecting-ip") || 
+                     "unknown";
+    
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIP);
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(
+        JSON.stringify({ error: 'For mange anmodninger. Prøv igen senere.' }),
+        {
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "Retry-After": "3600"
+          },
+          status: 429,
+        }
+      );
+    }
+
     const requestData = await req.json();
+    
+    // Log request for monitoring (without sensitive data)
+    console.log(`Payment intent request from IP: ${clientIP}, email domain: ${requestData.customerEmail?.split('@')[1] || 'unknown'}`);
     
     // Validate input
     const validation = validateBookingInput(requestData);
@@ -135,12 +183,6 @@ serve(async (req) => {
       description: `BeautyBoosters - ${bookingData.serviceName} ${bookingData.discountCode ? `(rabat: ${bookingData.discountCode})` : ''} med ${bookingData.boosterName}`,
     });
 
-    // Store booking in Supabase with payment intent ID
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     const { data: newBooking, error: insertError } = await supabase
       .from('bookings')
       .insert({
@@ -168,8 +210,6 @@ serve(async (req) => {
 
     // Create booking requests for extra boosters if provided
     if (bookingData.extraBoosterIds && Array.isArray(bookingData.extraBoosterIds) && bookingData.extraBoosterIds.length > 0) {
-      console.log('Creating booking requests for extra boosters:', bookingData.extraBoosterIds);
-      
       const requests = bookingData.extraBoosterIds.map((boosterId: string) => ({
         booking_id: newBooking.id,
         booster_id: boosterId,
@@ -183,8 +223,6 @@ serve(async (req) => {
       if (requestsError) {
         console.error('Error creating booking requests:', requestsError);
         // Don't fail the payment if requests fail - just log it
-      } else {
-        console.log(`Successfully created ${requests.length} booking requests`);
       }
     }
 
@@ -194,7 +232,11 @@ serve(async (req) => {
         paymentIntentId: paymentIntent.id,
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": String(rateLimit.remaining)
+        },
         status: 200,
       }
     );

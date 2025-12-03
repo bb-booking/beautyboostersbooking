@@ -7,6 +7,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per hour per IP
+
+function checkRateLimit(clientIP: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(clientIP);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count };
+}
+
 function validateGiftCardInput(data: any): { valid: boolean; error?: string } {
   if (!data.amount || typeof data.amount !== 'number' || data.amount < 100 || data.amount > 100000) {
     return { valid: false, error: 'Ugyldigt beløb (min. 100 DKK, max. 100.000 DKK)' };
@@ -36,7 +58,33 @@ serve(async (req) => {
   }
 
   try {
+    // Get client IP for rate limiting
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("cf-connecting-ip") || 
+                     "unknown";
+    
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIP);
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(
+        JSON.stringify({ error: 'For mange anmodninger. Prøv igen senere.' }),
+        {
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "Retry-After": "3600"
+          },
+          status: 429,
+        }
+      );
+    }
+
     const requestData = await req.json();
+    
+    // Log request for monitoring (without sensitive data)
+    console.log(`Giftcard payment request from IP: ${clientIP}`);
     
     const validation = validateGiftCardInput(requestData);
     if (!validation.valid) {
@@ -147,14 +195,18 @@ serve(async (req) => {
         code,
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": String(rateLimit.remaining)
+        },
         status: 200,
       }
     );
   } catch (error: any) {
     console.error("Error creating payment intent:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Der opstod en fejl. Prøv igen senere.' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
