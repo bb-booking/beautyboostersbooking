@@ -652,13 +652,58 @@ const Booking = () => {
       return;
     }
 
+    if (!selectedDate || !selectedTime) {
+      toast.error("Vælg venligst dato og tid");
+      return;
+    }
+
+    // Get the first cart item as the primary service
+    const primaryService = cartItems[0];
+    // Get the first assigned booster as the primary booster
+    const primaryAssignments = boosterAssignments.get(0) || [];
+    const primaryBooster = primaryAssignments[0];
+    
+    // Get extra boosters (all other assigned boosters)
+    const allAssignedBoosters = Array.from(boosterAssignments.values()).flat();
+    const extraBoosters = allAssignedBoosters.slice(1); // All except primary
+
+    const booking = {
+      service: primaryService.name,
+      date: selectedDate,
+      time: selectedTime,
+      booster: primaryBooster?.name || 'Ikke tildelt',
+      boosterId: primaryBooster?.id,
+      duration: primaryService.totalDuration,
+      price: primaryService.finalPrice,
+      location: bookingDetails?.location?.address || ''
+    };
+
+    // Calculate total price from all cart items
+    const totalPrice = cartItems.reduce((sum, item) => sum + item.finalPrice, 0);
+
     navigate('/checkout', {
       state: {
+        booking,
+        booster: primaryBooster,
+        service: {
+          id: primaryService.id,
+          name: primaryService.name,
+          price: totalPrice,
+          duration: primaryService.totalDuration,
+          category: primaryService.category
+        },
+        bookingDetails,
+        counts: { 
+          people: primaryService.people, 
+          boosters: cartItems.reduce((sum, item) => sum + item.boosters, 0)
+        },
         cartItems,
-        boosterAssignments: Array.from(boosterAssignments.entries()),
-        selectedDate,
-        selectedTime,
-        bookingDetails
+        extraBoosters: extraBoosters.map(b => ({
+          id: b.id,
+          name: b.name,
+          portfolio_image_url: b.portfolio_image_url,
+          location: b.location
+        }))
       }
     });
   };
@@ -1086,18 +1131,35 @@ const Booking = () => {
     );
   }
 
+  // Determine back navigation based on context
+  const getBackPath = () => {
+    if (boosterId) return "/stylists";
+    // Check if coming from services
+    try {
+      const stored = sessionStorage.getItem('bookingDetails');
+      const details = stored ? JSON.parse(stored) : null;
+      if (details?.serviceId) return "/services";
+    } catch {}
+    return "/services";
+  };
+
+  const getBackLabel = () => {
+    if (boosterId) return "Tilbage til Boosters";
+    return "Tilbage til Services";
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link to={boosterId ? "/stylists" : "/services"} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
+      <Link to={getBackPath()} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-4 w-4" />
-        {boosterId ? 'Tilbage til Boosters' : 'Tilbage til Services'}
+        {getBackLabel()}
       </Link>
 
       <div className="space-y-8">
         {/* Header with Location Bubble */}
         <div className="space-y-4">
           <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words">
-            {boosterId && specificBooster ? `Book ${specificBooster.name}` : 'Vælg dato og tid'}
+            {boosterId && specificBooster ? `Book ${specificBooster.name}` : 'Vælg dato og booster'}
           </h1>
           <LocationBubble
             onLocationChange={(address, postalCode, city) => {
