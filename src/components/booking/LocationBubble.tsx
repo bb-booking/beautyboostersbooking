@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPin, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+
+interface AddressSuggestion {
+  tekst: string;
+  adresse: {
+    vejnavn: string;
+    husnr: string;
+    etage?: string;
+    dør?: string;
+    postnr: string;
+    postnrnavn: string;
+  };
+}
 
 interface SavedAddress {
   id: string;
@@ -37,6 +49,45 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   const [manualPostalCode, setManualPostalCode] = useState("");
   const [manualCity, setManualCity] = useState("");
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch address suggestions from DAWA API
+  const fetchSuggestions = async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    
+    try {
+      const response = await fetch(
+        `https://api.dataforsyningen.dk/adresser/autocomplete?q=${encodeURIComponent(query)}&per_side=5`
+      );
+      const data = await response.json();
+      setSuggestions(data);
+      setShowSuggestions(data.length > 0);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      setSuggestions([]);
+    }
+  };
+
+  const handleAddressInputChange = (value: string) => {
+    setManualAddress(value);
+    fetchSuggestions(value);
+  };
+
+  const selectSuggestion = (suggestion: AddressSuggestion) => {
+    const addr = suggestion.adresse;
+    const streetAddress = `${addr.vejnavn} ${addr.husnr}${addr.etage ? ', ' + addr.etage + '.' : ''}${addr.dør ? ' ' + addr.dør : ''}`;
+    
+    setManualAddress(streetAddress);
+    setManualPostalCode(addr.postnr);
+    setManualCity(addr.postnrnavn);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
 
   useEffect(() => {
     checkAuthAndLoadAddress();
@@ -199,11 +250,33 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
           {/* Manual address entry */}
           <div className="space-y-3 pt-4 border-t">
             <Label className="text-sm font-medium">Indtast ny adresse</Label>
-            <Input
-              placeholder="Adresse (f.eks. Vestergade 12)"
-              value={manualAddress}
-              onChange={(e) => setManualAddress(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                placeholder="Adresse (f.eks. Vestergade 12)"
+                value={manualAddress}
+                onChange={(e) => handleAddressInputChange(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors border-b last:border-b-0"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectSuggestion(suggestion)}
+                    >
+                      {suggestion.tekst}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 placeholder="Postnummer"
