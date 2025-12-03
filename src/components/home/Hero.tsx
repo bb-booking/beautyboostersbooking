@@ -183,13 +183,13 @@ const Hero = () => {
           alt="Professionel makeup artist – BeautyBoosters"
           className="absolute pointer-events-none z-[1]"
           style={{ 
-            top: '50%',
+            top: '0',
             right: '-3cm',
-            transform: 'translateY(-50%) scale(0.6)',
-            transformOrigin: 'center right',
+            transform: 'scale(0.5)',
+            transformOrigin: 'top right',
             maxWidth: 'none',
             width: 'auto',
-            height: '100%'
+            height: 'auto'
           }}
         />
       )}
