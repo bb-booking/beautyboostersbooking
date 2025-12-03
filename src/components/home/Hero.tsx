@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import heroFallback from "@/assets/makeup-hair-hero.jpg";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -79,18 +80,16 @@ const Hero = () => {
         playsInline
         onLoadedData={() => setVideoLoaded(true)}
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-        poster="/lovable-uploads/makeup-hair-hero.jpg"
+        poster={heroFallback}
       >
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
 
-      {/* Fallback background while video loads */}
-      {!videoLoaded && (
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('/lovable-uploads/makeup-hair-hero.jpg')` }}
-        />
-      )}
+      {/* Fallback background - always visible, video overlays when loaded */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${heroFallback})` }}
+      />
 
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/40" />
