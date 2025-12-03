@@ -7,6 +7,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { LocationBubble } from "@/components/booking/LocationBubble";
 const Header = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,13 +61,20 @@ const Header = () => {
     <>
     <header className="border-b bg-primary backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-        <Link to="/" className="flex items-center">
-          <img 
-            src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
-            alt="BeautyBoosters Logo" 
-            className="h-12 w-auto mix-blend-multiply"
-          />
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
+              alt="BeautyBoosters Logo" 
+              className="h-12 w-auto mix-blend-multiply"
+            />
+          </Link>
+          
+          {/* Wolt-style location bubble - desktop */}
+          <div className="hidden md:block">
+            <LocationBubble />
+          </div>
+        </div>
         
         {/* Search bar in center */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4">
@@ -180,6 +188,9 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
               <div className="space-y-6 mt-6">
+                {/* Wolt-style location bubble - mobile */}
+                <LocationBubble />
+                
                 <form onSubmit={handleSearch} className="block">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
