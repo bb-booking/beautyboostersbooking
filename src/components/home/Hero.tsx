@@ -173,23 +173,23 @@ const Hero = () => {
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
 
-      {/* Light overlay for readability - shows when video is loaded */}
-      {videoLoaded && <div className="absolute inset-0 bg-white/60 z-[2]" />}
+      {/* Light overlay for readability */}
+      <div className="absolute inset-0 bg-white/50 z-[2]" />
 
       {/* Fallback image - shows when video not loaded */}
       {!videoLoaded && (
         <img
           src={heroFallback}
           alt="Professionel makeup artist – BeautyBoosters"
-          className="absolute pointer-events-none z-0"
+          className="absolute pointer-events-none z-[1]"
           style={{ 
             top: '50%',
-            right: '0',
-            transform: 'translateY(-50%) scale(0.9)',
+            right: '-3cm',
+            transform: 'translateY(-50%) scale(0.6)',
             transformOrigin: 'center right',
             maxWidth: 'none',
             width: 'auto',
-            height: '90%'
+            height: '100%'
           }}
         />
       )}
@@ -213,8 +213,8 @@ const Hero = () => {
           PROFESSIONELLE ARTISTER TIL DØREN
         </p>
 
-        {/* Address Search - shown for non-logged in users without address */}
-        {!isLoggedIn && !hasAddress && (
+        {/* Address Search - shown when no address is set */}
+        {!hasAddress && (
           <div className="mt-8 md:mt-10 animate-fade-in max-w-md mx-auto" style={{ animationDelay: '0.3s' }}>
             <form onSubmit={handleSearchSubmit} className="relative">
               <div className="relative">
