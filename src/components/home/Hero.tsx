@@ -145,10 +145,8 @@ const Hero = () => {
       return;
     }
     
-    window.dispatchEvent(new CustomEvent('openLocationDialog'));
-    setTimeout(() => {
-      navigate('/services');
-    }, 100);
+    // Open LocationBubble dialog - navigation will happen after address is selected
+    window.dispatchEvent(new CustomEvent('openLocationDialog', { detail: { navigateAfter: '/services' } }));
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {

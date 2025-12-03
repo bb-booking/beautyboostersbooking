@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { MapPin, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ interface LocationBubbleProps {
 }
 
 export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBubbleProps) => {
+  const navigate = useNavigate();
   const [currentAddress, setCurrentAddress] = useState<string>(initialAddress || "");
   const [currentAddressComponents, setCurrentAddressComponents] = useState<{
     address: string;
@@ -150,13 +152,18 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
   }, []);
 
   // Listen for custom event to open dialog (triggered from Hero "Book nu" button)
+  const [navigateAfterSelect, setNavigateAfterSelect] = useState<string | null>(null);
+  
   useEffect(() => {
-    const handleOpenDialog = () => {
+    const handleOpenDialog = (e: CustomEvent<{ navigateAfter?: string }>) => {
       setDialogOpen(true);
+      if (e.detail?.navigateAfter) {
+        setNavigateAfterSelect(e.detail.navigateAfter);
+      }
     };
     
-    window.addEventListener('openLocationDialog', handleOpenDialog);
-    return () => window.removeEventListener('openLocationDialog', handleOpenDialog);
+    window.addEventListener('openLocationDialog', handleOpenDialog as EventListener);
+    return () => window.removeEventListener('openLocationDialog', handleOpenDialog as EventListener);
   }, []);
 
   const checkAuthAndLoadAddress = async () => {
@@ -193,7 +200,7 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     tryGeolocation();
   };
 
-  const tryGeolocation = () => {
+  const tryGeolocation = (shouldNavigate?: boolean) => {
     if (!navigator.geolocation) return;
 
     setLoadingLocation(true);
@@ -219,6 +226,12 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
             setCurrentAddressComponents({ address, postalCode: postcode, city });
             saveToBookingDetails(address, postcode, city);
             onLocationChange?.(address, postcode, city);
+            
+            // Navigate if triggered from Hero "Book nu" button
+            if (shouldNavigate && navigateAfterSelect) {
+              navigate(navigateAfterSelect);
+              setNavigateAfterSelect(null);
+            }
           }
         } catch (error) {
           console.error("Error reverse geocoding:", error);
@@ -245,6 +258,12 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     saveToBookingDetails(address.address, address.postal_code, address.city);
     onLocationChange?.(address.address, address.postal_code, address.city);
     setDialogOpen(false);
+    
+    // Navigate if triggered from Hero "Book nu" button
+    if (navigateAfterSelect) {
+      navigate(navigateAfterSelect);
+      setNavigateAfterSelect(null);
+    }
   };
 
   const handleManualAddressSubmit = () => {
@@ -262,10 +281,16 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     saveToBookingDetails(manualAddress, manualPostalCode, manualCity);
     onLocationChange?.(manualAddress, manualPostalCode, manualCity);
     setDialogOpen(false);
+    
+    // Navigate if triggered from Hero "Book nu" button
+    if (navigateAfterSelect) {
+      navigate(navigateAfterSelect);
+      setNavigateAfterSelect(null);
+    }
   };
 
   const handleUseCurrentLocation = () => {
-    tryGeolocation();
+    tryGeolocation(!!navigateAfterSelect);
     setDialogOpen(false);
   };
 
