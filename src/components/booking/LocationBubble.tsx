@@ -116,8 +116,37 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     setShowSuggestions(false);
   };
 
+  // Check sessionStorage first for address from Hero
+  const loadFromSessionStorage = () => {
+    try {
+      const stored = sessionStorage.getItem("bookingDetails");
+      if (stored) {
+        const details = JSON.parse(stored);
+        if (details.location?.address && details.location?.postalCode && details.location?.city) {
+          const fullAddress = `${details.location.address}, ${details.location.postalCode} ${details.location.city}`;
+          setCurrentAddress(fullAddress);
+          setCurrentAddressComponents({
+            address: details.location.address,
+            postalCode: details.location.postalCode,
+            city: details.location.city,
+          });
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error("Error reading from sessionStorage:", e);
+    }
+    return false;
+  };
+
   useEffect(() => {
-    checkAuthAndLoadAddress();
+    // First check sessionStorage (might be set from Hero)
+    const hasSessionAddress = loadFromSessionStorage();
+    
+    // If no session address, check auth and load from DB or geolocation
+    if (!hasSessionAddress) {
+      checkAuthAndLoadAddress();
+    }
   }, []);
 
   // Listen for custom event to open dialog (triggered from Hero "Book nu" button)
