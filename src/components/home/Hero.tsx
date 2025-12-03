@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import heroFallback from "@/assets/makeup-hair-hero.jpg";
+import heroFallback from "@/assets/beauty-hero-final.png";
 
 const Hero = () => {
   const navigate = useNavigate();
