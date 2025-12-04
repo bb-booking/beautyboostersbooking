@@ -104,7 +104,7 @@ const ChatWidget = () => {
   }, [conversationId]);
 
   return (
-    <div className="fixed bottom-[180px] md:bottom-5 right-3 md:right-5 z-40">
+    <div className="fixed bottom-4 right-4 md:bottom-5 md:right-5 z-40">
       {open && (
         <div className="mb-3 w-[280px] md:w-[320px] rounded-lg border bg-card shadow-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 bg-muted/60">
