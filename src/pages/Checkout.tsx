@@ -62,8 +62,8 @@ export default function Checkout() {
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
   // Simulated saved card (in production this would come from Stripe)
-  const [hasSavedCard, setHasSavedCard] = useState(false);
-  const savedCard = hasSavedCard ? { last4: '4242', brand: 'Visa' } : null;
+  const [hasSavedCard] = useState(true);
+  const savedCard = { last4: '4242', brand: 'Visa' };
 
   const timeSlots = Array.from({ length: 24 * 2 - 1 }).map((_, i) => {
     const hour = Math.floor(i / 2) + 0;
@@ -808,18 +808,6 @@ export default function Checkout() {
                 </Label>
               </div>
               
-              {/* Toggle for demo - remove in production */}
-              <div className="flex items-center gap-2 mb-4 p-2 rounded bg-muted/50">
-                <Checkbox 
-                  id="saved-card-demo"
-                  checked={hasSavedCard}
-                  onCheckedChange={(checked) => setHasSavedCard(checked as boolean)}
-                />
-                <Label htmlFor="saved-card-demo" className="text-xs text-muted-foreground">
-                  Demo: Simuler gemt betalingskort
-                </Label>
-              </div>
-
               {/* Swipe to book for saved cards */}
               {hasSavedCard && agreedToTerms && customerInfo.name && customerInfo.email && customerInfo.phone ? (
                 <SwipeToBook
