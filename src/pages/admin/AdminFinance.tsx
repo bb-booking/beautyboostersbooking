@@ -177,12 +177,12 @@ const AdminFinance = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Økonomi</h2>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-40">
-              <Filter className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-full sm:w-40">
+              <Filter className="h-4 w-4 mr-2 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -192,8 +192,8 @@ const AdminFinance = () => {
               <SelectItem value="1year">Sidste år</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full sm:w-auto">
+            <Download className="h-4 w-4 mr-2 shrink-0" />
             Eksporter
           </Button>
         </div>
