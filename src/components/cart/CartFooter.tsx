@@ -25,33 +25,35 @@ const CartFooter = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-primary backdrop-blur-sm border-t">
-      <Card className="max-w-4xl mx-auto p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <ShoppingCart className="h-5 w-5 text-primary-foreground" />
-              <span className="font-medium text-primary-foreground">{getItemCount()} service{getItemCount() > 1 ? 's' : ''}</span>
-            </div>
-            
-            <div className="flex items-center space-x-2 text-sm text-primary-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{getTotalDuration()} timer</span>
-            </div>
-            
-            <div className="text-lg font-semibold text-primary-foreground">
-              {getTotalPrice()} DKK
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-3 md:p-4 bg-primary backdrop-blur-sm border-t">
+      <Card className="max-w-4xl mx-auto p-3 md:p-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="flex items-center justify-between md:justify-start md:space-x-4">
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="flex items-center space-x-2">
+                <ShoppingCart className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
+                <span className="font-medium text-sm md:text-base text-primary-foreground">{getItemCount()} service{getItemCount() > 1 ? 's' : ''}</span>
+              </div>
+              
+              <div className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm text-primary-foreground">
+                <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                <span>{getTotalDuration()} timer</span>
+              </div>
+              
+              <div className="text-base md:text-lg font-semibold text-primary-foreground">
+                {getTotalPrice()} DKK
+              </div>
             </div>
           </div>
           
-          <Button onClick={handleContinue} size="lg" className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleContinue} size="lg" className="w-full md:w-auto bg-primary hover:bg-primary/90">
             Fortsæt til booking
           </Button>
         </div>
         
         {items.length > 0 && (
           <div className="mt-3 pt-3 border-t">
-            <div className="text-sm text-primary-foreground space-y-1">
+            <div className="text-xs md:text-sm text-primary-foreground space-y-1">
               {items.map((item) => (
                 <div key={item.id} className="flex justify-between items-center">
                   <span className="flex-1 truncate pr-2">{item.name} ({item.people} person{item.people > 1 ? 'er' : ''}, {item.boosters} booster{item.boosters > 1 ? 's' : ''})</span>

@@ -104,9 +104,9 @@ const ChatWidget = () => {
   }, [conversationId]);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div className="fixed bottom-[180px] md:bottom-5 right-3 md:right-5 z-40">
       {open && (
-        <div className="mb-3 w-[320px] rounded-lg border bg-card shadow-lg overflow-hidden">
+        <div className="mb-3 w-[280px] md:w-[320px] rounded-lg border bg-card shadow-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 bg-muted/60">
             <div className="font-medium">Chat med os</div>
             <button aria-label="Luk chat" onClick={() => setOpen(false)} className="opacity-70 hover:opacity-100 transition">
