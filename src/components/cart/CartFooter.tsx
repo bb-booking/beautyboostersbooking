@@ -13,6 +13,10 @@ const CartFooter = () => {
   }
 
   const handleContinue = () => {
+    // Clear any stale append mode data to ensure fresh booking flow
+    sessionStorage.removeItem('appendBoosterId');
+    sessionStorage.removeItem('appendMode');
+    
     // For multiple items in cart, take the first service to start the flow
     // Later we can enhance this to handle multiple services better
     const firstService = items[0];
