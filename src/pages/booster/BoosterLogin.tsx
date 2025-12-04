@@ -67,30 +67,43 @@ export default function BoosterLogin() {
   };
 
   return (
-    <div className="container max-w-md mx-auto py-10">
+    <div className="min-h-screen bg-background">
       <Helmet>
         <title>Booster login – Beauty Boosters</title>
         <meta name="description" content="Log ind eller opret som Booster hos Beauty Boosters." />
         <link rel="canonical" href={`${window.location.origin}/booster/login`} />
       </Helmet>
-      <Card className="p-6">
-        <h1 className="text-xl font-semibold mb-4">Booster {mode === "login" ? "login" : "signup"}</h1>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <Button type="submit" disabled={loading} className="w-full">{loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}</Button>
-        </form>
-        <div className="text-sm text-muted-foreground mt-4 space-y-2">
-          {mode === "login" ? (
-            <button className="underline" onClick={() => setMode("signup")}>Har du ikke en konto? Opret</button>
-          ) : (
-            <button className="underline" onClick={() => setMode("login")}>Har du allerede en konto? Log ind</button>
-          )}
-          <div>
-            Kunde? <Link to="/auth" className="underline">Log ind som kunde</Link>
+
+      {/* Simple header with logo */}
+      <header className="bg-primary py-4 px-6">
+        <Link to="/" className="flex items-center justify-center">
+          <span className="text-xl md:text-2xl tracking-tight text-primary-foreground">
+            <span className="font-normal">BEAUTY</span>
+            <span className="font-black">BOOSTERS</span>
+          </span>
+        </Link>
+      </header>
+
+      <div className="container max-w-md mx-auto py-10 px-4">
+        <Card className="p-6">
+          <h1 className="text-xl font-semibold mb-4">Booster {mode === "login" ? "login" : "signup"}</h1>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Button type="submit" disabled={loading} className="w-full">{loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}</Button>
+          </form>
+          <div className="text-sm text-muted-foreground mt-4 space-y-2">
+            {mode === "login" ? (
+              <button className="underline" onClick={() => setMode("signup")}>Har du ikke en konto? Opret</button>
+            ) : (
+              <button className="underline" onClick={() => setMode("login")}>Har du allerede en konto? Log ind</button>
+            )}
+            <div>
+              Kunde? <Link to="/auth" className="underline">Log ind som kunde</Link>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

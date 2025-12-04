@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
@@ -102,44 +102,56 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="container max-w-md mx-auto py-10">
-      <Card className="p-6">
-        <h1 className="text-xl font-semibold mb-4">Admin {mode === "login" ? "login" : "signup"}</h1>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <Button type="submit" disabled={loading} className="w-full">{loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}</Button>
-        </form>
+    <div className="min-h-screen bg-background">
+      {/* Simple header with logo */}
+      <header className="bg-primary py-4 px-6">
+        <Link to="/" className="flex items-center justify-center">
+          <span className="text-xl md:text-2xl tracking-tight text-primary-foreground">
+            <span className="font-normal">BEAUTY</span>
+            <span className="font-black">BOOSTERS</span>
+          </span>
+        </Link>
+      </header>
 
-        {mode === "login" && (
-          <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-            <div className="mt-3 text-right">
-              <button className="underline text-sm" onClick={() => setResetOpen(true)}>Glemt adgangskode?</button>
-            </div>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nulstil adgangskode</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2 py-2">
-                <Label htmlFor="resetEmail">E-mail</Label>
-                <Input id="resetEmail" type="email" placeholder="din@email.dk" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
-                <p className="text-xs text-muted-foreground">Vi sender et link til at vælge en ny adgangskode.</p>
+      <div className="container max-w-md mx-auto py-10 px-4">
+        <Card className="p-6">
+          <h1 className="text-xl font-semibold mb-4">Admin {mode === "login" ? "login" : "signup"}</h1>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Button type="submit" disabled={loading} className="w-full">{loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}</Button>
+          </form>
+
+          {mode === "login" && (
+            <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+              <div className="mt-3 text-right">
+                <button className="underline text-sm" onClick={() => setResetOpen(true)}>Glemt adgangskode?</button>
               </div>
-              <DialogFooter>
-                <Button onClick={handleSendReset} disabled={sendingReset} className="w-full">{sendingReset ? "Sender…" : "Send nulstillingsmail"}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        <div className="text-sm text-muted-foreground mt-4">
-          {mode === "login" ? (
-            <button className="underline" onClick={() => setMode("signup")}>Har du ikke en konto? Opret</button>
-          ) : (
-            <button className="underline" onClick={() => setMode("login")}>Har du allerede en konto? Log ind</button>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Nulstil adgangskode</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2 py-2">
+                  <Label htmlFor="resetEmail">E-mail</Label>
+                  <Input id="resetEmail" type="email" placeholder="din@email.dk" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">Vi sender et link til at vælge en ny adgangskode.</p>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleSendReset} disabled={sendingReset} className="w-full">{sendingReset ? "Sender…" : "Send nulstillingsmail"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
-        </div>
-      </Card>
+
+          <div className="text-sm text-muted-foreground mt-4">
+            {mode === "login" ? (
+              <button className="underline" onClick={() => setMode("signup")}>Har du ikke en konto? Opret</button>
+            ) : (
+              <button className="underline" onClick={() => setMode("login")}>Har du allerede en konto? Log ind</button>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
