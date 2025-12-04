@@ -669,20 +669,22 @@ export default function Checkout() {
                 {/* Edit booking button - prominent */}
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start" 
+                  className="w-full justify-start text-left whitespace-normal h-auto py-2" 
                   onClick={handleEditBooking}
                 >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Rediger booking (ændre service, dato, tid)
+                  <Pencil className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Rediger booking (ændre service, dato, tid)</span>
+                  <span className="sm:hidden">Rediger booking</span>
                 </Button>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={handleAppendService}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Tilføj ekstra service
+                  <Button variant="outline" size="sm" className="flex-1 whitespace-nowrap" onClick={handleAppendService}>
+                    <Plus className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">Tilføj ekstra service</span>
+                    <span className="sm:hidden">Tilføj</span>
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/services')}>
-                    <Trash2 className="mr-2 h-4 w-4" />
+                  <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={() => navigate('/services')}>
+                    <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
                     Fjern
                   </Button>
                 </div>
