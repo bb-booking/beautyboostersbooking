@@ -824,7 +824,7 @@ Eksempel på notifikation som booster vil modtage.`;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Job Management</h2>
         <Dialog open={showCreateDialog || !!selectedJobForEdit} onOpenChange={(open) => {
           if (!open) {
@@ -836,7 +836,7 @@ Eksempel på notifikation som booster vil modtage.`;
           }
         }}>
           <DialogTrigger asChild>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Opret Job
             </Button>
@@ -1217,56 +1217,58 @@ Eksempel på notifikation som booster vil modtage.`;
         </Dialog>
       </div>
 
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Søg efter jobs..."
+            placeholder="Søg..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
         
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filtrer efter status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle jobs</SelectItem>
-            <SelectItem value="open">Åbne</SelectItem>
-            <SelectItem value="assigned">Tildelte</SelectItem>
-            <SelectItem value="in_progress">I gang</SelectItem>
-            <SelectItem value="completed">Afsluttede</SelectItem>
-            <SelectItem value="cancelled">Aflyste</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-40">
+              <Filter className="h-4 w-4 mr-2 shrink-0" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle jobs</SelectItem>
+              <SelectItem value="open">Åbne</SelectItem>
+              <SelectItem value="assigned">Tildelte</SelectItem>
+              <SelectItem value="in_progress">I gang</SelectItem>
+              <SelectItem value="completed">Afsluttede</SelectItem>
+              <SelectItem value="cancelled">Aflyste</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Badge variant="outline">
-          {filteredJobs.length} jobs
-        </Badge>
+          <Badge variant="outline" className="whitespace-nowrap shrink-0">
+            {filteredJobs.length} jobs
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-4">
         {filteredJobs.map((job) => (
           <Card key={job.id}>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{job.title}</CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Badge className={getStatusColor(job.status)}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <CardTitle className="text-lg break-words">{job.title}</CardTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className={cn(getStatusColor(job.status), "shrink-0")}>
                     {getStatusText(job.status)}
                   </Badge>
                   {job.assigned_boosters && job.assigned_boosters.length > 0 ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      {job.assigned_boosters.length}/{job.boosters_needed} tildelt
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 shrink-0">
+                      <CheckCircle className="h-3 w-3 mr-1 shrink-0" />
+                      <span className="truncate">{job.assigned_boosters.length}/{job.boosters_needed} tildelt</span>
                     </Badge>
                   ) : (
-                    <Badge variant="outline">
-                      <Users className="h-3 w-3 mr-1" />
-                      {getEligibleBoosters(job)} tilgængelige
+                    <Badge variant="outline" className="shrink-0">
+                      <Users className="h-3 w-3 mr-1 shrink-0" />
+                      <span className="truncate">{getEligibleBoosters(job)} tilgængelige</span>
                     </Badge>
                   )}
                 </div>
