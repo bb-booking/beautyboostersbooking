@@ -197,10 +197,10 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-        {/* Logo/Brand Typography - BEAUTY normal, BOOSTERS bold */}
-        <h1 className="font-sans leading-none tracking-tight animate-fade-in">
+        {/* Logo/Brand Typography - hidden on mobile, shown on tablet+ */}
+        <h1 className="hidden md:block font-sans leading-none tracking-tight animate-fade-in">
           <span 
-            className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-foreground"
+            className="block text-6xl lg:text-7xl text-foreground"
             style={{ 
               letterSpacing: '-0.02em'
             }}
@@ -209,9 +209,9 @@ const Hero = () => {
           </span>
         </h1>
 
-        {/* Tagline */}
-        <p className="mt-4 md:mt-6 text-base sm:text-lg md:text-xl font-semibold tracking-wide animate-fade-in text-foreground/80" style={{ animationDelay: '0.2s' }}>
-          PROFESSIONELLE ARTISTER TIL DØREN
+        {/* Tagline - primary heading on mobile, subtitle on desktop */}
+        <p className="md:mt-6 text-xl md:text-xl font-semibold tracking-wider animate-fade-in text-foreground/80 font-montserrat uppercase" style={{ animationDelay: '0.2s' }}>
+          PROFESSIONELLE ARTISTER DIREKTE TIL DØREN
         </p>
 
         {/* Address Search - shown when not logged in */}
