@@ -435,10 +435,18 @@ const Services = () => {
     } else {
       // If we are in append-mode, force same booster and go straight to booking
       const appendBoosterId = sessionStorage.getItem('appendBoosterId');
-      if (appendBoosterId) {
+      const isAppendMode = sessionStorage.getItem('appendMode') === '1';
+      if (appendBoosterId && isAppendMode) {
+        // Clear append mode after using it
+        sessionStorage.removeItem('appendBoosterId');
+        sessionStorage.removeItem('appendMode');
         navigate(`/book/${appendBoosterId}?service=${serviceId}`);
         return;
       }
+      // Clear any stale append mode data if not in append mode
+      sessionStorage.removeItem('appendBoosterId');
+      sessionStorage.removeItem('appendMode');
+      
       // If we already have booking context (address/date/time), skip address step
       try {
         const stored = sessionStorage.getItem('bookingDetails');

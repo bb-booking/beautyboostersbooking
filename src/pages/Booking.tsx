@@ -1113,7 +1113,10 @@ const Booking = () => {
     );
   }
 
-  if (!service || (!bookingDetails && !boosterId)) {
+  // Allow booking page if we have cart items OR a service with booking details
+  const hasValidContext = cartItems.length > 0 || (service && (bookingDetails || boosterId));
+  
+  if (!hasValidContext) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Link to="/services" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
