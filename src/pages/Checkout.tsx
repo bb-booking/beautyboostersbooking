@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import AssignBoostersDialog, { BoosterOption } from "@/components/boosters/AssignBoostersDialog";
 import { Badge } from "@/components/ui/badge";
+import SwipeToBook from "@/components/checkout/SwipeToBook";
 
 export default function Checkout() {
   const location = useLocation();
@@ -59,6 +60,10 @@ export default function Checkout() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+
+  // Simulated saved card (in production this would come from Stripe)
+  const [hasSavedCard, setHasSavedCard] = useState(false);
+  const savedCard = hasSavedCard ? { last4: '4242', brand: 'Visa' } : null;
 
   const timeSlots = Array.from({ length: 24 * 2 - 1 }).map((_, i) => {
     const hour = Math.floor(i / 2) + 0;
@@ -803,24 +808,46 @@ export default function Checkout() {
                 </Label>
               </div>
               
-              <Button 
-                className={cn("w-full", isDirectBooking && "bg-green-600 hover:bg-green-700")}
-                size="lg" 
-                onClick={handlePayment}
-                disabled={isProcessing}
-              >
-                {isDirectBooking ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    {isProcessing ? 'Bekræfter...' : 'Bekræft booking'}
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    {isProcessing ? 'Behandler...' : 'Reservér og betal'}
-                  </>
-                )}
-              </Button>
+              {/* Toggle for demo - remove in production */}
+              <div className="flex items-center gap-2 mb-4 p-2 rounded bg-muted/50">
+                <Checkbox 
+                  id="saved-card-demo"
+                  checked={hasSavedCard}
+                  onCheckedChange={(checked) => setHasSavedCard(checked as boolean)}
+                />
+                <Label htmlFor="saved-card-demo" className="text-xs text-muted-foreground">
+                  Demo: Simuler gemt betalingskort
+                </Label>
+              </div>
+
+              {/* Swipe to book for saved cards */}
+              {hasSavedCard && agreedToTerms && customerInfo.name && customerInfo.email && customerInfo.phone ? (
+                <SwipeToBook
+                  amount={Math.max(0, service.price - discount)}
+                  onComplete={handlePayment}
+                  isProcessing={isProcessing}
+                  savedCard={savedCard || undefined}
+                />
+              ) : (
+                <Button 
+                  className={cn("w-full", isDirectBooking && "bg-green-600 hover:bg-green-700")}
+                  size="lg" 
+                  onClick={handlePayment}
+                  disabled={isProcessing}
+                >
+                  {isDirectBooking ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      {isProcessing ? 'Bekræfter...' : 'Bekræft booking'}
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      {isProcessing ? 'Behandler...' : 'Reservér og betal'}
+                    </>
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
