@@ -38,6 +38,11 @@ const Address = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
+    // Clear any append mode data when starting a new booking from Address page
+    // This ensures fresh booking flow without accidentally using old booster assignments
+    sessionStorage.removeItem('appendBoosterId');
+    sessionStorage.removeItem('appendMode');
+    
     // Check if geolocation is supported and has permission
     if ("geolocation" in navigator) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
