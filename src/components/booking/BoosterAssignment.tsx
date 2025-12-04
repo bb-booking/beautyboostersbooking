@@ -83,7 +83,7 @@ export const BoosterAssignment = ({
       {/* Auto assign button */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
                 <Wand2 className="h-5 w-5 text-primary" />
@@ -97,7 +97,7 @@ export const BoosterAssignment = ({
               size="lg"
               onClick={onAutoAssign}
               disabled={loading || allServicesAssigned}
-              className="gap-2"
+              className="gap-2 w-full md:w-auto shrink-0"
             >
               <Wand2 className="h-4 w-4" />
               Tildel automatisk
