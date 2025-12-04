@@ -209,8 +209,8 @@ const Hero = () => {
           </span>
         </h1>
 
-        {/* Tagline - primary heading on mobile, subtitle on desktop */}
-        <p className="md:mt-6 text-xl md:text-xl font-semibold tracking-wider animate-fade-in text-foreground/80 font-montserrat uppercase" style={{ animationDelay: '0.2s' }}>
+        {/* Tagline - hidden on mobile, shown on desktop */}
+        <p className="hidden md:block md:mt-6 text-xl font-semibold tracking-wider animate-fade-in text-foreground/80 font-montserrat uppercase" style={{ animationDelay: '0.2s' }}>
           PROFESSIONELLE ARTISTER DIREKTE TIL DØREN
         </p>
 
