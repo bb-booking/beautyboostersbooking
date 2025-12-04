@@ -116,26 +116,26 @@ const AdminBookings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Bookinger</h2>
-        <Badge variant="outline">
+        <Badge variant="outline" className="w-fit">
           {filteredBookings.length} bookinger
         </Badge>
       </div>
 
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1 sm:max-w-sm">
           <Input
-            placeholder="Søg efter kunde, booster eller service..."
+            placeholder="Søg efter kunde, booster..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filtrer efter status" />
+          <SelectTrigger className="w-full sm:w-44">
+            <Filter className="h-4 w-4 mr-2 shrink-0" />
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle bookinger</SelectItem>

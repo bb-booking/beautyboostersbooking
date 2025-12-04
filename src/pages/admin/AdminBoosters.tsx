@@ -311,18 +311,18 @@ const AdminBoosters = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Booster Management</h2>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           {selectedBoosters.length > 0 && (
             <>
-              <Badge variant="outline">
+              <Badge variant="outline" className="shrink-0">
                 {selectedBoosters.length} valgt
               </Badge>
               <Dialog open={showSendJobDialog} onOpenChange={setShowSendJobDialog}>
                 <DialogTrigger asChild>
-                  <Button>
-                    <Send className="h-4 w-4 mr-2" />
+                  <Button className="w-full sm:w-auto">
+                    <Send className="h-4 w-4 mr-2 shrink-0" />
                     Send Job
                   </Button>
                 </DialogTrigger>

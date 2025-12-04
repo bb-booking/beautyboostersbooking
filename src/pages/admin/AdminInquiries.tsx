@@ -137,10 +137,10 @@ const AdminInquiries = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Forespørgsler</h2>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Filtrer efter status" />
           </SelectTrigger>
           <SelectContent>
@@ -167,9 +167,9 @@ const AdminInquiries = () => {
           filteredInquiries.map((inquiry) => (
             <Card key={inquiry.id}>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <CardTitle className="text-lg">{inquiry.navn}</CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge className={getStatusColor(inquiry.status)}>
                       {getStatusText(inquiry.status)}
                     </Badge>
