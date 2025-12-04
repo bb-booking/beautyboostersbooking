@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -746,7 +746,19 @@ const BoosterSignup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen bg-background">
+      {/* Header with logo */}
+      <header className="bg-primary py-4 px-6">
+        <Link to="/" className="flex items-center justify-center">
+          <img 
+            src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
+            alt="BeautyBoosters Logo" 
+            className="h-12 w-auto"
+          />
+        </Link>
+      </header>
+
+      <div className="py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <Card>
           <CardHeader>
@@ -791,6 +803,7 @@ const BoosterSignup = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
