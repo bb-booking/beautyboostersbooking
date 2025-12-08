@@ -90,6 +90,9 @@ const Booking = () => {
   // Availability state for booster-specific booking
   const [boosterAvailability, setBoosterAvailability] = useState<{date: string; start_time: string; end_time: string; status: string}[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [showAllTimes, setShowAllTimes] = useState(false);
+  
+  const INITIAL_TIMES_TO_SHOW = 8;
 
   const generateTimeSlots = () => {
     const slots = [];
@@ -297,7 +300,10 @@ const Booking = () => {
       const boosterIds = boosters?.map(b => b.id) || [];
 
       if (boosterIds.length === 0) {
-        toast.error("Ingen tilgængelige boosters fundet");
+        // No boosters in DB, suggest tomorrow at 10:00
+        setSelectedDate(addDays(now, 1));
+        setSelectedTime("10:00");
+        toast.success("Foreslået tid: i morgen kl. 10:00");
         return;
       }
 
@@ -329,9 +335,10 @@ const Booking = () => {
         }
       }
       
+      // No registered availability - suggest tomorrow at 10:00 (popular time)
       setSelectedDate(addDays(now, 1));
       setSelectedTime("10:00");
-      toast.info("Ingen registrerede ledige tider - vælg selv");
+      toast.success("Foreslået tid: i morgen kl. 10:00");
     } catch (error) {
       console.error('Error finding available time:', error);
       toast.error("Kunne ikke finde ledige tider");
@@ -784,7 +791,7 @@ const Booking = () => {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date) => { setSelectedDate(date); setSelectedTime(""); }}
+                  onSelect={(date) => { setSelectedDate(date); setSelectedTime(""); setShowAllTimes(false); }}
                   disabled={(date) => isBefore(date, startOfDay(new Date()))}
                   className="rounded-lg border"
                   locale={da}
@@ -793,19 +800,55 @@ const Booking = () => {
 
               {/* Time slots */}
               {selectedDate && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label className="text-sm font-medium">Ledige tider {format(selectedDate, 'd. MMMM', { locale: da })}</Label>
-                  <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto">
-                    {getFilteredTimes().length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-2">Ingen ledige tider - prøv en anden dag.</p>
-                    ) : (
-                      getFilteredTimes().map((time) => (
-                        <Button key={time} variant={selectedTime === time ? "default" : "outline"} size="sm" onClick={() => setSelectedTime(time)}>
-                          {time}
-                        </Button>
-                      ))
-                    )}
-                  </div>
+                  {(() => {
+                    const allTimes = getFilteredTimes();
+                    const timesToShow = showAllTimes ? allTimes : allTimes.slice(0, INITIAL_TIMES_TO_SHOW);
+                    const hasMoreTimes = allTimes.length > INITIAL_TIMES_TO_SHOW;
+                    
+                    if (allTimes.length === 0) {
+                      return <p className="text-sm text-muted-foreground py-2">Ingen ledige tider - prøv en anden dag.</p>;
+                    }
+                    
+                    return (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          {timesToShow.map((time) => (
+                            <Button 
+                              key={time} 
+                              variant={selectedTime === time ? "default" : "outline"} 
+                              size="sm" 
+                              onClick={() => setSelectedTime(time)}
+                              className="min-w-[70px]"
+                            >
+                              {time}
+                            </Button>
+                          ))}
+                        </div>
+                        {hasMoreTimes && !showAllTimes && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setShowAllTimes(true)}
+                            className="text-primary hover:text-primary/80"
+                          >
+                            Se flere tider ({allTimes.length - INITIAL_TIMES_TO_SHOW} mere)
+                          </Button>
+                        )}
+                        {showAllTimes && hasMoreTimes && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setShowAllTimes(false)}
+                            className="text-muted-foreground"
+                          >
+                            Vis færre
+                          </Button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
