@@ -32,6 +32,12 @@ export default function Checkout() {
   
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [customerInfoLoaded, setCustomerInfoLoaded] = useState(false);
+
+  // Step-based checkout: 1 = confirm booking, 2 = your info
+  const [currentStep, setCurrentStep] = useState(1);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
   // Promo code
   const [promoCode, setPromoCode] = useState("");
@@ -71,29 +77,43 @@ export default function Checkout() {
     return `${hour.toString().padStart(2, '0')}:${minute}`;
   });
 
-  // Auto-load saved address for logged-in customers
+  // Auto-load user data and saved address for logged-in customers
   useEffect(() => {
-    const loadSavedAddress = async () => {
-      // Only load if no address is set
-      if (addressQuery) return;
-      
+    const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       
-      const { data: addresses } = await supabase
-        .from("customer_addresses")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_default", { ascending: false })
-        .limit(1);
-      
-      if (addresses && addresses.length > 0) {
-        const defaultAddr = addresses[0];
-        const fullAddress = `${defaultAddr.address}, ${defaultAddr.postal_code} ${defaultAddr.city}`;
-        setAddressQuery(fullAddress);
+      if (user) {
+        setIsLoggedIn(true);
+        
+        // Auto-fill customer info from auth user
+        setCustomerInfo(prev => ({
+          ...prev,
+          email: user.email || prev.email,
+          name: user.user_metadata?.full_name || user.user_metadata?.name || prev.name,
+          phone: user.user_metadata?.phone || user.phone || prev.phone
+        }));
+        setCustomerInfoLoaded(true);
+        
+        // Load saved address if not already set
+        if (!addressQuery) {
+          const { data: addresses } = await supabase
+            .from("customer_addresses")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("is_default", { ascending: false })
+            .limit(1);
+          
+          if (addresses && addresses.length > 0) {
+            const defaultAddr = addresses[0];
+            const fullAddress = `${defaultAddr.address}, ${defaultAddr.postal_code} ${defaultAddr.city}`;
+            setAddressQuery(fullAddress);
+          }
+        }
+      } else {
+        setCustomerInfoLoaded(true);
       }
     };
-    loadSavedAddress();
+    loadUserData();
   }, []);
 
   useEffect(() => {
@@ -485,23 +505,41 @@ export default function Checkout() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <h1 className="text-3xl font-bold">Bekræft din booking</h1>
+        {/* Step Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+              currentStep === 1 ? "bg-primary text-primary-foreground" : bookingConfirmed ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+            )}>
+              {bookingConfirmed ? <Check className="h-4 w-4" /> : <span className="w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs">1</span>}
+              <span>Bekræft booking</span>
+            </div>
+            <div className="h-px w-8 bg-border" />
+            <div className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+              currentStep === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            )}>
+              <span className="w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs">2</span>
+              <span>Dine oplysninger</span>
+            </div>
+          </div>
+          
+          <h1 className="text-3xl font-bold text-center">
+            {currentStep === 1 ? 'Bekræft din booking' : 'Dine oplysninger'}
+          </h1>
+          
           {isDirectBooking && (
-            <Badge className="bg-green-500 text-white hover:bg-green-600">
-              Direkte booking
-            </Badge>
+            <div className="mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 max-w-md mx-auto">
+              <p className="text-sm text-green-800 dark:text-green-200 text-center">
+                <strong>Ledig tid!</strong> Bookingen bekræftes med det samme.
+              </p>
+            </div>
           )}
         </div>
         
-        {isDirectBooking && (
-          <div className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-            <p className="text-sm text-green-800 dark:text-green-200">
-              <strong>Ledig tid valgt!</strong> Denne tid er ledig i {booster.name}s kalender og vil blive bekræftet med det samme.
-            </p>
-          </div>
-        )}
-        
+        {/* Step 1: Confirm Booking */}
+        {currentStep === 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Booking Summary */}
           <Card>
@@ -742,15 +780,58 @@ export default function Checkout() {
                   <li>• Aflysning under 6 timer før: 100% gebyr</li>
                 </ul>
               </div>
+              
+              {/* Confirm Step 1 Button */}
+              <Button 
+                className="w-full mt-4" 
+                size="lg"
+                onClick={() => {
+                  setBookingConfirmed(true);
+                  setCurrentStep(2);
+                }}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Bekræft og fortsæt
+              </Button>
             </CardContent>
           </Card>
+        </div>
+        )}
+
+        {/* Step 2: Customer Information */}
+        {currentStep === 2 && (
+          <div className="max-w-md mx-auto">
+            {/* Show confirmed booking summary */}
+            <div className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Check className="h-5 w-5 text-green-600" />
+                <span className="font-semibold text-green-800 dark:text-green-200">Booking bekræftet</span>
+              </div>
+              <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                <p><strong>Service:</strong> {service.name}</p>
+                <p><strong>Booster:</strong> {booster.name}</p>
+                <p><strong>Dato:</strong> {selectedDate?.toLocaleDateString('da-DK') || 'Ikke valgt'}</p>
+                <p><strong>Tid:</strong> {selectedTime}</p>
+                <p><strong>Adresse:</strong> {addressQuery}</p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mt-2 text-green-700 dark:text-green-300"
+                onClick={() => setCurrentStep(1)}
+              >
+                <Pencil className="h-3 w-3 mr-1" /> Rediger
+              </Button>
+            </div>
 
           {/* Customer Information */}
           <Card>
             <CardHeader>
               <CardTitle>Dine oplysninger</CardTitle>
               <CardDescription>
-                Udfyld dine kontaktoplysninger for at gennemføre bookingen
+                {isLoggedIn && customerInfo.email 
+                  ? 'Vi har udfyldt dine oplysninger - tjek dem og fortsæt'
+                  : 'Udfyld dine kontaktoplysninger for at gennemføre bookingen'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -838,7 +919,8 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
-        </div>
+          </div>
+        )}
 
         <AssignBoostersDialog
           open={assignOpen}
