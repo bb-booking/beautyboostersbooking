@@ -272,12 +272,33 @@ const Booking = () => {
       const serviceCategory = service?.category || cartItems[0]?.category || '';
       let filteredBoosters = data || [];
       
+      // Filter by specialty
       if (serviceCategory.includes('Spraytan')) {
         filteredBoosters = filteredBoosters.filter(b => b.specialties.some((s: string) => s.toLowerCase().includes('spraytan')));
       } else if (serviceCategory.includes('Makeup') || serviceCategory.includes('Hår')) {
         filteredBoosters = filteredBoosters.filter(b => b.specialties.some((s: string) => 
           s.toLowerCase().includes('makeup') || s.toLowerCase().includes('hår') || s.toLowerCase().includes('frisør')
         ));
+      }
+
+      // Filter by location - only show boosters from customer's area
+      const customerCity = bookingDetails?.location?.city?.toLowerCase() || '';
+      if (customerCity) {
+        // Extract base city name (e.g., "København" from "København N")
+        const baseCityName = customerCity.includes('køben') ? 'køben' : 
+                           customerCity.includes('århus') || customerCity.includes('aarhus') ? 'arhu' :
+                           customerCity.includes('odense') ? 'odense' :
+                           customerCity.includes('aalborg') ? 'aalborg' :
+                           customerCity;
+        
+        const locationFiltered = filteredBoosters.filter(b => 
+          b.location.toLowerCase().includes(baseCityName)
+        );
+        
+        // Only apply location filter if we found matches
+        if (locationFiltered.length > 0) {
+          filteredBoosters = locationFiltered;
+        }
       }
 
       setAvailableBoosters(filteredBoosters.length > 0 ? filteredBoosters : (data || []));
