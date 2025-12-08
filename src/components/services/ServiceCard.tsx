@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 interface ServiceCardProps {
   id: string;
@@ -107,6 +108,7 @@ const ServiceCard = ({
       totalDuration: calculateDuration(),
       groupPricing
     });
+    toast.success(`${name} lagt i kurv`);
   };
 
   const handleBookNow = (e: React.MouseEvent) => {
