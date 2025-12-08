@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
-import { format, addDays, isBefore, startOfDay } from "date-fns";
+import { format, addDays, isBefore, startOfDay, isToday } from "date-fns";
 import { da } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -815,6 +815,11 @@ const Booking = () => {
     const slots = boosterAvailability.filter(slot => slot.date === dateStr);
     
     const availableTimes: string[] = [];
+    const now = new Date();
+    const currentHourNow = now.getHours();
+    const currentMinNow = now.getMinutes();
+    const isTodayDate = isToday(date);
+    
     slots.forEach(slot => {
       const startHour = parseInt(slot.start_time.split(':')[0]);
       const startMin = parseInt(slot.start_time.split(':')[1]);
@@ -827,7 +832,11 @@ const Booking = () => {
       
       while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
         const timeStr = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
-        availableTimes.push(timeStr);
+        
+        // Skip past times if date is today
+        if (!isTodayDate || currentHour > currentHourNow || (currentHour === currentHourNow && currentMin > currentMinNow)) {
+          availableTimes.push(timeStr);
+        }
         
         currentMin += 30;
         if (currentMin >= 60) {
@@ -1244,11 +1253,19 @@ const Booking = () => {
                     <SelectValue placeholder="Vælg tidspunkt" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border z-50 max-h-72">
-                    {timeSlots.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
+                    {timeSlots
+                      .filter((time) => {
+                        // Filter out past times if today is selected
+                        if (!selectedDate || !isToday(selectedDate)) return true;
+                        const [hour, min] = time.split(':').map(Number);
+                        const now = new Date();
+                        return hour > now.getHours() || (hour === now.getHours() && min > now.getMinutes());
+                      })
+                      .map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
