@@ -824,9 +824,9 @@ const Booking = () => {
               </div>
 
               {/* Calendar & Time slots - side by side on desktop */}
-              <div className="flex flex-col lg:flex-row lg:gap-8">
+              <div className="flex flex-col md:flex-row md:gap-8">
                 {/* Calendar */}
-                <div className="flex justify-center lg:justify-start">
+                <div className="flex justify-center md:justify-start shrink-0">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -839,7 +839,7 @@ const Booking = () => {
 
                 {/* Time slots */}
                 {selectedDate && (
-                  <div className="flex-1 mt-4 lg:mt-0 space-y-3">
+                  <div className="flex-1 mt-4 md:mt-0 space-y-3">
                     <Label className="text-sm font-medium">Ledige tider {format(selectedDate, 'd. MMMM', { locale: da })}</Label>
                     {(() => {
                       const allTimes = getFilteredTimes();
