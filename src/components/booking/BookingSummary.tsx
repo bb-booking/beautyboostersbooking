@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Users, Clock, X, Sparkles } from "lucide-react";
+import { ShoppingBag, Users, Clock, X, Sparkles, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CartItem } from "@/contexts/CartContext";
+import { useNavigate } from "react-router-dom";
 
 interface BookingSummaryProps {
   items: CartItem[];
@@ -12,6 +12,8 @@ interface BookingSummaryProps {
 }
 
 export const BookingSummary = ({ items, onRemoveItem, totalPrice, totalDuration }: BookingSummaryProps) => {
+  const navigate = useNavigate();
+  
   if (items.length === 0) return null;
 
   const totalBoosters = items.reduce((sum, item) => sum + item.boosters, 0);
@@ -30,17 +32,15 @@ export const BookingSummary = ({ items, onRemoveItem, totalPrice, totalDuration 
       </div>
 
       <CardContent className="p-5 space-y-4">
-        {/* Service items - compact list */}
+        {/* Service items - compact list with quantity */}
         <div className="space-y-2">
-          {items.map((item, index) => (
+          {items.map((item) => (
             <div 
               key={item.id} 
               className="flex items-center justify-between gap-3 bg-background/60 p-3 rounded-lg border border-border/30"
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <Badge variant="secondary" className="shrink-0 h-7 px-2.5 text-xs font-medium">
-                  {item.category}
-                </Badge>
+                <span className="text-sm text-muted-foreground font-medium">{item.people}x</span>
                 <span className="font-medium text-sm truncate">{item.name}</span>
               </div>
               {onRemoveItem && (
@@ -56,6 +56,17 @@ export const BookingSummary = ({ items, onRemoveItem, totalPrice, totalDuration 
             </div>
           ))}
         </div>
+
+        {/* Add/remove services button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-sm"
+          onClick={() => navigate('/services')}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Tilføj/fjern services
+        </Button>
 
         {/* Summary - only show totals once */}
         <div className="bg-muted/40 rounded-xl p-4 space-y-2.5">
