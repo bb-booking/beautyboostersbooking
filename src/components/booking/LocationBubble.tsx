@@ -227,10 +227,11 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
             saveToBookingDetails(address, postcode, city);
             onLocationChange?.(address, postcode, city);
             
-            // Navigate if triggered from Hero "Book nu" button
-            if (shouldNavigate && navigateAfterSelect) {
-              navigate(navigateAfterSelect);
+            // Navigate to services after location is set
+            if (shouldNavigate) {
+              const targetRoute = navigateAfterSelect || '/services';
               setNavigateAfterSelect(null);
+              navigate(targetRoute);
             }
           }
         } catch (error) {
@@ -259,11 +260,10 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     onLocationChange?.(address.address, address.postal_code, address.city);
     setDialogOpen(false);
     
-    // Navigate if triggered from Hero "Book nu" button
-    if (navigateAfterSelect) {
-      navigate(navigateAfterSelect);
-      setNavigateAfterSelect(null);
-    }
+    // Navigate to services (either specified route or default to /services)
+    const targetRoute = navigateAfterSelect || '/services';
+    setNavigateAfterSelect(null);
+    navigate(targetRoute);
   };
 
   const handleManualAddressSubmit = () => {
@@ -282,15 +282,15 @@ export const LocationBubble = ({ onLocationChange, initialAddress }: LocationBub
     onLocationChange?.(manualAddress, manualPostalCode, manualCity);
     setDialogOpen(false);
     
-    // Navigate if triggered from Hero "Book nu" button
-    if (navigateAfterSelect) {
-      navigate(navigateAfterSelect);
-      setNavigateAfterSelect(null);
-    }
+    // Navigate to services (either specified route or default to /services)
+    const targetRoute = navigateAfterSelect || '/services';
+    setNavigateAfterSelect(null);
+    navigate(targetRoute);
   };
 
   const handleUseCurrentLocation = () => {
-    tryGeolocation(!!navigateAfterSelect);
+    // Always navigate after getting location
+    tryGeolocation(true);
     setDialogOpen(false);
   };
 
