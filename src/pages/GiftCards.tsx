@@ -6,63 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { PrintableGiftCard } from "@/components/giftcard/PrintableGiftCard";
-import { loadStripe, Stripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-
-// Stripe promise will be loaded dynamically
-let stripePromise: Promise<Stripe | null> | null = null;
-
-
-function PaymentForm({ 
-  giftCardData, 
-  onSuccess 
-}: { 
-  giftCardData: any; 
-  onSuccess: (code: string) => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [processing, setProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-
-    setProcessing(true);
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/giftcards`,
-      },
-      redirect: 'if_required',
-    });
-
-    if (error) {
-      toast.error(error.message);
-      setProcessing(false);
-    } else {
-      toast.success('Betaling gennemført!');
-      onSuccess(giftCardData.code);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement 
-        options={{
-          layout: 'tabs',
-        }} 
-      />
-      <Button type="submit" size="lg" className="w-full" disabled={!stripe || processing}>
-        {processing ? 'Behandler...' : `Betal ${giftCardData.amount} DKK`}
-      </Button>
-    </form>
-  );
-}
+import { PlaceholderPayment } from "@/components/giftcard/PlaceholderPayment";
 
 export default function GiftCards() {
   const [mode, setMode] = useState<'amount' | 'service'>('amount');
@@ -77,58 +24,25 @@ export default function GiftCards() {
   const [validTo, setValidTo] = useState<string>('');
   const [processing, setProcessing] = useState(false);
   const [printData, setPrintData] = useState<any>(null);
-  const [clientSecret, setClientSecret] = useState<string>('');
+  const [showPayment, setShowPayment] = useState(false);
   const [giftCardCode, setGiftCardCode] = useState<string>('');
-  const [stripeLoading, setStripeLoading] = useState(true);
 
-  // Load Stripe publishable key from edge function
-  useEffect(() => {
-    const loadStripeKey = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('stripe-public-key');
-        if (error) throw error;
-        
-        if (data?.publishableKey) {
-          stripePromise = loadStripe(data.publishableKey);
-          await stripePromise; // Wait for it to load
-        }
-      } catch (e: any) {
-        console.error('Failed to load Stripe:', e);
-        toast.error('Kunne ikke indlæse betalingssystem');
-      } finally {
-        setStripeLoading(false);
-      }
-    };
-    loadStripeKey();
-  }, []);
+  const generateCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = 'BB-';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
 
-  const handleCreatePayment = async () => {
+  const handleContinueToPayment = () => {
     if (!toName || !fromName) { toast.error('Udfyld venligst modtager og afsender'); return; }
     if (mode === 'amount' && (!amount || amount < 100)) { toast.error('Vælg et gyldigt beløb (min. 100 DKK)'); return; }
     if (mode === 'service' && !serviceName) { toast.error('Angiv servicenavn'); return; }
 
-    setProcessing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-giftcard-payment', {
-        body: {
-          amount: mode === 'amount' ? amount : (servicePrice || amount),
-          toName, 
-          fromName, 
-          message,
-          mode,
-          serviceName: mode === 'service' ? serviceName : undefined,
-          servicePrice: mode === 'service' && servicePrice ? Number(servicePrice) : undefined,
-          validTo: validTo || undefined,
-        }
-      });
-      if (error) throw error;
-      setClientSecret(data.clientSecret);
-      setGiftCardCode(data.code);
-    } catch (e: any) {
-      toast.error(e.message || 'Kunne ikke oprette betaling');
-    } finally {
-      setProcessing(false);
-    }
+    setGiftCardCode(generateCode());
+    setShowPayment(true);
   };
 
   const handlePaymentSuccess = (code: string) => {
@@ -146,7 +60,7 @@ export default function GiftCards() {
       <h1 className="text-3xl md:text-4xl font-bold mb-6">Køb gavekort</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {!clientSecret ? (
+        {!showPayment ? (
           <>
             <Card className="lg:col-span-2">
               <CardHeader>
@@ -219,7 +133,7 @@ export default function GiftCards() {
                   </div>
                 )}
 
-                <Button size="lg" className="w-full" onClick={handleCreatePayment} disabled={processing}>
+                <Button size="lg" className="w-full" onClick={handleContinueToPayment} disabled={processing}>
                   {processing ? 'Opretter...' : 'Fortsæt til betaling'}
                 </Button>
               </CardContent>
@@ -245,22 +159,11 @@ export default function GiftCards() {
               <CardTitle>Gennemfør betaling</CardTitle>
             </CardHeader>
             <CardContent>
-              {stripeLoading ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  Indlæser betalingsmuligheder...
-                </div>
-              ) : stripePromise ? (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <PaymentForm 
-                    giftCardData={{ amount: mode === 'amount' ? amount : (servicePrice || amount), code: giftCardCode }}
-                    onSuccess={handlePaymentSuccess}
-                  />
-                </Elements>
-              ) : (
-                <div className="py-8 text-center text-destructive">
-                  Kunne ikke indlæse betalingssystem
-                </div>
-              )}
+              <PlaceholderPayment 
+                amount={mode === 'amount' ? amount : (servicePrice ? Number(servicePrice) : amount)}
+                onSuccess={handlePaymentSuccess}
+                giftCardCode={giftCardCode}
+              />
             </CardContent>
           </Card>
         )}
