@@ -817,71 +817,74 @@ const Booking = () => {
                 </div>
               </div>
 
-              {/* Calendar */}
-              <div className="flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => { setSelectedDate(date); setSelectedTime(""); setShowAllTimes(false); }}
-                  disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                  className="rounded-lg border"
-                  locale={da}
-                />
-              </div>
-
-              {/* Time slots */}
-              {selectedDate && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Ledige tider {format(selectedDate, 'd. MMMM', { locale: da })}</Label>
-                  {(() => {
-                    const allTimes = getFilteredTimes();
-                    const timesToShow = showAllTimes ? allTimes : allTimes.slice(0, INITIAL_TIMES_TO_SHOW);
-                    const hasMoreTimes = allTimes.length > INITIAL_TIMES_TO_SHOW;
-                    
-                    if (allTimes.length === 0) {
-                      return <p className="text-sm text-muted-foreground py-2">Ingen ledige tider - prøv en anden dag.</p>;
-                    }
-                    
-                    return (
-                      <>
-                        <div className="flex flex-wrap gap-2">
-                          {timesToShow.map((time) => (
-                            <Button 
-                              key={time} 
-                              variant={selectedTime === time ? "default" : "outline"} 
-                              size="sm" 
-                              onClick={() => setSelectedTime(time)}
-                              className="min-w-[70px]"
-                            >
-                              {time}
-                            </Button>
-                          ))}
-                        </div>
-                        {hasMoreTimes && !showAllTimes && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setShowAllTimes(true)}
-                            className="text-primary hover:text-primary/80"
-                          >
-                            Se flere tider ({allTimes.length - INITIAL_TIMES_TO_SHOW} mere)
-                          </Button>
-                        )}
-                        {showAllTimes && hasMoreTimes && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setShowAllTimes(false)}
-                            className="text-muted-foreground"
-                          >
-                            Vis færre
-                          </Button>
-                        )}
-                      </>
-                    );
-                  })()}
+              {/* Calendar & Time slots - side by side on desktop */}
+              <div className="flex flex-col lg:flex-row lg:gap-8">
+                {/* Calendar */}
+                <div className="flex justify-center lg:justify-start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => { setSelectedDate(date); setSelectedTime(""); setShowAllTimes(false); }}
+                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                    className="rounded-lg border"
+                    locale={da}
+                  />
                 </div>
-              )}
+
+                {/* Time slots */}
+                {selectedDate && (
+                  <div className="flex-1 mt-4 lg:mt-0 space-y-3">
+                    <Label className="text-sm font-medium">Ledige tider {format(selectedDate, 'd. MMMM', { locale: da })}</Label>
+                    {(() => {
+                      const allTimes = getFilteredTimes();
+                      const timesToShow = showAllTimes ? allTimes : allTimes.slice(0, INITIAL_TIMES_TO_SHOW);
+                      const hasMoreTimes = allTimes.length > INITIAL_TIMES_TO_SHOW;
+                      
+                      if (allTimes.length === 0) {
+                        return <p className="text-sm text-muted-foreground py-2">Ingen ledige tider - prøv en anden dag.</p>;
+                      }
+                      
+                      return (
+                        <>
+                          <div className="flex flex-wrap gap-2">
+                            {timesToShow.map((time) => (
+                              <Button 
+                                key={time} 
+                                variant={selectedTime === time ? "default" : "outline"} 
+                                size="sm" 
+                                onClick={() => setSelectedTime(time)}
+                                className="min-w-[70px]"
+                              >
+                                {time}
+                              </Button>
+                            ))}
+                          </div>
+                          {hasMoreTimes && !showAllTimes && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setShowAllTimes(true)}
+                              className="text-primary hover:text-primary/80"
+                            >
+                              Se flere tider ({allTimes.length - INITIAL_TIMES_TO_SHOW} mere)
+                            </Button>
+                          )}
+                          {showAllTimes && hasMoreTimes && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setShowAllTimes(false)}
+                              className="text-muted-foreground"
+                            >
+                              Vis færre
+                            </Button>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
 
               {/* Selection summary */}
               {selectedDate && selectedTime && (
