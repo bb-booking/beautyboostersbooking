@@ -18,6 +18,7 @@ import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BoosterAssignment } from "@/components/booking/BoosterAssignment";
 import { LocationBubble } from "@/components/booking/LocationBubble";
 import { BookingSteps } from "@/components/booking/BookingSteps";
+import { UpsellServices } from "@/components/booking/UpsellServices";
 
 interface Service {
   id: string;
@@ -786,13 +787,18 @@ const Booking = () => {
         </div>
 
         {/* Cart Summary (always visible) */}
-        <div className="mb-6">
+        <div className="mb-4">
           <BookingSummary
             items={cartItems}
             onRemoveItem={removeFromCart}
             totalPrice={getTotalPrice()}
             totalDuration={getTotalDuration()}
           />
+        </div>
+
+        {/* Upsell related services */}
+        <div className="mb-6">
+          <UpsellServices excludeIds={cartItems.map(item => item.id.split('-')[0])} />
         </div>
 
         {/* STEP 1: Date & Time */}
