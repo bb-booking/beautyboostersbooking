@@ -2,7 +2,7 @@ import Hero from "@/components/home/Hero";
 import AppDownloadQR from "@/components/home/AppDownloadQR";
 import PopularServices from "@/components/home/PopularServices";
 import { Button } from "@/components/ui/button";
-import { Users, Phone, Zap, Calendar as CalendarIcon, Mail, FileText } from "lucide-react";
+import { Users, Phone, Zap, Calendar as CalendarIcon, Mail, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -79,12 +79,13 @@ const Index = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <Button variant="outline" size="lg" asChild>
                 <a href="mailto:hello@beautyboosters.dk">
-                  <Phone className="mr-2 h-5 w-5" />
+                  <Mail className="mr-2 h-5 w-5" />
                   Send Mail
                 </a>
               </Button>
               <Button variant="outline" size="lg" asChild>
                 <Link to="/inquiry">
+                  <Send className="mr-2 h-5 w-5" />
                   Opret Forespørgsel
                 </Link>
               </Button>
