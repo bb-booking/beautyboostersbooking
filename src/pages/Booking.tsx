@@ -79,7 +79,7 @@ const Booking = () => {
   const [specificBooster, setSpecificBooster] = useState<Booster | null>(null);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
   const [selectedCounts, setSelectedCounts] = useState<{people: number; boosters: number} | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableBoosters, setAvailableBoosters] = useState<Booster[]>([]);
   const [loading, setLoading] = useState(true);

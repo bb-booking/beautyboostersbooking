@@ -71,7 +71,7 @@ export const BookingSummary = ({ items, onRemoveItem, totalPrice, totalDuration 
               <Sparkles className="h-4 w-4" />
               <span>Boosters</span>
             </div>
-            <span className="font-semibold text-primary">{totalBoosters}</span>
+            <span className="font-semibold text-foreground">{totalBoosters}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
