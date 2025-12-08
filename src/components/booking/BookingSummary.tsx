@@ -19,6 +19,18 @@ export const BookingSummary = ({ items, onRemoveItem, totalPrice, totalDuration 
   const totalBoosters = items.reduce((sum, item) => sum + item.boosters, 0);
   const totalPeople = items.reduce((sum, item) => sum + item.people, 0);
 
+  // Group items by service name
+  const groupedItems = items.reduce((acc, item) => {
+    const existing = acc.find(g => g.name === item.name);
+    if (existing) {
+      existing.count += item.people;
+      existing.ids.push(item.id);
+    } else {
+      acc.push({ name: item.name, count: item.people, ids: [item.id] });
+    }
+    return acc;
+  }, [] as { name: string; count: number; ids: string[] }[]);
+
   return (
     <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-primary/5">
       {/* Header */}
@@ -32,23 +44,23 @@ export const BookingSummary = ({ items, onRemoveItem, totalPrice, totalDuration 
       </div>
 
       <CardContent className="p-5 space-y-4">
-        {/* Service items - compact list with quantity */}
+        {/* Service items - grouped by name */}
         <div className="space-y-2">
-          {items.map((item) => (
+          {groupedItems.map((group) => (
             <div 
-              key={item.id} 
+              key={group.name} 
               className="flex items-center justify-between gap-3 bg-background/60 p-3 rounded-lg border border-border/30"
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="text-sm text-muted-foreground font-medium">{item.people}x</span>
-                <span className="font-medium text-sm truncate">{item.name}</span>
+                <span className="text-sm text-muted-foreground font-medium">{group.count}x</span>
+                <span className="font-medium text-sm truncate">{group.name}</span>
               </div>
               {onRemoveItem && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
-                  onClick={() => onRemoveItem(item.id)}
+                  onClick={() => onRemoveItem(group.ids[group.ids.length - 1])}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
