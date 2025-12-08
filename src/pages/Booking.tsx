@@ -536,9 +536,11 @@ const Booking = () => {
     setLoadingBoosters(true);
 
     try {
-      // Search for available slots for the next 14 days
-      const searchDate = selectedDate || new Date();
-      const endDate = addDays(searchDate, 14);
+      // Always search from NOW, not from selected date
+      const now = new Date();
+      const searchDate = now;
+      const endDate = addDays(now, 14);
+      const currentTime = format(now, 'HH:mm');
 
       // Get service categories to filter boosters
       const serviceCategories = cartItems.length > 0 
@@ -587,17 +589,33 @@ const Booking = () => {
           .lte('date', format(endDate, 'yyyy-MM-dd'))
           .order('date', { ascending: true })
           .order('start_time', { ascending: true })
-          .limit(1);
+          .limit(20);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
-          const firstSlot = data[0];
-          setSelectedDate(new Date(firstSlot.date));
-          setSelectedTime(firstSlot.start_time.substring(0, 5));
-          toast.success(`Fundet ledig tid: ${format(new Date(firstSlot.date), 'd. MMMM', { locale: da })} kl. ${firstSlot.start_time.substring(0, 5)}`);
+          // Find the first slot that's actually in the future (considering time for today)
+          const today = format(now, 'yyyy-MM-dd');
+          const validSlot = data.find(slot => {
+            if (slot.date > today) return true;
+            if (slot.date === today) {
+              return slot.start_time.substring(0, 5) > currentTime;
+            }
+            return false;
+          });
+          
+          if (validSlot) {
+            setSelectedDate(new Date(validSlot.date));
+            setSelectedTime(validSlot.start_time.substring(0, 5));
+            toast.success(`Fundet ledig tid: ${format(new Date(validSlot.date), 'd. MMMM', { locale: da })} kl. ${validSlot.start_time.substring(0, 5)}`);
+          } else {
+            const tomorrow = addDays(now, 1);
+            setSelectedDate(tomorrow);
+            setSelectedTime("09:00");
+            toast.info("Ingen ledige tider fundet");
+          }
         } else {
-          const tomorrow = addDays(searchDate, 1);
+          const tomorrow = addDays(now, 1);
           setSelectedDate(tomorrow);
           setSelectedTime("09:00");
           toast.info("Ingen ledige tider fundet");
@@ -615,19 +633,34 @@ const Booking = () => {
         .lte('date', format(endDate, 'yyyy-MM-dd'))
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
-        .limit(1);
+        .limit(20);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Find the first slot
-        const firstSlot = data[0];
-        setSelectedDate(new Date(firstSlot.date));
-        setSelectedTime(firstSlot.start_time.substring(0, 5)); // Convert HH:MM:SS to HH:MM
-        toast.success(`Fundet ledig tid: ${format(new Date(firstSlot.date), 'd. MMMM', { locale: da })} kl. ${firstSlot.start_time.substring(0, 5)}`);
+        // Find the first slot that's actually in the future (considering time for today)
+        const today = format(now, 'yyyy-MM-dd');
+        const validSlot = data.find(slot => {
+          if (slot.date > today) return true;
+          if (slot.date === today) {
+            return slot.start_time.substring(0, 5) > currentTime;
+          }
+          return false;
+        });
+        
+        if (validSlot) {
+          setSelectedDate(new Date(validSlot.date));
+          setSelectedTime(validSlot.start_time.substring(0, 5));
+          toast.success(`Fundet ledig tid: ${format(new Date(validSlot.date), 'd. MMMM', { locale: da })} kl. ${validSlot.start_time.substring(0, 5)}`);
+        } else {
+          const tomorrow = addDays(now, 1);
+          setSelectedDate(tomorrow);
+          setSelectedTime("09:00");
+          toast.info("Ingen registrerede ledige tider fundet i de næste 14 dage");
+        }
       } else {
         // If no availability found in database, suggest next day at 09:00
-        const tomorrow = addDays(searchDate, 1);
+        const tomorrow = addDays(now, 1);
         setSelectedDate(tomorrow);
         setSelectedTime("09:00");
         toast.info("Ingen registrerede ledige tider fundet i de næste 14 dage");
@@ -1203,7 +1236,7 @@ const Booking = () => {
           />
         )}
 
-        {/* Date & Time Selection - Compact Layout */}
+        {/* Date & Time Selection - Smart Layout */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -1214,91 +1247,100 @@ const Booking = () => {
               Vælg dit foretrukne tidspunkt for behandlingen
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              {/* Date Picker - Compact */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Dato</Label>
-                <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: da }) : "Vælg dato"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => { setSelectedDate(date); setDatePopoverOpen(false); }}
-                      disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                      className={cn("rounded-md border pointer-events-auto")}
-                      locale={da}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          <CardContent className="space-y-4">
+            {/* Next Available Time Button - Prominent */}
+            <Button 
+              variant="default" 
+              className="w-full"
+              onClick={findNextAvailableTime}
+              disabled={loadingBoosters}
+            >
+              {loadingBoosters ? "Søger..." : "🕐 Find næste ledige tid"}
+            </Button>
 
-              {/* Time Picker */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Tidspunkt</Label>
-                <Select value={selectedTime} onValueChange={setSelectedTime} disabled={!selectedDate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vælg tidspunkt" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50 max-h-72">
-                    {timeSlots
-                      .filter((time) => {
-                        // Filter out past times if today is selected
-                        if (!selectedDate || !isToday(selectedDate)) return true;
-                        const [hour, min] = time.split(':').map(Number);
-                        const now = new Date();
-                        return hour > now.getHours() || (hour === now.getHours() && min > now.getMinutes());
-                      })
-                      .map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
               </div>
-
-              {/* Next Available Times Button */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium opacity-0">Næste</Label>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={findNextAvailableTime}
-                  disabled={loadingBoosters}
-                >
-                  {loadingBoosters ? "Søger..." : "Vis næste ledige tider"}
-                </Button>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">eller vælg selv</span>
               </div>
             </div>
 
-            {/* Selected Summary - Clickable */}
+            {/* Date Picker */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Dato</Label>
+              <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "EEEE d. MMMM yyyy", { locale: da }) : "Vælg dato"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => { setSelectedDate(date); setSelectedTime(""); setDatePopoverOpen(false); }}
+                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                    className={cn("rounded-md border pointer-events-auto")}
+                    locale={da}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Available Time Slots - Shown when date is selected */}
+            {selectedDate && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Ledige tider {format(selectedDate, 'd. MMMM', { locale: da })}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(() => {
+                    const availableTimes = timeSlots.filter((time) => {
+                      if (!isToday(selectedDate)) return true;
+                      const [hour, min] = time.split(':').map(Number);
+                      const now = new Date();
+                      return hour > now.getHours() || (hour === now.getHours() && min > now.getMinutes());
+                    });
+                    
+                    if (availableTimes.length === 0) {
+                      return (
+                        <p className="text-sm text-muted-foreground py-2">
+                          Ingen ledige tider på denne dato. Prøv en anden dag.
+                        </p>
+                      );
+                    }
+                    
+                    return availableTimes.map((time) => (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedTime(time)}
+                        className="min-w-[70px]"
+                      >
+                        {time}
+                      </Button>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Selected Summary */}
             {selectedDate && selectedTime && (
-              <div 
-                className="mt-4 p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
-                onClick={() => {
-                  // Allow clicking on summary to edit time
-                  setSelectedTime("");
-                }}
-              >
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-primary" />
-                  <span>
-                    <strong>{format(selectedDate, 'EEEE d. MMMM yyyy', { locale: da })}</strong> kl. {selectedTime}
+                  <span className="font-medium">
+                    {format(selectedDate, 'EEEE d. MMMM yyyy', { locale: da })} kl. {selectedTime}
                   </span>
-                  <span className="text-muted-foreground ml-auto">Klik for at ændre tid</span>
                 </div>
               </div>
             )}
