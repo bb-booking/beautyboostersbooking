@@ -502,6 +502,11 @@ export default function Checkout() {
     }
   };
 
+  // Calculate total from all cart items
+  const allCartItems = cartItems || [{ service, booster, booking }];
+  const cartTotal = allCartItems.reduce((sum: number, item: any) => sum + (item.service?.price || 0), 0);
+  const finalTotal = Math.max(0, cartTotal - discount);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -510,10 +515,10 @@ export default function Checkout() {
           <div className="flex items-center justify-center gap-4 mb-4">
             <div className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors",
-              currentStep === 1 ? "bg-primary text-primary-foreground" : bookingConfirmed ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+              currentStep === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             )}>
-              {bookingConfirmed ? <Check className="h-4 w-4" /> : <span className="w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs">1</span>}
-              <span>Bekræft booking</span>
+              <span className="w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs">1</span>
+              <span>Oversigt</span>
             </div>
             <div className="h-px w-8 bg-border" />
             <div className={cn(
@@ -521,128 +526,66 @@ export default function Checkout() {
               currentStep === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             )}>
               <span className="w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs">2</span>
-              <span>Dine oplysninger</span>
+              <span>Betaling</span>
             </div>
           </div>
           
           <h1 className="text-3xl font-bold text-center">
-            {currentStep === 1 ? 'Bekræft din booking' : 'Dine oplysninger'}
+            {currentStep === 1 ? 'Din ordre' : 'Gennemfør betaling'}
           </h1>
-          
-          {isDirectBooking && (
-            <div className="mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 max-w-md mx-auto">
-              <p className="text-sm text-green-800 dark:text-green-200 text-center">
-                <strong>Ledig tid!</strong> Bookingen bekræftes med det samme.
-              </p>
-            </div>
-          )}
         </div>
         
-        {/* Step 1: Confirm Booking */}
+        {/* Step 1: Order Overview */}
         {currentStep === 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Booking Summary */}
+          {/* All Cart Items */}
           <Card>
             <CardHeader>
-              <CardTitle>Booking oversigt</CardTitle>
-              <CardDescription>
-                {isDirectBooking 
-                  ? 'Tjek dine oplysninger - bookingen bekræftes med det samme' 
-                  : 'Redigér dato/tid og adresse inden betaling'}
-              </CardDescription>
+              <CardTitle>Din kurv ({allCartItems.length} {allCartItems.length === 1 ? 'service' : 'services'})</CardTitle>
+              <CardDescription>Gennemgå dine valgte services</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
-              {/* Top-oversigt */}
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">Service: {service.name}</Badge>
-                  <Badge variant="outline">Varighed: {service.duration} t</Badge>
-                  {counts?.people ? (<Badge variant="outline">Personer: {counts.people}</Badge>) : null}
-                  {counts?.boosters ? (<Badge variant="outline">Boosters: {counts.boosters}</Badge>) : null}
-                  <Badge variant="outline">
-                    Dato: {(selectedDate || booking.date)
-                      ? (selectedDate
-                          ? selectedDate.toLocaleDateString('da-DK')
-                          : (typeof booking.date === 'string'
-                              ? new Date(booking.date).toLocaleDateString('da-DK')
-                              : (booking.date as Date).toLocaleDateString('da-DK')))
-                      : 'Ikke valgt'}
-                  </Badge>
-                  <Badge variant="outline">Tid: {selectedTime || booking.time}</Badge>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">Boosters:</span>
-                  <Badge variant="secondary">{booster.name} (primær)</Badge>
-                  {extraBoosters.map((b) => (
-                    <Badge key={b.id} variant="outline">{b.name}</Badge>
-                  ))}
-                  {!isDirectBooking && (
-                    <div className="ml-auto">
-                      <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
-                        Vælg/administrér ekstra booster(s)
-                      </Button>
+            <CardContent className="space-y-4">
+              {allCartItems.map((item: any, index: number) => (
+                <div key={index} className="p-4 rounded-lg border bg-muted/30">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-semibold">{item.service?.name || service.name}</h4>
+                      <p className="text-sm text-muted-foreground">{item.booster?.name || booster.name}</p>
                     </div>
-                  )}
+                    <span className="font-semibold">{item.service?.price || service.price} DKK</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <Badge variant="outline">
+                      <CalendarIcon className="h-3 w-3 mr-1" />
+                      {selectedDate?.toLocaleDateString('da-DK') || 'Dato ikke valgt'}
+                    </Badge>
+                    <Badge variant="outline">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {selectedTime || 'Tid ikke valgt'}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
+              ))}
 
-              {/* Date */}
-              <div className="space-y-2">
-                <Label>Dato</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      disabled={isDirectBooking}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? selectedDate.toLocaleDateString('da-DK') : "Vælg dato"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(d) => {
-                        setSelectedDate(d);
-                        setLocalBooking((prev: any) => ({ ...prev, date: d }));
-                      }}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Time */}
-              <div className="space-y-2">
-                <Label>Tidspunkt</Label>
-                <Select 
-                  value={selectedTime} 
-                  onValueChange={(v) => {
-                    setSelectedTime(v);
-                    setLocalBooking((prev: any) => ({ ...prev, time: v }));
-                  }}
-                  disabled={isDirectBooking}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vælg tidspunkt" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50 max-h-72">
-                    {timeSlots.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
+              {extraBoosters.length > 0 && (
+                <div className="p-3 rounded-md bg-muted/50">
+                  <span className="text-sm font-medium">Ekstra boosters:</span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {extraBoosters.map((b) => (
+                      <Badge key={b.id} variant="outline">{b.name}</Badge>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                </div>
+              )}
+
+              <Separator />
 
               {/* Address */}
               <div className="space-y-2">
-                <Label>Adresse</Label>
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Leveringsadresse
+                </Label>
                 <div className="relative">
                   <Input
                     placeholder="F.eks. Husumgade 1, 2200 København N"
@@ -651,274 +594,256 @@ export default function Checkout() {
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
                   />
-                  {showSuggestions && addressQuery.trim().length >= 3 && (
+                  {showSuggestions && addressQuery.trim().length >= 3 && suggestions.length > 0 && (
                     <div className="absolute mt-1 left-0 right-0 bg-background border rounded-md shadow z-50 max-h-56 overflow-auto">
                       {suggestions.slice(0,8).map((opt) => (
-                        <div
-                          key={opt}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setAddressQuery(opt);
-                            setShowSuggestions(false);
-                            const parsed = parseAddressFromText(opt);
-                            if (parsed) {
-                              const full = `${parsed.street}, ${parsed.postalCode} ${parsed.city}`;
-                              setLocalBooking((p: any) => ({ ...p, location: full }));
-                              const stored = sessionStorage.getItem('bookingDetails');
-                              try {
-                                const bd = stored ? JSON.parse(stored) : {};
-                                const newBD = {
-                                  ...bd,
-                                  location: { address: parsed.street, postalCode: parsed.postalCode, city: parsed.city },
-                                };
-                                sessionStorage.setItem('bookingDetails', JSON.stringify(newBD));
-                              } catch {}
-                            }
-                          }}
-                        >
+                        <div key={opt} className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onMouseDown={(e) => { e.preventDefault(); setAddressQuery(opt); setShowSuggestions(false); }}>
                           {opt}
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div>
-                  <Button variant="outline" size="sm" onClick={getCurrentLocation} disabled={isLoadingLocation} className="mt-2">
-                    {isLoadingLocation ? (
-                      <>
-                        <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-b-transparent animate-spin" />
-                        Finder lokation...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin className="mr-2 h-4 w-4" />
-                        Brug nuværende lokation
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Service controls */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Valgt service:</span>
-                  <span className="truncate max-w-[60%] text-right">{service.name}</span>
-                </div>
-                
-                {/* Edit booking button - prominent */}
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-left whitespace-normal h-auto py-2" 
-                  onClick={handleEditBooking}
-                >
-                  <Pencil className="mr-2 h-4 w-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">Rediger booking (ændre service, dato, tid)</span>
-                  <span className="sm:hidden">Rediger booking</span>
+                <Button variant="outline" size="sm" onClick={getCurrentLocation} disabled={isLoadingLocation}>
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {isLoadingLocation ? 'Finder...' : 'Brug nuværende lokation'}
                 </Button>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 whitespace-nowrap" onClick={handleAppendService}>
-                    <Plus className="mr-2 h-4 w-4 flex-shrink-0" />
-                    <span className="hidden sm:inline">Tilføj ekstra service</span>
-                    <span className="sm:hidden">Tilføj</span>
-                  </Button>
-                  <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={() => navigate('/services')}>
-                    <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
-                    Fjern
-                  </Button>
-                </div>
               </div>
 
-              {/* Rabatkode */}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleEditBooking}>
+                  <Pencil className="mr-2 h-4 w-4" />Rediger
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleAppendService}>
+                  <Plus className="mr-2 h-4 w-4" />Tilføj service
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Price Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pris oversigt</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {allCartItems.map((item: any, index: number) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span>{item.service?.name || service.name}</span>
+                  <span>{item.service?.price || service.price} DKK</span>
+                </div>
+              ))}
+              
+              <Separator />
+              
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{cartTotal} DKK</span>
+              </div>
+
+              {/* Promo code */}
               <div className="space-y-2">
                 <Label>Rabatkode</Label>
                 {appliedCode ? (
-                  <div className="flex items-center justify-between p-2 rounded-md bg-muted">
-                    <span className="text-sm">Anvendt: {appliedCode} (-{discount} DKK)</span>
-                    <Button variant="ghost" size="sm" onClick={handleRemovePromo}>
-                      Fjern
-                    </Button>
+                  <div className="flex items-center justify-between p-2 rounded-md bg-green-50 dark:bg-green-950/30">
+                    <span className="text-sm text-green-700 dark:text-green-300">{appliedCode} (-{discount} DKK)</span>
+                    <Button variant="ghost" size="sm" onClick={handleRemovePromo}>Fjern</Button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <Input
-                      placeholder="Indtast rabatkode"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                    />
-                    <Button onClick={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()}>
-                      Anvend
-                    </Button>
+                    <Input placeholder="Indtast kode" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
+                    <Button onClick={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()}>Anvend</Button>
                   </div>
                 )}
               </div>
 
-              {/* Total */}
-              <div className="space-y-1">
-                {discount > 0 && (
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Rabat</span>
-                    <span>-{discount} DKK</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total:</span>
-                  <span>{Math.max(0, service.price - discount)} DKK</span>
+              {discount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Rabat</span>
+                  <span>-{discount} DKK</span>
                 </div>
+              )}
+
+              <Separator />
+
+              <div className="flex justify-between items-center text-xl font-bold">
+                <span>Total at betale</span>
+                <span>{finalTotal} DKK</span>
               </div>
 
-              <div className="mt-2 p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold mb-2">Betalingsbetingelser:</h4>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• Beløbet reserveres på dit kort indtil service er udført</li>
-                  <li>• Aflysning 24+ timer før: Ingen gebyr</li>
-                  <li>• Aflysning 6-24 timer før: 50% gebyr</li>
-                  <li>• Aflysning under 6 timer før: 100% gebyr</li>
-                </ul>
-              </div>
-              
-              {/* Confirm Step 1 Button */}
-              <Button 
-                className="w-full mt-4" 
-                size="lg"
-                onClick={() => {
-                  setBookingConfirmed(true);
-                  setCurrentStep(2);
-                }}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Bekræft og fortsæt
+              <Button className="w-full mt-4" size="lg" onClick={() => setCurrentStep(2)}>
+                Fortsæt til betaling
               </Button>
             </CardContent>
           </Card>
         </div>
         )}
 
-        {/* Step 2: Customer Information */}
+        {/* Step 2: Customer Info & Payment */}
         {currentStep === 2 && (
-          <div className="max-w-md mx-auto">
-            {/* Show confirmed booking summary */}
-            <div className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Check className="h-5 w-5 text-green-600" />
-                <span className="font-semibold text-green-800 dark:text-green-200">Booking bekræftet</span>
-              </div>
-              <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                <p><strong>Service:</strong> {service.name}</p>
-                <p><strong>Booster:</strong> {booster.name}</p>
-                <p><strong>Dato:</strong> {selectedDate?.toLocaleDateString('da-DK') || 'Ikke valgt'}</p>
-                <p><strong>Tid:</strong> {selectedTime}</p>
-                <p><strong>Adresse:</strong> {addressQuery}</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="mt-2 text-green-700 dark:text-green-300"
-                onClick={() => setCurrentStep(1)}
-              >
-                <Pencil className="h-3 w-3 mr-1" /> Rediger
-              </Button>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Customer Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Dine oplysninger</CardTitle>
+                <CardDescription>
+                  {isLoggedIn && customerInfo.email 
+                    ? 'Vi har udfyldt dine oplysninger - tjek dem'
+                    : 'Udfyld kontaktoplysninger'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Fulde navn</Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Indtast dit fulde navn"
+                    value={customerInfo.name}
+                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="din@email.dk"
+                    value={customerInfo.email}
+                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefonnummer</Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="+45 12 34 56 78"
+                    value={customerInfo.phone}
+                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="special-requests">Specielle ønsker (valgfrit)</Label>
+                  <Textarea 
+                    id="special-requests" 
+                    placeholder="Har du nogle specielle ønsker?"
+                    rows={3}
+                    value={customerInfo.specialRequests}
+                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, specialRequests: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="terms" 
+                    checked={agreedToTerms}
+                    onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                  />
+                  <Label htmlFor="terms" className="text-sm leading-relaxed">
+                    Jeg accepterer betalingsbetingelserne og{" "}
+                    <a href="#" className="text-primary underline">privatlivspolitikken</a>
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Dine oplysninger</CardTitle>
-              <CardDescription>
-                {isLoggedIn && customerInfo.email 
-                  ? 'Vi har udfyldt dine oplysninger - tjek dem og fortsæt'
-                  : 'Udfyld dine kontaktoplysninger for at gennemføre bookingen'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Fulde navn</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Indtast dit fulde navn"
-                  value={customerInfo.name}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="din@email.dk"
-                  value={customerInfo.email}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefonnummer</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="+45 12 34 56 78"
-                  value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="special-requests">Specielle ønsker (valgfrit)</Label>
-                <Textarea 
-                  id="special-requests" 
-                  placeholder="Har du nogle specielle ønsker eller krav til behandlingen?"
-                  rows={3}
-                  value={customerInfo.specialRequests}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, specialRequests: e.target.value }))}
-                />
-              </div>
-              
-              <div className="flex items-start space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={agreedToTerms}
-                  onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                />
-                <Label htmlFor="terms" className="text-sm leading-relaxed">
-                  Jeg accepterer betalingsbetingelserne og{" "}
-                  <a href="#" className="text-primary underline">privatlivspolitikken</a>
-                </Label>
-              </div>
-              
-              {/* Swipe to book for saved cards */}
-              {hasSavedCard && agreedToTerms && customerInfo.name && customerInfo.email && customerInfo.phone ? (
-                <SwipeToBook
-                  amount={Math.max(0, service.price - discount)}
-                  onComplete={handlePayment}
-                  isProcessing={isProcessing}
-                  savedCard={savedCard || undefined}
-                />
-              ) : (
-                <Button 
-                  className={cn("w-full", isDirectBooking && "bg-green-600 hover:bg-green-700")}
-                  size="lg" 
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                >
-                  {isDirectBooking ? (
-                    <>
-                      <Check className="mr-2 h-4 w-4" />
-                      {isProcessing ? 'Bekræfter...' : 'Bekræft booking'}
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      {isProcessing ? 'Behandler...' : 'Reservér og betal'}
-                    </>
+            {/* Order Summary & Payment */}
+            <div className="space-y-6">
+              {/* Mini Order Summary */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Ordre oversigt</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {allCartItems.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between text-sm">
+                      <div>
+                        <span className="font-medium">{item.service?.name || service.name}</span>
+                        <span className="text-muted-foreground ml-2">({item.booster?.name || booster.name})</span>
+                      </div>
+                      <span>{item.service?.price || service.price} DKK</span>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span>{selectedDate?.toLocaleDateString('da-DK')}</span>
+                    <span>kl. {selectedTime}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">{addressQuery}</div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Rabat ({appliedCode})</span>
+                      <span>-{discount} DKK</span>
+                    </div>
                   )}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>{finalTotal} DKK</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
+                    <Pencil className="h-3 w-3 mr-1" /> Rediger ordre
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Payment */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Betalingsmetode
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-4 bg-muted/50 rounded-lg mb-4">
+                    <p className="text-sm text-muted-foreground mb-3">Vi accepterer:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">Visa</Badge>
+                      <Badge variant="outline">Mastercard</Badge>
+                      <Badge variant="outline">Dankort</Badge>
+                      <Badge variant="outline">MobilePay</Badge>
+                      <Badge variant="outline">Apple Pay</Badge>
+                    </div>
+                  </div>
+                  
+                  {hasSavedCard && (
+                    <div className="p-3 bg-muted/30 rounded-lg mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        <span className="text-sm">Gemt kort: •••• {savedCard.last4}</span>
+                      </div>
+                      <Badge>{savedCard.brand}</Badge>
+                    </div>
+                  )}
+
+                  {hasSavedCard && agreedToTerms && customerInfo.name && customerInfo.email && customerInfo.phone ? (
+                    <SwipeToBook
+                      amount={finalTotal}
+                      onComplete={handlePayment}
+                      isProcessing={isProcessing}
+                      savedCard={savedCard || undefined}
+                    />
+                  ) : (
+                    <Button 
+                      className="w-full"
+                      size="lg" 
+                      onClick={handlePayment}
+                      disabled={isProcessing || !agreedToTerms || !customerInfo.name || !customerInfo.email || !customerInfo.phone}
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      {isProcessing ? 'Behandler...' : `Betal ${finalTotal} DKK`}
+                    </Button>
+                  )}
+
+                  <p className="text-xs text-muted-foreground text-center mt-3">
+                    Bookingen bekræftes efter betaling gennemføres
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
