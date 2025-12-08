@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface CartItem {
   id: string;
@@ -31,6 +31,24 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Load cart from sessionStorage
+const loadCartFromStorage = (): CartItem[] => {
+  try {
+    const stored = sessionStorage.getItem('cart');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {}
+  return [];
+};
+
+// Save cart to sessionStorage
+const saveCartToStorage = (items: CartItem[]) => {
+  try {
+    sessionStorage.setItem('cart', JSON.stringify(items));
+  } catch {}
+};
+
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -40,18 +58,32 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(loadCartFromStorage);
 
+  // Save cart synchronously to ensure it's persisted before navigation
   const addToCart = (item: CartItem) => {
-    setItems(prev => [...prev, { ...item, id: `${item.id}-${Date.now()}` }]);
+    const newItem = { ...item, id: `${item.id}-${Date.now()}` };
+    setItems(prev => {
+      const newItems = [...prev, newItem];
+      // Save synchronously - critical for navigation timing
+      saveCartToStorage(newItems);
+      return newItems;
+    });
   };
 
   const removeFromCart = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    setItems(prev => {
+      const newItems = prev.filter(item => item.id !== id);
+      saveCartToStorage(newItems);
+      return newItems;
+    });
   };
 
   const clearCart = () => {
     setItems([]);
+    try {
+      sessionStorage.removeItem('cart');
+    } catch {}
   };
 
   const getTotalPrice = () => {

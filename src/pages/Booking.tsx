@@ -783,7 +783,12 @@ const Booking = () => {
     }
   };
 
-  if (loading || (boosterId && (loadingSpecificBooster || !specificBooster))) {
+  // Only show skeleton for booster-specific booking that needs to load booster data
+  // For general booking (from Services), we should show content immediately if cart has items
+  const shouldShowSkeleton = loading && cartItems.length === 0;
+  const boosterLoading = boosterId && (loadingSpecificBooster || !specificBooster);
+  
+  if (shouldShowSkeleton || boosterLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-8 w-48 mb-6" />
