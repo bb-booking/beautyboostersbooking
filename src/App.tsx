@@ -40,6 +40,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
+import AdminInvoicesPage from "./pages/admin/AdminInvoices";
 import { BoosterLayout } from "@/components/layout/BoosterLayout";
 import BoosterDashboard from "./pages/booster/BoosterDashboard";
 import BoosterCalendar from "./pages/booster/BoosterCalendar";
@@ -113,6 +114,7 @@ const AppContent = () => {
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="bookings" element={<AdminBookings />} />
             <Route path="finance" element={<AdminFinance />} />
+            <Route path="invoices" element={<AdminInvoicesPage />} />
             <Route path="boosters" element={<AdminBoosters />} />
             <Route path="booster-applications" element={<AdminBoosterApplications />} />
             <Route path="messages" element={<AdminMessages />} />

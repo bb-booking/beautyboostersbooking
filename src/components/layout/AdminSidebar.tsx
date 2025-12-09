@@ -9,7 +9,8 @@ import {
   UserCheck,
   DollarSign,
   CalendarDays,
-  Tag
+  Tag,
+  FileText
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const adminItems = [
   { title: "Kalender", url: "/admin/calendar", icon: CalendarDays },
   { title: "Bookinger", url: "/admin/bookings", icon: Calendar },
   { title: "Beskeder", url: "/admin/messages", icon: MessageSquare },
+  { title: "Fakturaer", url: "/admin/invoices", icon: FileText },
   { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
   { title: "Rabatkoder", url: "/admin/discount-codes", icon: Tag },
 ];
