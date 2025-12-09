@@ -13,6 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { addDays, format, isEqual, startOfDay, startOfWeek } from "date-fns";
 import { da } from "date-fns/locale";
 import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound, MessageCircle, ImagePlus, StickyNote } from "lucide-react";
+import { BookingChatDialog } from "@/components/booking/BookingChatDialog";
+import { ImageUploadDialog } from "@/components/booking/ImageUploadDialog";
+import { AddServiceDialog } from "@/components/booking/AddServiceDialog";
+import { toast } from "sonner";
 
 interface BoosterEvent {
   id: string;
@@ -119,6 +123,11 @@ export default function BoosterCalendar() {
   const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
   const [releaseReason, setReleaseReason] = useState('');
   const [releaseLoading, setReleaseLoading] = useState(false);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const [currentBookingImages, setCurrentBookingImages] = useState<string[]>([]);
+  const [currentBookingServices, setCurrentBookingServices] = useState<any[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -538,11 +547,25 @@ export default function BoosterCalendar() {
 
                   {/* Hurtigknapper */}
                   <div className="flex flex-wrap gap-2 pt-3">
-                    <Button variant="default" size="sm" className="gap-1" onClick={() => alert('Chat åbner med kunden...')}>
+                    <Button variant="default" size="sm" className="gap-1" onClick={() => setChatDialogOpen(true)}>
                       <MessageCircle className="h-4 w-4" /> Chat med kunde
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => alert('Vælg billede at uploade...')}>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => {
+                      setCurrentBookingImages(meta.look_images || []);
+                      setImageDialogOpen(true);
+                    }}>
                       <ImagePlus className="h-4 w-4" /> Tilføj billede
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => {
+                      setCurrentBookingServices([{ 
+                        id: '1', 
+                        name: meta.service || '', 
+                        price: price, 
+                        peopleCount: peopleCount 
+                      }]);
+                      setServiceDialogOpen(true);
+                    }}>
+                      <Tag className="h-4 w-4" /> Tilføj service
                     </Button>
                   </div>
 
@@ -622,6 +645,47 @@ export default function BoosterCalendar() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Chat Dialog */}
+      {selectedEvent && (() => {
+        const meta = parseNotes(selectedEvent);
+        return (
+          <BookingChatDialog
+            open={chatDialogOpen}
+            onOpenChange={setChatDialogOpen}
+            customerName={meta.customer_name || 'Kunde'}
+            customerEmail={meta.customer_email}
+            customerPhone={meta.customer_phone}
+            bookingId={selectedEvent.id}
+            service={meta.service}
+          />
+        );
+      })()}
+
+      {/* Image Upload Dialog */}
+      <ImageUploadDialog
+        open={imageDialogOpen}
+        onOpenChange={setImageDialogOpen}
+        existingImages={currentBookingImages}
+        onImagesChange={(images) => {
+          setCurrentBookingImages(images);
+          // TODO: Save images to booking
+          toast.success('Billeder opdateret');
+        }}
+        bookingId={selectedEvent?.id}
+      />
+
+      {/* Add Service Dialog */}
+      <AddServiceDialog
+        open={serviceDialogOpen}
+        onOpenChange={setServiceDialogOpen}
+        existingServices={currentBookingServices}
+        onServicesChange={(services) => {
+          setCurrentBookingServices(services);
+          // TODO: Update booking with new services
+          toast.success('Services opdateret');
+        }}
+      />
     </div>
   );
 }
