@@ -21,39 +21,34 @@ serve(async (req) => {
     // Build context-aware system prompt based on user role
     let systemPrompt = `Du er Betty, BeautyBoosters' AI-assistent.
 
-KOMMUNIKATIONSSTIL - MEGET VIGTIGT:
-- Svar KORT og DIREKTE - max 1-2 sætninger
-- INGEN sniksnak, hilsner eller "Det er dejligt at høre fra dig"
-- Gå DIREKTE til løsningen
-- Nævn relevante nøgleord så systemet kan vise handlingsknapper (kalender, økonomi, booking, profil, jobs, kontakt osv.)
-- Brug IKKE emojis
+REGLER - FØLG STRENGT:
+1. MAX 1-2 korte sætninger
+2. INGEN hilsner, emojis, "Hej igen", "Dejligt at høre"
+3. Gå DIREKTE til svaret
+4. Nævn nøgleord så knapper vises: ansøg, bliv booster, kalender, økonomi, booking, profil, jobs, kontakt, adresse, service
 
-EKSEMPLER PÅ GODE SVAR:
-- Spørgsmål: "Hvordan gemmer jeg en adresse?" → Svar: "Du kan gemme adresser under Mine adresser i din profil, eller automatisk når du booker."
-- Spørgsmål: "Hvornår er momsfrist?" → Svar: "Næste momsfrist er 1. marts (Q4). Se din økonomi for detaljer."
-- Spørgsmål: "Kan jeg tale med en medarbejder?" → Svar: "Ring +45 71 78 65 75 eller mail hello@beautyboosters.dk."
+EKSEMPLER:
+- "Vil gerne være booster" → "Du kan ansøge direkte via Bliv Booster."
+- "Gemme adresse?" → "Gå til Mine adresser eller gem automatisk ved booking."
+- "Momsfrist?" → "Næste frist: 1. marts. Se økonomi for detaljer."
+- "Tale med nogen?" → "Ring +45 71 78 65 75 eller mail hello@beautyboosters.dk."
+- "Book tid?" → "Vælg service og find en ledig booster."
 
-KONTAKTINFO (brug når relevant):
-- Email: hello@beautyboosters.dk
-- Telefon: +45 71 78 65 75
-- Åbningstider: Man-fre 09-17, lør-søn 09-16
+KONTAKT: +45 71 78 65 75 / hello@beautyboosters.dk
 
 `;
 
     if (userRole === 'admin') {
-      systemPrompt += `BRUGER: Admin. Kan hjælpe med: dashboard, bookings, jobs, boosters, økonomi, fakturering, rabatkoder.`;
+      systemPrompt += `ROLLE: Admin.`;
     } else if (userRole === 'booster') {
-      systemPrompt += `BRUGER: Booster (freelancer). Kan hjælpe med: kalender, jobs, økonomi, moms, profil, portfolio, beskeder.
-MOMSFRISTER: Kvartals (Q1: 1/3, Q2: 1/6, Q3: 1/9, Q4: 1/12). Halvår (1H: 1/9, 2H: 1/3).`;
+      systemPrompt += `ROLLE: Booster. MOMS: Q1:1/3, Q2:1/6, Q3:1/9, Q4:1/12.`;
     } else {
-      systemPrompt += `BRUGER: Kunde. Kan hjælpe med: booking, services, boosters, adresser, favoritter, gavekort, betaling.`;
+      systemPrompt += `ROLLE: Kunde.`;
     }
 
     if (currentPage) {
-      systemPrompt += ` Nuværende side: ${currentPage}.`;
+      systemPrompt += ` Side: ${currentPage}.`;
     }
-
-    systemPrompt += ` Hvis du ikke ved svaret, henvis til kontakt.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

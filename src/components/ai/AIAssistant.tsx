@@ -242,8 +242,14 @@ const AIAssistant: React.FC = () => {
       }
     }
     
+    // Become booster / apply actions
+    if (content.includes('bliv booster') || content.includes('ansøg') || content.includes('blive booster') || 
+        content.includes('freelance') || content.includes('arbejde hos') || content.includes('job hos')) {
+      actions.push({ label: 'Bliv Booster', icon: <Star className="h-3 w-3" />, action: () => navigate('/booster-signup') });
+    }
+    
     // Jobs actions
-    if (content.includes('job') || content.includes('opgave') || content.includes('ansøg')) {
+    if (content.includes('job') || content.includes('opgave')) {
       if (userRole === 'booster') {
         actions.push({ label: 'Se ledige jobs', icon: <Briefcase className="h-3 w-3" />, action: () => navigate('/booster/jobs') });
       } else if (userRole === 'admin') {
@@ -268,8 +274,9 @@ const AIAssistant: React.FC = () => {
       }
     }
     
-    // Boosters/stylists actions (customer)
-    if (content.includes('booster') || content.includes('stylist') || content.includes('artist') || content.includes('find')) {
+    // Boosters/stylists actions (customer) - but not if already added "Bliv Booster"
+    if ((content.includes('booster') || content.includes('stylist') || content.includes('artist') || content.includes('find')) &&
+        !content.includes('bliv booster') && !content.includes('blive booster') && !content.includes('ansøg')) {
       if (userRole === 'customer') {
         actions.push({ label: 'Se vores boosters', icon: <Users className="h-3 w-3" />, action: () => navigate('/stylists') });
       }
