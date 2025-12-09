@@ -8,6 +8,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import Header from "@/components/layout/Header";
 import ChatWidget from "@/components/chat/ChatWidget";
 import SiteFooter from "@/components/layout/SiteFooter";
+import AIAssistant from "@/components/ai/AIAssistant";
 import Index from "./pages/Index";
 import BookingLanding from "./pages/BookingLanding";
 import Services from "./pages/Services";
@@ -142,6 +143,7 @@ const AppContent = () => {
       </main>
       {showPublicHeader && <SiteFooter />}
       {showPublicHeader && <ChatWidget />}
+      <AIAssistant />
     </div>
   );
 };

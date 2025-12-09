@@ -85,3 +85,6 @@ verify_jwt = false
 
 [functions.verify-cvr]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
