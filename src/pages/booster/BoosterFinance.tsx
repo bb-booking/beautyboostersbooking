@@ -76,6 +76,9 @@ interface BoosterProfile {
   cvrNumber?: string;
   companyName?: string;
   businessType: 'cvr' | 'b-income';
+  isVATRegistered: boolean;
+  vatPeriod: 'monthly' | 'quarterly' | 'semi-annual'; // månedsmoms, kvartalsmoms, halvårsmoms
+  annualRevenue?: number; // Determines VAT period
 }
 
 interface VATDeadline {
@@ -94,6 +97,21 @@ interface MonthlyInvoice {
   generatedAt?: Date;
 }
 
+// Determine VAT period based on annual revenue (Danish rules)
+const determineVATPeriod = (annualRevenue: number): 'monthly' | 'quarterly' | 'semi-annual' => {
+  if (annualRevenue >= 50000000) return 'monthly'; // Over 50 mio = månedsmoms
+  if (annualRevenue >= 5000000) return 'quarterly'; // 5-50 mio = kvartalsmoms
+  return 'semi-annual'; // Under 5 mio = halvårsmoms
+};
+
+const getVATPeriodLabel = (period: 'monthly' | 'quarterly' | 'semi-annual'): string => {
+  switch (period) {
+    case 'monthly': return 'Månedsmoms';
+    case 'quarterly': return 'Kvartalsmoms';
+    case 'semi-annual': return 'Halvårsmoms';
+  }
+};
+
 export default function BoosterFinance() {
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -105,38 +123,90 @@ export default function BoosterFinance() {
     hasCVR: true,
     cvrNumber: '12345678',
     companyName: 'Anna\'s Makeup Studio',
-    businessType: 'cvr'
+    businessType: 'cvr',
+    isVATRegistered: true, // Would be fetched from CVR API
+    vatPeriod: 'quarterly', // Determined by annual revenue
+    annualRevenue: 374400 // Under 5 mio = halvårsmoms, but showing quarterly for demo
   });
   const [vatDeadlines, setVatDeadlines] = useState<VATDeadline[]>([]);
   const [monthlyInvoices, setMonthlyInvoices] = useState<MonthlyInvoice[]>([]);
   const [vatSavingsAmount, setVatSavingsAmount] = useState(0);
   const [pendingInvoiceAmount, setPendingInvoiceAmount] = useState(0);
 
-  // Calculate VAT deadlines for CVR holders
-  const calculateVATDeadlines = () => {
+  // Calculate VAT deadlines based on VAT period type and current date
+  const calculateVATDeadlines = (vatPeriod: 'monthly' | 'quarterly' | 'semi-annual') => {
     const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     const deadlines: VATDeadline[] = [];
-    
-    // Danish VAT deadlines: quarterly for small businesses
-    // Q1: May 1, Q2: Aug 1, Q3: Nov 1, Q4: Mar 1 next year
-    const quarters = [
-      { period: 'Q4 2024 (Okt-Dec)', dueDate: new Date(2025, 2, 1), amount: 14400 },
-      { period: 'Q1 2025 (Jan-Mar)', dueDate: new Date(2025, 4, 1), amount: 0 },
-      { period: 'Q2 2025 (Apr-Jun)', dueDate: new Date(2025, 7, 1), amount: 0 },
-    ];
 
-    quarters.forEach(q => {
-      const daysUntil = differenceInDays(q.dueDate, now);
-      let status: VATDeadline['status'] = 'upcoming';
-      if (daysUntil < 0) status = 'overdue';
-      else if (daysUntil <= 14) status = 'due_soon';
+    if (vatPeriod === 'semi-annual') {
+      // Halvårsmoms: H1 (Jan-Jun) due Sep 1, H2 (Jul-Dec) due Mar 1 next year
+      const periods = [
+        { period: `H1 ${currentYear} (Jan-Jun)`, dueDate: new Date(currentYear, 8, 1) }, // Sep 1
+        { period: `H2 ${currentYear} (Jul-Dec)`, dueDate: new Date(currentYear + 1, 2, 1) }, // Mar 1 next year
+        { period: `H1 ${currentYear + 1} (Jan-Jun)`, dueDate: new Date(currentYear + 1, 8, 1) }, // Sep 1 next year
+      ];
       
-      if (q.period === 'Q4 2024 (Okt-Dec)') status = 'paid';
-      
-      deadlines.push({ ...q, status });
-    });
+      periods.forEach((p, idx) => {
+        const daysUntil = differenceInDays(p.dueDate, now);
+        let status: VATDeadline['status'] = 'upcoming';
+        if (daysUntil < 0) status = 'paid'; // Assume past deadlines are paid
+        else if (daysUntil <= 14) status = 'due_soon';
+        
+        // Only show future deadlines and the most recent past one
+        if (daysUntil >= -30) {
+          deadlines.push({ 
+            ...p, 
+            amount: idx === 0 ? 46800 : 0, // Estimated VAT for first period
+            status 
+          });
+        }
+      });
+    } else if (vatPeriod === 'quarterly') {
+      // Kvartalsmoms: Q1 due Jun 1, Q2 due Sep 1, Q3 due Dec 1, Q4 due Mar 1 next year
+      const quarters = [
+        { period: `Q3 ${currentYear} (Jul-Sep)`, dueDate: new Date(currentYear, 11, 1) }, // Dec 1
+        { period: `Q4 ${currentYear} (Okt-Dec)`, dueDate: new Date(currentYear + 1, 2, 1) }, // Mar 1 next year
+        { period: `Q1 ${currentYear + 1} (Jan-Mar)`, dueDate: new Date(currentYear + 1, 5, 1) }, // Jun 1 next year
+      ];
 
-    return deadlines;
+      quarters.forEach((q, idx) => {
+        const daysUntil = differenceInDays(q.dueDate, now);
+        let status: VATDeadline['status'] = 'upcoming';
+        if (daysUntil < 0) status = 'paid';
+        else if (daysUntil <= 14) status = 'due_soon';
+
+        deadlines.push({ 
+          ...q, 
+          amount: idx === 0 ? 14400 : 0,
+          status 
+        });
+      });
+    } else {
+      // Månedsmoms: Due on the 25th of the following month
+      for (let i = 0; i < 3; i++) {
+        const monthOffset = currentMonth + i;
+        const year = currentYear + Math.floor(monthOffset / 12);
+        const month = monthOffset % 12;
+        const periodDate = new Date(year, month, 1);
+        const dueDate = new Date(year, month + 1, 25); // 25th of next month
+        
+        const daysUntil = differenceInDays(dueDate, now);
+        let status: VATDeadline['status'] = 'upcoming';
+        if (daysUntil < 0) status = 'paid';
+        else if (daysUntil <= 7) status = 'due_soon';
+
+        deadlines.push({
+          period: format(periodDate, 'MMMM yyyy', { locale: da }),
+          dueDate,
+          amount: i === 0 ? 4800 : 0,
+          status
+        });
+      }
+    }
+
+    return deadlines.filter(d => d.status !== 'paid' || differenceInDays(new Date(), d.dueDate) <= 60);
   };
 
   // Mock chart data
@@ -253,7 +323,7 @@ export default function BoosterFinance() {
     setRecentJobs(mockJobs);
     setPayouts(mockPayouts);
     setPayslips(mockPayslips);
-    setVatDeadlines(calculateVATDeadlines());
+    setVatDeadlines(calculateVATDeadlines(boosterProfile.vatPeriod));
     setMonthlyInvoices(mockMonthlyInvoices);
     
     // Calculate VAT savings (25% of gross for CVR)
@@ -439,23 +509,54 @@ export default function BoosterFinance() {
       )}
 
       {/* VAT Savings Card for CVR holders */}
-      {boosterProfile.hasCVR && (
+      {boosterProfile.hasCVR && boosterProfile.isVATRegistered && (
         <Card className="border-green-300 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
                   <PiggyBank className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Læg til side til moms denne måned</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm text-muted-foreground">Læg til side til moms denne måned</p>
+                    <Badge variant="outline" className="text-xs">
+                      {getVATPeriodLabel(boosterProfile.vatPeriod)}
+                    </Badge>
+                  </div>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-400">{vatSavingsAmount.toLocaleString('da-DK')} kr</p>
                   <p className="text-xs text-muted-foreground">25% af brutto ({currentEarnings?.gross?.toLocaleString('da-DK')} kr)</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Næste momsfrist</p>
-                <p className="font-medium">{format(vatDeadlines.find(d => d.status !== 'paid')?.dueDate || new Date(), "d. MMM yyyy", { locale: da })}</p>
+                <p className="font-medium text-lg">
+                  {vatDeadlines.find(d => d.status !== 'paid')?.dueDate 
+                    ? format(vatDeadlines.find(d => d.status !== 'paid')!.dueDate, "d. MMMM yyyy", { locale: da })
+                    : 'Ingen kommende'
+                  }
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {vatDeadlines.find(d => d.status !== 'paid')?.period}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Not VAT registered notice */}
+      {boosterProfile.hasCVR && !boosterProfile.isVATRegistered && (
+        <Card className="border-blue-300 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Info className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="font-medium text-blue-800 dark:text-blue-400">Ikke momsregistreret</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Din virksomhed (CVR: {boosterProfile.cvrNumber}) er ikke momsregistreret. 
+                  Hvis din omsætning overstiger 50.000 kr årligt, skal du momsregistreres.
+                </p>
               </div>
             </div>
           </CardContent>
@@ -630,13 +731,16 @@ export default function BoosterFinance() {
           </Card>
 
           {/* VAT Section for CVR holders */}
-          {boosterProfile.hasCVR && (
+          {boosterProfile.hasCVR && boosterProfile.isVATRegistered && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Momsindberetning
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Momsindberetning
+                  </CardTitle>
+                  <Badge variant="secondary">{getVATPeriodLabel(boosterProfile.vatPeriod)}</Badge>
+                </div>
                 <Button variant="outline" size="sm" asChild>
                   <a href="https://skat.dk" target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -646,6 +750,22 @@ export default function BoosterFinance() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* VAT Period Info */}
+                  <div className="p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Din virksomhed ({boosterProfile.cvrNumber}) er registreret for {getVATPeriodLabel(boosterProfile.vatPeriod).toLowerCase()}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {boosterProfile.vatPeriod === 'semi-annual' && 'Årlig omsætning under 5 mio. kr'}
+                      {boosterProfile.vatPeriod === 'quarterly' && 'Årlig omsætning 5-50 mio. kr'}
+                      {boosterProfile.vatPeriod === 'monthly' && 'Årlig omsætning over 50 mio. kr'}
+                    </span>
+                  </div>
+
+                  {/* VAT Overview */}
                   {/* VAT Overview */}
                   <div className="grid md:grid-cols-3 gap-4 mb-4">
                     <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
