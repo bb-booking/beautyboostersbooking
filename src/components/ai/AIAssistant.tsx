@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageCircle, MessageSquare, Briefcase, Settings, FileText, Image } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageCircle, MessageSquare, Briefcase, Settings, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -328,23 +328,32 @@ const AIAssistant: React.FC = () => {
     return 'from-pink-500 to-rose-500';
   };
 
+  // Check if on a page with interactive fields that need visibility
+  const needsHigherPosition = () => {
+    const path = location.pathname;
+    return path.includes('booking') || path.includes('checkout') || path.includes('inquiry');
+  };
+
+  const buttonPosition = needsHigherPosition() ? 'bottom-32' : 'bottom-8';
+  const chatPosition = needsHigherPosition() ? 'bottom-48' : 'bottom-24';
+
   return (
     <>
       {/* Floating button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'fixed bottom-24 right-6 z-40 h-12 w-12 rounded-full shadow-lg transition-all hover:scale-105',
-          'bg-primary/80 hover:bg-primary text-primary-foreground'
+          `fixed ${buttonPosition} right-6 z-40 h-14 w-14 rounded-full shadow-lg transition-all hover:scale-105`,
+          'bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-400 hover:from-pink-500 hover:via-purple-500 hover:to-indigo-500 text-white'
         )}
         size="icon"
       >
-        {isOpen ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
+        {isOpen ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
       </Button>
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-40 right-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl border bg-background shadow-2xl">
+        <div className={`fixed ${chatPosition} right-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl border bg-background shadow-2xl`}>
           {/* Header */}
           <div className={cn(
             'flex items-center gap-3 rounded-t-2xl p-4 text-white',
