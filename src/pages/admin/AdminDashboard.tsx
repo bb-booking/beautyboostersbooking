@@ -63,7 +63,7 @@ interface RecentInquiry {
 
 interface StatusUpdate {
   id: string;
-  type: 'vat' | 'invoice' | 'payout' | 'job' | 'inquiry' | 'message' | 'review';
+  type: 'vat' | 'invoice' | 'payout' | 'job' | 'inquiry' | 'message' | 'review' | 'application';
   title: string;
   description: string;
   urgent: boolean;
@@ -213,75 +213,51 @@ const AdminDashboard = () => {
           { id: '2', customerName: 'Louise K.', boosterName: 'My Phung', rating: 4, comment: 'Meget professionel', date: '2024-12-03', replied: true },
         ]);
 
-        // Generate status updates
+        // Fetch booster applications
+        const { data: boosterApplications } = await supabase
+          .from("booster_applications")
+          .select("id")
+          .eq("status", "pending");
+
+        const pendingApplications = boosterApplications?.length || 0;
+
+        // Generate status updates - only show 3 key items
         const updates: StatusUpdate[] = [];
 
-        // VAT deadline (mock)
+        // 1. Open jobs
+        updates.push({
+          id: 'open-jobs',
+          type: 'job',
+          title: `${openJobs} ledige jobs`,
+          description: 'Jobs der mangler at blive tildelt boosters',
+          urgent: openJobs > 0,
+          action: 'Se jobs',
+          actionPath: '/admin/jobs'
+        });
+
+        // 2. Booster applications
+        updates.push({
+          id: 'booster-applications',
+          type: 'application',
+          title: `${pendingApplications} nye booster ansøgninger`,
+          description: 'Ansøgninger der venter på godkendelse',
+          urgent: pendingApplications > 0,
+          action: 'Se ansøgninger',
+          actionPath: '/admin/booster-applications'
+        });
+
+        // 3. VAT deadline
         const nextVATDeadline = new Date(2025, 2, 1); // March 1
         const daysUntilVAT = differenceInDays(nextVATDeadline, today);
-        if (daysUntilVAT <= 30 && daysUntilVAT > 0) {
-          updates.push({
-            id: 'vat-deadline',
-            type: 'vat',
-            title: 'Momsfrist nærmer sig',
-            description: `Q4 2024 moms skal indberettes inden ${format(nextVATDeadline, "d. MMMM", { locale: da })}`,
-            urgent: daysUntilVAT <= 14,
-            action: 'Se økonomi',
-            actionPath: '/admin/finance'
-          });
-        }
-
-        // Open jobs
-        if (openJobs > 0) {
-          updates.push({
-            id: 'open-jobs',
-            type: 'job',
-            title: `${openJobs} ledige jobs`,
-            description: 'Jobs der mangler at blive tildelt boosters',
-            urgent: openJobs > 5,
-            action: 'Se jobs',
-            actionPath: '/admin/jobs'
-          });
-        }
-
-        // New inquiries
-        if (newInquiries > 0) {
-          updates.push({
-            id: 'new-inquiries',
-            type: 'inquiry',
-            title: `${newInquiries} nye forespørgsler`,
-            description: 'Kunder venter på svar',
-            urgent: true,
-            action: 'Se forespørgsler',
-            actionPath: '/admin/inquiries'
-          });
-        }
-
-        // Unread messages
-        if (unreadMessages > 0) {
-          updates.push({
-            id: 'unread-messages',
-            type: 'message',
-            title: `${unreadMessages} ulæste beskeder`,
-            description: 'Beskeder fra kunder og boosters',
-            urgent: unreadMessages > 10,
-            action: 'Se beskeder',
-            actionPath: '/admin/messages'
-          });
-        }
-
-        // Unpaid invoices
-        if (unpaidInvoices > 0) {
-          updates.push({
-            id: 'unpaid-invoices',
-            type: 'invoice',
-            title: `${unpaidInvoices} ubetalte fakturaer`,
-            description: 'Fakturaer der kræver opfølgning',
-            urgent: unpaidInvoices > 3,
-            action: 'Se fakturaer',
-            actionPath: '/admin/invoices'
-          });
-        }
+        updates.push({
+          id: 'vat-deadline',
+          type: 'vat',
+          title: 'Næste moms deadline',
+          description: `Q4 2024 moms skal indberettes inden ${format(nextVATDeadline, "d. MMMM", { locale: da })} (${daysUntilVAT} dage)`,
+          urgent: daysUntilVAT <= 14,
+          action: 'Se økonomi',
+          actionPath: '/admin/finance'
+        });
 
         setStatusUpdates(updates);
 
@@ -419,18 +395,17 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      {/* STATUS UPDATES - Critical notifications */}
-      {statusUpdates.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-primary" />
-              <CardTitle>Statusopdateringer</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {statusUpdates.map((update) => (
+      {/* STATUS UPDATES - Always show 3 key items */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-primary" />
+            <CardTitle>Statusopdateringer</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {statusUpdates.map((update) => (
                 <div 
                   key={update.id}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
@@ -443,6 +418,7 @@ const AdminDashboard = () => {
                     {update.type === 'vat' && <PiggyBank className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
                     {update.type === 'invoice' && <FileText className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
                     {update.type === 'job' && <Briefcase className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-blue-600'}`} />}
+                    {update.type === 'application' && <Users className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-purple-600'}`} />}
                     {update.type === 'inquiry' && <MessageSquare className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-pink-600'}`} />}
                     {update.type === 'message' && <MessageSquare className="h-5 w-5 text-blue-600" />}
                     {update.type === 'review' && <Star className="h-5 w-5 text-yellow-500" />}
@@ -458,10 +434,9 @@ const AdminDashboard = () => {
                   )}
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
