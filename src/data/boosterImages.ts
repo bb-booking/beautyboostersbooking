@@ -3,8 +3,8 @@ export const boosterImageOverrides: Record<string, string> = {
   // Existing custom images
 'anna g': '/lovable-uploads/9f3e9a28-fd85-46b8-97b7-c5c0156f24e8.png',
   'anna g.': '/lovable-uploads/9f3e9a28-fd85-46b8-97b7-c5c0156f24e8.png',
-  'angelica': '/lovable-uploads/9d4d8a1b-6699-4473-850c-11d43e2547c4.png',
-  'angelika': '/lovable-uploads/9d4d8a1b-6699-4473-850c-11d43e2547c4.png',
+  'angelica': '/lovable-uploads/angelica-profile.png',
+  'angelika': '/lovable-uploads/angelica-profile.png',
 
   // Scraped from Meet the Boosters
   'ann katrine': '/lovable-uploads/profiles/ann-katrine.png',

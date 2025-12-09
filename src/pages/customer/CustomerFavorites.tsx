@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Heart, MapPin, Star, Briefcase } from "lucide-react";
+import { Heart, MapPin, Star, Briefcase, ArrowLeft } from "lucide-react";
 
 interface FavoriteBooster {
   id: string;
@@ -102,9 +102,14 @@ const CustomerFavorites = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Mine favorit boosters</h1>
-        <p className="text-muted-foreground mt-1">Book hurtigt med dine foretrukne behandlere</p>
+      <div className="flex items-center gap-4 mb-8">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/customer/dashboard')}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Mine favorit boosters</h1>
+          <p className="text-muted-foreground mt-1">Book hurtigt med dine foretrukne behandlere</p>
+        </div>
       </div>
 
       {favorites.length === 0 ? (
