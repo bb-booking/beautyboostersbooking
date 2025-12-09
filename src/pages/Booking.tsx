@@ -503,7 +503,7 @@ const Booking = () => {
   const handleNextStep = () => {
     if (canProceed(currentStep) && currentStep < 3) {
       setCurrentStep(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 0);
     } else if (currentStep === 3) {
       handleProceedToCheckout();
     }
@@ -512,7 +512,7 @@ const Booking = () => {
   const handlePrevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 0);
     }
   };
 
