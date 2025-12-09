@@ -36,6 +36,8 @@ interface FinancialStats {
   averageJobValue: number;
   totalSalaryCosts: number;
   vatOwed: number;
+  outputVAT: number; // Salgsmoms
+  inputVAT: number; // Købsmoms
   taxReserve: number;
   topEarningBoosters: Array<{
     name: string;
@@ -65,6 +67,7 @@ interface SalaryEntry {
   netAmount: number;
   status: 'pending' | 'approved' | 'paid';
   paymentDate?: string;
+  type: 'b-income' | 'cvr';
 }
 
 const AdminFinance = () => {
@@ -75,6 +78,8 @@ const AdminFinance = () => {
     averageJobValue: 0,
     totalSalaryCosts: 0,
     vatOwed: 0,
+    outputVAT: 0,
+    inputVAT: 0,
     taxReserve: 0,
     topEarningBoosters: [],
     revenueByMonth: []
@@ -125,11 +130,13 @@ const AdminFinance = () => {
   const fetchSalaryData = () => {
     // Mock salary data - would come from database
     const mockSalaries: SalaryEntry[] = [
-      { id: '1', boosterName: 'Anna K.', period: 'December 2024', grossAmount: 57600, taxDeduction: 14400, netAmount: 43200, status: 'pending' },
-      { id: '2', boosterName: 'My Phung', period: 'December 2024', grossAmount: 48000, taxDeduction: 12000, netAmount: 36000, status: 'pending' },
-      { id: '3', boosterName: 'Angelica', period: 'December 2024', grossAmount: 62400, taxDeduction: 15600, netAmount: 46800, status: 'approved' },
-      { id: '4', boosterName: 'Anna K.', period: 'November 2024', grossAmount: 51200, taxDeduction: 12800, netAmount: 38400, status: 'paid', paymentDate: '2024-12-01' },
-      { id: '5', boosterName: 'My Phung', period: 'November 2024', grossAmount: 44800, taxDeduction: 11200, netAmount: 33600, status: 'paid', paymentDate: '2024-12-01' },
+      { id: '1', boosterName: 'Anna K.', period: 'December 2024', grossAmount: 57600, taxDeduction: 14400, netAmount: 43200, status: 'pending', type: 'b-income' },
+      { id: '2', boosterName: 'My Phung', period: 'December 2024', grossAmount: 48000, taxDeduction: 12000, netAmount: 36000, status: 'pending', type: 'b-income' },
+      { id: '3', boosterName: 'Angelica', period: 'December 2024', grossAmount: 62400, taxDeduction: 0, netAmount: 62400, status: 'approved', type: 'cvr' },
+      { id: '4', boosterName: 'Marie S.', period: 'December 2024', grossAmount: 45000, taxDeduction: 0, netAmount: 45000, status: 'pending', type: 'cvr' },
+      { id: '5', boosterName: 'Anna K.', period: 'November 2024', grossAmount: 51200, taxDeduction: 12800, netAmount: 38400, status: 'paid', paymentDate: '2024-12-01', type: 'b-income' },
+      { id: '6', boosterName: 'My Phung', period: 'November 2024', grossAmount: 44800, taxDeduction: 11200, netAmount: 33600, status: 'paid', paymentDate: '2024-12-01', type: 'b-income' },
+      { id: '7', boosterName: 'Angelica', period: 'November 2024', grossAmount: 58000, taxDeduction: 0, netAmount: 58000, status: 'paid', paymentDate: '2024-12-01', type: 'cvr' },
     ];
     setSalaryEntries(mockSalaries);
   };
@@ -175,8 +182,10 @@ const AdminFinance = () => {
       // Calculate salary costs (mock - 60% of revenue goes to boosters)
       const totalSalaryCosts = totalRevenue * 0.6;
       
-      // Calculate VAT owed (25% of revenue for Danish VAT)
-      const vatOwed = totalRevenue * 0.25;
+      // Calculate VAT - Salgsmoms (output VAT on revenue) and Købsmoms (input VAT on expenses)
+      const outputVAT = totalRevenue * 0.25; // 25% salgsmoms
+      const inputVAT = totalSalaryCosts * 0.05; // Estimated input VAT from purchases/expenses (mock)
+      const vatOwed = outputVAT - inputVAT; // Forventet skyldig moms = salgsmoms - købsmoms
       
       // Tax reserve (estimate 22% corporate tax on profit)
       const profit = totalRevenue - totalSalaryCosts;
@@ -226,7 +235,9 @@ const AdminFinance = () => {
         completedJobs: completedJobs || 315,
         averageJobValue: averageJobValue || 5880,
         totalSalaryCosts: totalSalaryCosts || 1111200,
-        vatOwed: vatOwed || 463000,
+        outputVAT: outputVAT || 463000, // Salgsmoms
+        inputVAT: inputVAT || 55560, // Købsmoms
+        vatOwed: vatOwed || 407440, // Forventet skyldig moms
         taxReserve: taxReserve || 162976,
         topEarningBoosters: topEarningBoosters.length > 0 ? topEarningBoosters : [
           { name: 'Anna K.', earnings: 287000, jobs_completed: 48 },
@@ -465,15 +476,40 @@ const AdminFinance = () => {
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Skyldig moms (estimat)</CardTitle>
-                <PiggyBank className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Salgsmoms (Output VAT)</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.vatOwed)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.outputVAT)}</div>
                 <p className="text-xs text-muted-foreground">25% af omsætning</p>
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Købsmoms (Input VAT)</CardTitle>
+                <TrendingDown className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">-{formatCurrency(stats.inputVAT)}</div>
+                <p className="text-xs text-muted-foreground">Fradragsberettiget moms</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/50">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Forventet skyldig moms</CardTitle>
+                <PiggyBank className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">{formatCurrency(stats.vatOwed)}</div>
+                <p className="text-xs text-muted-foreground">Salgsmoms - Købsmoms</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Additional Tax Info */}
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Skat reserve</CardTitle>
@@ -584,12 +620,12 @@ const AdminFinance = () => {
         </TabsContent>
 
         <TabsContent value="salary" className="space-y-6">
-          {/* Salary Overview */}
+          {/* B-lønnede Section */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Lønudbetalinger
+                B-lønnede
               </CardTitle>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
@@ -604,66 +640,135 @@ const AdminFinance = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {salaryEntries.map((entry) => (
-                  <div key={entry.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Users className="h-5 w-5 text-primary" />
+                {salaryEntries.filter(e => e.type === 'b-income').length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Ingen B-lønnede boosters</p>
+                ) : (
+                  salaryEntries.filter(e => e.type === 'b-income').map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Users className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{entry.boosterName}</p>
+                          <p className="text-sm text-muted-foreground">{entry.period}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{entry.boosterName}</p>
-                        <p className="text-sm text-muted-foreground">{entry.period}</p>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Brutto</p>
+                          <p className="font-medium">{formatCurrency(entry.grossAmount)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">A-skat</p>
+                          <p className="font-medium text-red-600">-{formatCurrency(entry.taxDeduction)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Netto</p>
+                          <p className="font-medium text-green-600">{formatCurrency(entry.netAmount)}</p>
+                        </div>
+                        <Badge variant={getSalaryStatusColor(entry.status)}>
+                          {entry.status === 'pending' ? 'Afventer' : entry.status === 'approved' ? 'Godkendt' : 'Udbetalt'}
+                        </Badge>
+                        {entry.status === 'pending' && (
+                          <Button size="sm" variant="outline">Godkend</Button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Brutto</p>
-                        <p className="font-medium">{formatCurrency(entry.grossAmount)}</p>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* CVR Boosters Section */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                CVR Boosters (Fakturaer)
+              </CardTitle>
+              <Button variant="outline" size="sm">
+                <FileText className="h-4 w-4 mr-2" />
+                Se alle fakturaer
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {salaryEntries.filter(e => e.type === 'cvr').length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Ingen CVR boosters</p>
+                ) : (
+                  salaryEntries.filter(e => e.type === 'cvr').map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{entry.boosterName}</p>
+                          <p className="text-sm text-muted-foreground">{entry.period}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Skat</p>
-                        <p className="font-medium text-red-600">-{formatCurrency(entry.taxDeduction)}</p>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Fakturabeløb</p>
+                          <p className="font-medium">{formatCurrency(entry.grossAmount)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Moms (25%)</p>
+                          <p className="font-medium text-muted-foreground">{formatCurrency(entry.grossAmount * 0.2)}</p>
+                        </div>
+                        <Badge variant={getSalaryStatusColor(entry.status)}>
+                          {entry.status === 'pending' ? 'Afventer' : entry.status === 'approved' ? 'Godkendt' : 'Betalt'}
+                        </Badge>
+                        {entry.status === 'pending' && (
+                          <Button size="sm" variant="outline">Godkend</Button>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Netto</p>
-                        <p className="font-medium text-green-600">{formatCurrency(entry.netAmount)}</p>
-                      </div>
-                      <Badge variant={getSalaryStatusColor(entry.status)}>
-                        {entry.status === 'pending' ? 'Afventer' : entry.status === 'approved' ? 'Godkendt' : 'Udbetalt'}
-                      </Badge>
-                      {entry.status === 'pending' && (
-                        <Button size="sm" variant="outline">Godkend</Button>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* Salary Summary */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Afventer godkendelse</CardTitle>
+                <CardTitle className="text-sm font-medium">B-lønnede afventer</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(salaryEntries.filter(s => s.status === 'pending').reduce((sum, s) => sum + s.netAmount, 0))}
+                  {formatCurrency(salaryEntries.filter(s => s.status === 'pending' && s.type === 'b-income').reduce((sum, s) => sum + s.netAmount, 0))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {salaryEntries.filter(s => s.status === 'pending').length} udbetalinger
+                  {salaryEntries.filter(s => s.status === 'pending' && s.type === 'b-income').length} udbetalinger
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Godkendt - klar til udbetaling</CardTitle>
+                <CardTitle className="text-sm font-medium">CVR afventer</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(salaryEntries.filter(s => s.status === 'pending' && s.type === 'cvr').reduce((sum, s) => sum + s.grossAmount, 0))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {salaryEntries.filter(s => s.status === 'pending' && s.type === 'cvr').length} fakturaer
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Godkendt - klar</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(salaryEntries.filter(s => s.status === 'approved').reduce((sum, s) => sum + s.netAmount, 0))}
+                  {formatCurrency(salaryEntries.filter(s => s.status === 'approved').reduce((sum, s) => sum + (s.type === 'b-income' ? s.netAmount : s.grossAmount), 0))}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {salaryEntries.filter(s => s.status === 'approved').length} udbetalinger
@@ -677,7 +782,7 @@ const AdminFinance = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(salaryEntries.filter(s => s.status === 'paid').reduce((sum, s) => sum + s.netAmount, 0))}
+                  {formatCurrency(salaryEntries.filter(s => s.status === 'paid').reduce((sum, s) => sum + (s.type === 'b-income' ? s.netAmount : s.grossAmount), 0))}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {salaryEntries.filter(s => s.status === 'paid').length} udbetalinger
