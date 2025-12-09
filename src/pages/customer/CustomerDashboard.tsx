@@ -43,11 +43,79 @@ interface SavedAddress {
   is_default: boolean;
 }
 
+// Mock data for past bookings (demo purposes)
+const mockPastBookings: Booking[] = [
+  {
+    id: 'mock-1',
+    service_name: 'Makeup Styling',
+    booking_date: '2024-11-15',
+    booking_time: '14:00',
+    location: 'Vesterbrogade 123, 1620 København V',
+    amount: 1295,
+    status: 'completed',
+    booster_name: 'My Phung',
+    booster_id: 'mock-booster-1',
+    created_at: '2024-11-10T10:00:00Z'
+  },
+  {
+    id: 'mock-2',
+    service_name: 'Hår Styling',
+    booking_date: '2024-10-28',
+    booking_time: '10:00',
+    location: 'Hotel D\'Angleterre, Kongens Nytorv 34, 1050 København K',
+    amount: 1495,
+    status: 'completed',
+    booster_name: 'Josephine',
+    booster_id: 'mock-booster-2',
+    created_at: '2024-10-25T08:00:00Z'
+  },
+  {
+    id: 'mock-3',
+    service_name: 'Bryllups Makeup',
+    booking_date: '2024-09-12',
+    booking_time: '08:00',
+    location: 'Nimb Hotel, Bernstorffsgade 5, 1577 København V',
+    amount: 2995,
+    status: 'completed',
+    booster_name: 'Kristine',
+    booster_id: 'mock-booster-3',
+    created_at: '2024-09-01T12:00:00Z'
+  }
+];
+
+// Mock saved addresses
+const mockSavedAddresses: SavedAddress[] = [
+  {
+    id: 'addr-1',
+    label: 'Privat',
+    address: 'Vesterbrogade 123',
+    postal_code: '1620',
+    city: 'København V',
+    is_default: true
+  },
+  {
+    id: 'addr-2',
+    label: 'Kontor',
+    address: 'Bredgade 45, 3. sal',
+    postal_code: '1260',
+    city: 'København K',
+    is_default: false
+  },
+  {
+    id: 'addr-3',
+    label: 'Hotel',
+    address: 'Hotel D\'Angleterre, Kongens Nytorv 34',
+    postal_code: '1050',
+    city: 'København K',
+    is_default: false
+  }
+];
+
 const CustomerDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(mockSavedAddresses);
   const [loading, setLoading] = useState(true);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -88,9 +156,13 @@ const CustomerDashboard = () => {
         .limit(10);
 
       if (error) throw error;
-      setBookings(data || []);
+      // Combine real bookings with mock data for demo
+      const realBookings = data || [];
+      setBookings([...realBookings, ...mockPastBookings]);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      // Still show mock data if fetch fails
+      setBookings(mockPastBookings);
     }
   };
 
@@ -103,9 +175,16 @@ const CustomerDashboard = () => {
         .order('is_default', { ascending: false });
 
       if (error) throw error;
-      setSavedAddresses(data || []);
+      // Combine real addresses with mock data
+      const realAddresses = data || [];
+      if (realAddresses.length === 0) {
+        setSavedAddresses(mockSavedAddresses);
+      } else {
+        setSavedAddresses(realAddresses);
+      }
     } catch (error) {
       console.error('Error fetching addresses:', error);
+      setSavedAddresses(mockSavedAddresses);
     }
   };
 
@@ -216,7 +295,7 @@ const CustomerDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/customer/settings')}>
           <CardContent className="p-6 text-center">
             <Settings className="h-8 w-8 mx-auto mb-2 text-primary" />
             <h3 className="font-medium">Indstillinger</h3>
