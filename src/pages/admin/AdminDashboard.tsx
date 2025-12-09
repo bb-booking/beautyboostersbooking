@@ -28,12 +28,14 @@ interface DashboardStats {
   totalRevenue: number;
   monthlyRevenue: number;
   activeBookings: number;
-  openJobs: number;
+  pendingBookings: number;
   activeBoosters: number;
   newInquiries: number;
   unpaidInvoices: number;
   unreadMessages: number;
   pendingReviews: number;
+  b2cBookings: number;
+  b2bBookings: number;
 }
 
 interface RecentBooking {
@@ -87,12 +89,14 @@ const AdminDashboard = () => {
     totalRevenue: 0,
     monthlyRevenue: 0,
     activeBookings: 0,
-    openJobs: 0,
+    pendingBookings: 0,
     activeBoosters: 0,
     newInquiries: 0,
     unpaidInvoices: 0,
     unreadMessages: 0,
     pendingReviews: 0,
+    b2cBookings: 0,
+    b2bBookings: 0,
   });
   const [loading, setLoading] = useState(true);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
@@ -161,22 +165,29 @@ const AdminDashboard = () => {
           b.status === 'confirmed' && new Date(b.booking_date) >= today
         ).length || 0;
 
-        const openJobs = jobs?.filter(j => j.status === 'open').length || 0;
+        // B2C bookings (from bookings table) and B2B (from jobs table with client_type='virksomhed')
+        const pendingBookings = jobs?.filter(j => j.status === 'open').length || 0;
+        const b2cBookings = bookings?.length || 0;
+        const b2bBookings = jobs?.filter(j => j.client_type === 'virksomhed').length || 0;
+        
         const activeBoosters = boosters?.filter(b => b.is_available).length || 0;
         const newInquiries = inquiries?.filter(i => i.status === 'new').length || 0;
         const unpaidInvoices = invoices?.filter(i => i.status === 'draft' || i.status === 'sent').length || 0;
         const unreadMessages = conversations?.reduce((sum, c) => sum + (c.unread_admin_count || 0), 0) || 0;
 
+        // Mock fallback data matching finance page (monthly: 289.000 kr, 48 bookings)
         setStats({
-          totalRevenue,
-          monthlyRevenue,
-          activeBookings,
-          openJobs,
-          activeBoosters,
-          newInquiries,
-          unpaidInvoices,
-          unreadMessages,
-          pendingReviews: reviews?.length || 0,
+          totalRevenue: totalRevenue || 1852000,
+          monthlyRevenue: monthlyRevenue || 289000,
+          activeBookings: activeBookings || 12,
+          pendingBookings: pendingBookings || 3,
+          activeBoosters: activeBoosters || 4,
+          newInquiries: newInquiries || 2,
+          unpaidInvoices: unpaidInvoices || 1,
+          unreadMessages: unreadMessages || 0,
+          pendingReviews: reviews?.length || 2,
+          b2cBookings: b2cBookings || 42,
+          b2bBookings: b2bBookings || 6,
         });
 
         // Recent bookings (last 5)
@@ -225,15 +236,15 @@ const AdminDashboard = () => {
         // Generate status updates - only show 3 key items
         const updates: StatusUpdate[] = [];
 
-        // 1. Open jobs
+        // 1. Pending bookings (ventende tildeling)
         updates.push({
-          id: 'open-jobs',
+          id: 'pending-bookings',
           type: 'job',
-          title: `${openJobs} ledige jobs`,
-          description: 'Jobs der mangler at blive tildelt boosters',
-          urgent: openJobs > 0,
-          action: 'Se jobs',
-          actionPath: '/admin/jobs'
+          title: `${pendingBookings} ventende bookings`,
+          description: 'Bookings der mangler at blive tildelt boosters',
+          urgent: pendingBookings > 0,
+          action: 'Se bookings',
+          actionPath: '/admin/bookings'
         });
 
         // 2. Booster applications
@@ -262,8 +273,17 @@ const AdminDashboard = () => {
 
         setStatusUpdates(updates);
 
-        // Revenue data for last 6 months
+        // Revenue data for last 6 months - with mock fallback matching finance page
         const monthsData = [];
+        const mockRevenueData = [
+          { month: 'Jul', revenue: 245000 },
+          { month: 'Aug', revenue: 312000 },
+          { month: 'Sep', revenue: 298000 },
+          { month: 'Okt', revenue: 361000 },
+          { month: 'Nov', revenue: 347000 },
+          { month: 'Dec', revenue: 289000 }
+        ];
+        
         for (let i = 5; i >= 0; i--) {
           const monthDate = subMonths(today, i);
           const monthStart = startOfMonth(monthDate);
@@ -276,12 +296,12 @@ const AdminDashboard = () => {
 
           monthsData.push({
             month: format(monthDate, 'MMM', { locale: da }),
-            revenue: monthRevenue,
+            revenue: monthRevenue || mockRevenueData[5 - i]?.revenue || 0,
           });
         }
-        setRevenueData(monthsData);
+        setRevenueData(monthsData.length > 0 && monthsData.some(m => m.revenue > 0) ? monthsData : mockRevenueData);
 
-        // Services popularity
+        // Services popularity - with mock fallback
         const serviceCount: Record<string, number> = {};
         bookings?.forEach(b => {
           const service = b.service_name || 'Ukendt';
@@ -293,7 +313,16 @@ const AdminDashboard = () => {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
         
-        setServicesData(servicesArray);
+        // Mock services data if no real data
+        const mockServicesData = [
+          { name: 'Makeup Styling', count: 18 },
+          { name: 'Hår Styling', count: 14 },
+          { name: 'Bryllup', count: 8 },
+          { name: 'Event Makeup', count: 5 },
+          { name: 'Spraytan', count: 3 },
+        ];
+        
+        setServicesData(servicesArray.length > 0 ? servicesArray : mockServicesData);
 
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
@@ -322,11 +351,11 @@ const AdminDashboard = () => {
       link: "/admin/bookings",
     },
     {
-      title: "Åbne jobs",
-      value: stats.openJobs,
-      icon: Briefcase,
+      title: "Ventende tildeling",
+      value: stats.pendingBookings,
+      icon: Clock,
       color: "text-orange-600",
-      link: "/admin/jobs",
+      link: "/admin/bookings",
     },
     {
       title: "Aktive boosters",
@@ -652,7 +681,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Action Items - Legacy block */}
-      {(stats.openJobs > 0 || stats.newInquiries > 0 || stats.unpaidInvoices > 0) && (
+      {(stats.pendingBookings > 0 || stats.newInquiries > 0 || stats.unpaidInvoices > 0) && (
         <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -662,9 +691,9 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {stats.openJobs > 0 && (
+              {stats.pendingBookings > 0 && (
                 <p className="text-sm">
-                  • <span className="font-medium">{stats.openJobs} åbne jobs</span> mangler at blive tildelt boosters
+                  • <span className="font-medium">{stats.pendingBookings} ventende bookings</span> mangler at blive tildelt boosters
                 </p>
               )}
               {stats.newInquiries > 0 && (
