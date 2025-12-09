@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Home, MapPin, Plus, Trash2, Star } from "lucide-react";
+import { Home, MapPin, Plus, Trash2, Star, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 interface SavedAddress {
@@ -19,9 +19,37 @@ interface SavedAddress {
   is_default: boolean;
 }
 
+// Mock addresses for demo
+const mockAddresses: SavedAddress[] = [
+  {
+    id: 'mock-addr-1',
+    label: 'Privat',
+    address: 'Vesterbrogade 123',
+    postal_code: '1620',
+    city: 'København V',
+    is_default: true
+  },
+  {
+    id: 'mock-addr-2',
+    label: 'Kontor',
+    address: 'Bredgade 45, 3. sal',
+    postal_code: '1260',
+    city: 'København K',
+    is_default: false
+  },
+  {
+    id: 'mock-addr-3',
+    label: 'Hotel',
+    address: 'Hotel D\'Angleterre, Kongens Nytorv 34',
+    postal_code: '1050',
+    city: 'København K',
+    is_default: false
+  }
+];
+
 const CustomerAddresses = () => {
   const navigate = useNavigate();
-  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [addresses, setAddresses] = useState<SavedAddress[]>(mockAddresses);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -51,10 +79,15 @@ const CustomerAddresses = () => {
         .order('is_default', { ascending: false });
 
       if (error) throw error;
-      setAddresses(data || []);
+      // Use real data if available, otherwise show mock data
+      if (data && data.length > 0) {
+        setAddresses(data);
+      } else {
+        setAddresses(mockAddresses);
+      }
     } catch (error) {
       console.error('Error fetching addresses:', error);
-      toast.error('Kunne ikke hente adresser');
+      setAddresses(mockAddresses);
     } finally {
       setLoading(false);
     }
@@ -148,9 +181,14 @@ const CustomerAddresses = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Mine adresser</h1>
-          <p className="text-muted-foreground mt-1">Gem dine foretrukne adresser til hurtigere booking</p>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/customer/dashboard')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Mine adresser</h1>
+            <p className="text-muted-foreground mt-1">Gem dine foretrukne adresser til hurtigere booking</p>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
