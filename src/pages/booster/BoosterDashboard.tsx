@@ -75,19 +75,22 @@ const BoosterDashboard = () => {
       value: stats.availableJobs,
       icon: Clock,
       color: "text-blue-600",
-      badge: "nye",
+      badge: stats.availableJobs > 0 ? "nye" : undefined,
+      action: () => navigate("/booster/jobs"),
     },
     {
       title: "Afsluttede jobs",
       value: stats.completedJobs,
       icon: TrendingUp,
       color: "text-green-600",
+      action: () => navigate("/booster/jobs?status=completed"),
     },
     {
       title: "Total indtjening",
       value: `${stats.totalEarnings.toLocaleString()} kr`,
       icon: DollarSign,
       color: "text-purple-600",
+      action: () => navigate("/booster/finance"),
     },
     {
       title: "Nye beskeder",
@@ -95,6 +98,7 @@ const BoosterDashboard = () => {
       icon: MessageSquare,
       color: "text-orange-600",
       badge: stats.newMessages > 0 ? "ulæst" : undefined,
+      action: () => navigate("/booster/messages"),
     },
   ];
 
@@ -161,7 +165,11 @@ const BoosterDashboard = () => {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat, index) => (
-          <Card key={index}>
+          <Card 
+            key={index} 
+            className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
+            onClick={stat.action}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {stat.title}
@@ -205,20 +213,32 @@ const BoosterDashboard = () => {
       {/* Recent Activity & Overview */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Seneste aktivitet</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/booster/jobs")}>
+              Se alle
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3">
+              <div 
+                className="flex items-center space-x-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                onClick={() => navigate("/booster/jobs")}
+              >
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <p className="text-sm">Nyt job tilgængeligt: "Bryllupsmakeup København"</p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div 
+                className="flex items-center space-x-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                onClick={() => navigate("/booster/finance")}
+              >
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <p className="text-sm">Job afsluttet: "Fotoshoot Aarhus" - 1.200 kr</p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div 
+                className="flex items-center space-x-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                onClick={() => navigate("/booster/messages")}
+              >
                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                 <p className="text-sm">Ny besked fra kunde Sarah</p>
               </div>
@@ -227,19 +247,31 @@ const BoosterDashboard = () => {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Denne uge</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/booster")}>
+              Kalender
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+              onClick={() => navigate("/booster")}
+            >
               <span className="text-sm text-muted-foreground">Bookede timer:</span>
               <span className="font-semibold">12 timer</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+              onClick={() => navigate("/booster/finance")}
+            >
               <span className="text-sm text-muted-foreground">Forventet indtjening:</span>
               <span className="font-semibold">3.600 kr</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+              onClick={() => navigate("/booster")}
+            >
               <span className="text-sm text-muted-foreground">Tilgængelige slots:</span>
               <span className="font-semibold">8 timer</span>
             </div>
@@ -249,6 +281,22 @@ const BoosterDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Booking Requests */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Afventende anmodninger</CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/booster/requests")}>
+            Se alle
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-muted-foreground">
+            <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Ingen afventende anmodninger</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
