@@ -18,8 +18,16 @@ import {
   Check,
   X,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  CalendarClock,
+  FileText,
+  PiggyBank,
+  Send,
+  ExternalLink
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { differenceInDays, endOfMonth, format } from "date-fns";
+import { da } from "date-fns/locale";
 
 interface BoosterStats {
   availableJobs: number;
@@ -51,6 +59,17 @@ interface BookingRequest {
   amount: number;
 }
 
+interface StatusUpdate {
+  id: string;
+  type: 'invoice' | 'vat' | 'payout' | 'review';
+  title: string;
+  description: string;
+  dueDate?: Date;
+  urgent: boolean;
+  action?: string;
+  actionPath?: string;
+}
+
 const BoosterDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<BoosterStats>({
@@ -64,7 +83,12 @@ const BoosterDashboard = () => {
   });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [pendingRequests, setPendingRequests] = useState<BookingRequest[]>([]);
+  const [statusUpdates, setStatusUpdates] = useState<StatusUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Calculate days until month end
+  const daysUntilMonthEnd = differenceInDays(endOfMonth(new Date()), new Date());
+  const hasCVR = true; // Mock - would come from booster profile
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -160,6 +184,68 @@ const BoosterDashboard = () => {
             replied: false,
           },
         ]);
+
+        // Set status updates based on deadlines
+        const updates: StatusUpdate[] = [];
+        
+        // Invoice reminder (end of month)
+        if (daysUntilMonthEnd <= 7) {
+          updates.push({
+            id: 'invoice-reminder',
+            type: 'invoice',
+            title: 'Send månedsfaktura',
+            description: `${daysUntilMonthEnd} dage til månedsslut. Send din faktura for at få udbetaling til tiden.`,
+            dueDate: endOfMonth(new Date()),
+            urgent: daysUntilMonthEnd <= 3,
+            action: 'Send faktura',
+            actionPath: '/booster/finance'
+          });
+        }
+
+        // VAT reminder for CVR holders (mock - would check actual deadlines)
+        if (hasCVR) {
+          const nextVATDeadline = new Date(2025, 4, 1); // May 1, 2025
+          const daysUntilVAT = differenceInDays(nextVATDeadline, new Date());
+          if (daysUntilVAT <= 30 && daysUntilVAT > 0) {
+            updates.push({
+              id: 'vat-reminder',
+              type: 'vat',
+              title: 'Momsfrist nærmer sig',
+              description: `Q1 2025 moms skal indberettes inden ${format(nextVATDeadline, "d. MMMM", { locale: da })}. Læg ca. 14.400 kr til side.`,
+              dueDate: nextVATDeadline,
+              urgent: daysUntilVAT <= 14,
+              action: 'Se økonomi',
+              actionPath: '/booster/finance'
+            });
+          }
+        }
+
+        // Pending payout
+        updates.push({
+          id: 'payout-info',
+          type: 'payout',
+          title: 'Næste udbetaling',
+          description: 'Forventet udbetaling: 43.200 kr d. 1. januar 2026',
+          urgent: false,
+          action: 'Se detaljer',
+          actionPath: '/booster/finance'
+        });
+
+        // Unreplied reviews
+        const unrepliedReviews = 2; // Mock count
+        if (unrepliedReviews > 0) {
+          updates.push({
+            id: 'review-reply',
+            type: 'review',
+            title: `${unrepliedReviews} anmeldelser afventer svar`,
+            description: 'Besvar kundefeedback for at øge din profil-synlighed.',
+            urgent: false,
+            action: 'Besvar nu',
+            actionPath: '/booster/reviews'
+          });
+        }
+
+        setStatusUpdates(updates);
       } catch (error) {
         console.error("Error fetching booster stats:", error);
       } finally {
@@ -168,7 +254,7 @@ const BoosterDashboard = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [daysUntilMonthEnd, hasCVR]);
 
   const statCards = [
     {
@@ -262,6 +348,48 @@ const BoosterDashboard = () => {
           Velkommen tilbage til Beauty Boosters
         </p>
       </div>
+
+      {/* STATUS UPDATES - Financial deadlines & notifications */}
+      {statusUpdates.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              <CardTitle>Statusopdateringer</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {statusUpdates.map((update) => (
+                <div 
+                  key={update.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    update.urgent 
+                      ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' 
+                      : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {update.type === 'invoice' && <FileText className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
+                    {update.type === 'vat' && <PiggyBank className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
+                    {update.type === 'payout' && <DollarSign className="h-5 w-5 text-green-600" />}
+                    {update.type === 'review' && <Star className="h-5 w-5 text-yellow-500" />}
+                    <div>
+                      <p className="font-medium text-sm">{update.title}</p>
+                      <p className="text-xs text-muted-foreground">{update.description}</p>
+                    </div>
+                  </div>
+                  {update.action && (
+                    <Button size="sm" variant={update.urgent ? "default" : "outline"} onClick={() => navigate(update.actionPath!)}>
+                      {update.action}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ACTION REQUIRED SECTION - Booking Requests */}
       {pendingRequests.length > 0 && (
