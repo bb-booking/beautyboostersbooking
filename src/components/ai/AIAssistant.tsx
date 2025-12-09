@@ -442,7 +442,7 @@ const AIAssistant: React.FC = () => {
                     <button
                       key={i}
                       onClick={action.action}
-                      className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                      className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-primary hover:text-primary-foreground"
                     >
                       {action.icon}
                       {action.label}
