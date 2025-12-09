@@ -503,8 +503,15 @@ export default function Checkout() {
   };
 
   // Calculate total from all cart items
+  // cartItems from CartContext have finalPrice, service has price
   const allCartItems = cartItems || [{ service, booster, booking }];
-  const cartTotal = allCartItems.reduce((sum: number, item: any) => sum + (item.service?.price || 0), 0);
+  const cartTotal = allCartItems.reduce((sum: number, item: any) => {
+    // Handle both CartContext items (have finalPrice) and legacy single-service (has service.price)
+    if (item.finalPrice !== undefined) {
+      return sum + item.finalPrice;
+    }
+    return sum + (item.service?.price || service?.price || 0);
+  }, 0);
   const finalTotal = Math.max(0, cartTotal - discount);
 
   return (
@@ -549,10 +556,10 @@ export default function Checkout() {
                 <div key={index} className="p-4 rounded-lg border bg-muted/30">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-semibold">{item.service?.name || service.name}</h4>
+                      <h4 className="font-semibold">{item.name || item.service?.name || service.name}</h4>
                       <p className="text-sm text-muted-foreground">{item.booster?.name || booster.name}</p>
                     </div>
-                    <span className="font-semibold">{item.service?.price || service.price} DKK</span>
+                    <span className="font-semibold">{item.finalPrice ?? item.service?.price ?? service.price} DKK</span>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <Badge variant="outline">
@@ -630,8 +637,8 @@ export default function Checkout() {
             <CardContent className="space-y-4">
               {allCartItems.map((item: any, index: number) => (
                 <div key={index} className="flex justify-between text-sm">
-                  <span>{item.service?.name || service.name}</span>
-                  <span>{item.service?.price || service.price} DKK</span>
+                  <span>{item.name || item.service?.name || service.name}</span>
+                  <span>{item.finalPrice ?? item.service?.price ?? service.price} DKK</span>
                 </div>
               ))}
               
