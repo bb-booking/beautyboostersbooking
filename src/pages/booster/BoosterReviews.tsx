@@ -3,7 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Star, TrendingUp, MessageSquare, Calendar } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Star, TrendingUp, MessageSquare, Calendar, Reply } from "lucide-react";
+import { toast } from "sonner";
+import { Helmet } from "react-helmet-async";
 
 interface Review {
   id: string;
@@ -13,11 +17,15 @@ interface Review {
   date: string;
   serviceType: string;
   verified: boolean;
+  replied: boolean;
+  reply?: string;
+  replyDate?: string;
 }
 
 interface ReviewStats {
   averageRating: number;
   totalReviews: number;
+  pendingReplies: number;
   ratingDistribution: {
     5: number;
     4: number;
@@ -32,8 +40,12 @@ export default function BoosterReviews() {
   const [stats, setStats] = useState<ReviewStats>({
     averageRating: 0,
     totalReviews: 0,
+    pendingReplies: 0,
     ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
   });
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   // Mock data
   useEffect(() => {
@@ -43,57 +55,94 @@ export default function BoosterReviews() {
         clientName: 'Sarah Jensen',
         rating: 5,
         comment: 'Anna gjorde et fantastisk job til mit bryllup! Hun var professionel, venlig og jeg følte mig så smuk. Kan varmt anbefales!',
-        date: '2024-01-20',
+        date: '2024-12-05',
         serviceType: 'Bryllup',
-        verified: true
+        verified: true,
+        replied: true,
+        reply: 'Tusind tak for de fine ord, Sarah! Det var en fornøjelse at være en del af jeres store dag. Held og lykke fremover! 💕',
+        replyDate: '2024-12-06'
       },
       {
         id: '2',
         clientName: 'Mette Christensen',
         rating: 5,
         comment: 'Perfekt makeup til vores fotoshoot. Anna forstod præcis hvad vi havde brug for og leverede over forventning.',
-        date: '2024-01-18',
+        date: '2024-12-01',
         serviceType: 'Fotoshoot',
-        verified: true
+        verified: true,
+        replied: false
       },
       {
         id: '3',
         clientName: 'Laura Andersen',
         rating: 4,
         comment: 'Rigtig godt arbejde! Makeup holdt hele dagen og så naturligt ud. Kommer gerne igen.',
-        date: '2024-01-15',
+        date: '2024-11-28',
         serviceType: 'Event',
-        verified: true
+        verified: true,
+        replied: false
       },
       {
         id: '4',
         clientName: 'Camilla Nielsen',
         rating: 5,
         comment: 'Anna er så dygtig! Hun lyttede til mine ønsker og skabte præcis det look jeg drømte om.',
-        date: '2024-01-10',
+        date: '2024-11-20',
         serviceType: 'Konfirmation',
-        verified: true
+        verified: true,
+        replied: true,
+        reply: 'Mange tak Camilla! Glæder mig til at se dig igen! ✨',
+        replyDate: '2024-11-21'
       },
       {
         id: '5',
         clientName: 'Maja Hansen',
         rating: 4,
         comment: 'Meget tilfreds med resultatet. Professionel tilgang og god kommunikation gennem hele processen.',
-        date: '2024-01-08',
+        date: '2024-11-15',
         serviceType: 'Bryllup',
-        verified: true
+        verified: true,
+        replied: false
       }
     ];
 
+    const pendingCount = mockReviews.filter(r => !r.replied).length;
     const mockStats: ReviewStats = {
       averageRating: 4.6,
       totalReviews: 5,
+      pendingReplies: pendingCount,
       ratingDistribution: { 5: 4, 4: 1, 3: 0, 2: 0, 1: 0 }
     };
 
     setReviews(mockReviews);
     setStats(mockStats);
   }, []);
+
+  const handleOpenReply = (review: Review) => {
+    setSelectedReview(review);
+    setReplyText(review.reply || "");
+    setReplyDialogOpen(true);
+  };
+
+  const handleSendReply = () => {
+    if (!selectedReview || !replyText.trim()) return;
+
+    setReviews(prev => prev.map(r => 
+      r.id === selectedReview.id 
+        ? { ...r, replied: true, reply: replyText, replyDate: new Date().toISOString().split('T')[0] }
+        : r
+    ));
+
+    setStats(prev => ({
+      ...prev,
+      pendingReplies: prev.pendingReplies - (selectedReview.replied ? 0 : 1)
+    }));
+
+    toast.success("Svar sendt til kunden");
+    setReplyDialogOpen(false);
+    setReplyText("");
+    setSelectedReview(null);
+  };
 
   const renderStars = (rating: number, size: 'sm' | 'lg' = 'sm') => {
     return (
@@ -117,42 +166,56 @@ export default function BoosterReviews() {
 
   return (
     <div className="space-y-6">
+      <Helmet>
+        <title>Anmeldelser - BeautyBoosters</title>
+      </Helmet>
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Anmeldelser</h1>
         <p className="text-muted-foreground">Se hvad dine kunder siger om dit arbejde</p>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-3xl font-bold">{stats.averageRating}</span>
-              {renderStars(Math.round(stats.averageRating), 'lg')}
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <span className="text-2xl font-bold">{stats.averageRating}</span>
+              {renderStars(Math.round(stats.averageRating), 'sm')}
             </div>
-            <p className="text-muted-foreground">Gennemsnitlig bedømmelse</p>
+            <p className="text-sm text-muted-foreground">Gennemsnit</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <MessageSquare className="h-6 w-6 text-muted-foreground" />
-              <span className="text-3xl font-bold">{stats.totalReviews}</span>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <span className="text-2xl font-bold">{stats.totalReviews}</span>
             </div>
-            <p className="text-muted-foreground">Anmeldelser i alt</p>
+            <p className="text-sm text-muted-foreground">I alt</p>
+          </CardContent>
+        </Card>
+
+        <Card className={stats.pendingReplies > 0 ? "border-orange-300 dark:border-orange-800" : ""}>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Reply className="h-5 w-5 text-orange-500" />
+              <span className="text-2xl font-bold text-orange-600">{stats.pendingReplies}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Afventer svar</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <TrendingUp className="h-6 w-6 text-green-500" />
-              <span className="text-3xl font-bold text-green-500">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              <span className="text-2xl font-bold text-green-600">
                 {Math.round(getRatingPercentage(5) + getRatingPercentage(4))}%
               </span>
             </div>
-            <p className="text-muted-foreground">Positive anmeldelser</p>
+            <p className="text-sm text-muted-foreground">Positive</p>
           </CardContent>
         </Card>
       </div>
@@ -173,13 +236,13 @@ export default function BoosterReviews() {
                     <span className="text-sm">{rating}</span>
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                   </div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className="flex-1 bg-muted rounded-full h-2">
                     <div 
                       className="bg-yellow-400 h-2 rounded-full transition-all"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <span className="text-sm text-muted-foreground w-12">
+                  <span className="text-sm text-muted-foreground w-16">
                     {count} ({Math.round(percentage)}%)
                   </span>
                 </div>
@@ -192,21 +255,18 @@ export default function BoosterReviews() {
       {/* Recent Reviews */}
       <Card>
         <CardHeader>
-          <CardTitle>Seneste anmeldelser</CardTitle>
+          <CardTitle>Alle anmeldelser</CardTitle>
         </CardHeader>
         <CardContent>
           {reviews.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">Ingen anmeldelser endnu</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Dine anmeldelser vil vises her når kunder bedømmer dit arbejde
-              </p>
             </div>
           ) : (
             <div className="space-y-6">
               {reviews.map((review) => (
-                <div key={review.id} className="border-b last:border-b-0 pb-6 last:pb-0">
+                <div key={review.id} className={`border-b last:border-b-0 pb-6 last:pb-0 ${!review.replied ? 'bg-orange-50/50 dark:bg-orange-950/20 -mx-6 px-6 py-4 rounded-lg' : ''}`}>
                   <div className="flex items-start gap-4">
                     <Avatar>
                       <AvatarFallback>
@@ -224,6 +284,11 @@ export default function BoosterReviews() {
                                 Verificeret
                               </Badge>
                             )}
+                            {!review.replied && (
+                              <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                                Afventer svar
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             {renderStars(review.rating)}
@@ -232,13 +297,35 @@ export default function BoosterReviews() {
                             </Badge>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(review.date).toLocaleDateString('da-DK')}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(review.date).toLocaleDateString('da-DK')}
+                          </div>
+                          <Button 
+                            variant={review.replied ? "ghost" : "default"} 
+                            size="sm"
+                            onClick={() => handleOpenReply(review)}
+                          >
+                            <Reply className="h-4 w-4 mr-1" />
+                            {review.replied ? "Rediger" : "Besvar"}
+                          </Button>
                         </div>
                       </div>
                       
-                      <p className="text-muted-foreground">{review.comment}</p>
+                      <p className="text-muted-foreground mb-3">"{review.comment}"</p>
+
+                      {review.replied && review.reply && (
+                        <div className="ml-4 border-l-2 border-primary pl-4 mt-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className="text-xs">Dit svar</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(review.replyDate!).toLocaleDateString('da-DK')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{review.reply}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -247,6 +334,50 @@ export default function BoosterReviews() {
           )}
         </CardContent>
       </Card>
+
+      {/* Reply Dialog */}
+      <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedReview?.replied ? "Rediger svar" : "Besvar anmeldelse"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedReview && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium">{selectedReview.clientName}</span>
+                  {renderStars(selectedReview.rating)}
+                </div>
+                <p className="text-sm">"{selectedReview.comment}"</p>
+              </div>
+
+              <div>
+                <Textarea
+                  placeholder="Skriv dit svar til kunden..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Dit svar vil være synligt for alle, der ser anmeldelsen
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReplyDialogOpen(false)}>
+              Annuller
+            </Button>
+            <Button onClick={handleSendReply} disabled={!replyText.trim()}>
+              Send svar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

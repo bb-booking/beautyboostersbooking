@@ -14,7 +14,11 @@ import {
   TrendingUp,
   Clock,
   Star,
-  Reply
+  Reply,
+  Check,
+  X,
+  MapPin,
+  AlertCircle
 } from "lucide-react";
 
 interface BoosterStats {
@@ -24,6 +28,7 @@ interface BoosterStats {
   newMessages: number;
   averageRating: number;
   reviewCount: number;
+  pendingRequests: number;
 }
 
 interface Review {
@@ -36,6 +41,16 @@ interface Review {
   replied: boolean;
 }
 
+interface BookingRequest {
+  id: string;
+  serviceName: string;
+  customerName: string;
+  date: string;
+  time: string;
+  location: string;
+  amount: number;
+}
+
 const BoosterDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<BoosterStats>({
@@ -45,8 +60,10 @@ const BoosterDashboard = () => {
     newMessages: 0,
     averageRating: 0,
     reviewCount: 0,
+    pendingRequests: 2,
   });
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<BookingRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,13 +99,36 @@ const BoosterDashboard = () => {
           : 4.8;
 
         setStats({
-          availableJobs: jobs?.length || 0,
+          availableJobs: jobs?.length || 1,
           completedJobs: completedJobs?.length || 0,
           totalEarnings: 15750,
           newMessages: messages?.length || 0,
           averageRating: avgRating,
           reviewCount: reviewsData?.length || 12,
+          pendingRequests: 2,
         });
+
+        // Set mock pending booking requests
+        setPendingRequests([
+          {
+            id: "req-1",
+            serviceName: "Bryllupsmakeup",
+            customerName: "Emma Christensen",
+            date: "2024-12-14",
+            time: "10:00",
+            location: "Frederiksberg",
+            amount: 2500,
+          },
+          {
+            id: "req-2",
+            serviceName: "Event Styling",
+            customerName: "Sofie Andersen",
+            date: "2024-12-16",
+            time: "14:00",
+            location: "København K",
+            amount: 1800,
+          },
+        ]);
 
         // Set mock reviews for display
         setReviews([
@@ -223,6 +263,83 @@ const BoosterDashboard = () => {
         </p>
       </div>
 
+      {/* ACTION REQUIRED SECTION - Booking Requests */}
+      {pendingRequests.length > 0 && (
+        <Card className="border-orange-300 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <CardTitle>Booking anmodninger</CardTitle>
+              <Badge className="bg-orange-600">{pendingRequests.length} afventer</Badge>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/booster/requests")}>
+              Se alle
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingRequests.map((request) => (
+                <div 
+                  key={request.id}
+                  className="flex items-center justify-between p-4 bg-background rounded-lg border"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium">{request.serviceName}</span>
+                      <Badge variant="secondary">{request.amount} kr</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{request.customerName}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(request.date).toLocaleDateString('da-DK')} kl. {request.time}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {request.location}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                      <Check className="h-4 w-4 mr-1" />
+                      Acceptér
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ACTION REQUIRED - Available Jobs */}
+      {stats.availableJobs > 0 && (
+        <Card 
+          className="border-blue-300 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 cursor-pointer hover:shadow-md transition-all"
+          onClick={() => navigate("/booster/jobs")}
+        >
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <CardTitle>Ledige jobs</CardTitle>
+              <Badge className="bg-blue-600">{stats.availableJobs} nye</Badge>
+            </div>
+            <Button variant="ghost" size="sm">
+              Se jobs →
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Der er {stats.availableJobs} ledige jobs der matcher dine kompetencer. Klik for at se og ansøge.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat, index) => (
@@ -343,21 +460,6 @@ const BoosterDashboard = () => {
         </Card>
       </div>
 
-      {/* Booking Requests */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Afventende anmodninger</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/booster/requests")}>
-            Se alle
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4 text-muted-foreground">
-            <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Ingen afventende anmodninger</p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Reviews Section */}
       <Card>
