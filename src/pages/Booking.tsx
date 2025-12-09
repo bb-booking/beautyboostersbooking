@@ -19,6 +19,7 @@ import { BoosterAssignment } from "@/components/booking/BoosterAssignment";
 import { LocationBubble } from "@/components/booking/LocationBubble";
 import { BookingSteps } from "@/components/booking/BookingSteps";
 import { UpsellServices } from "@/components/booking/UpsellServices";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Service {
   id: string;
@@ -93,7 +94,8 @@ const Booking = () => {
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [showAllTimes, setShowAllTimes] = useState(false);
   
-  const INITIAL_TIMES_TO_SHOW = 8;
+  const isMobile = useIsMobile();
+  const INITIAL_TIMES_TO_SHOW = isMobile ? 8 : 16;
 
   const generateTimeSlots = () => {
     const slots = [];
