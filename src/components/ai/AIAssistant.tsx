@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageSquare } from 'lucide-react';
+import { X, Send, Loader2, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageSquare, Briefcase, Settings, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -195,33 +195,113 @@ const AIAssistant: React.FC = () => {
     }
   };
 
-  // Contact action buttons
-  const contactActions = [
-    { 
-      label: 'Ring til os', 
-      icon: <Phone className="h-3 w-3" />, 
-      action: () => window.open('tel:+4571786575', '_self') 
-    },
-    { 
-      label: 'Send mail', 
-      icon: <Mail className="h-3 w-3" />, 
-      action: () => window.open('mailto:hello@beautyboosters.dk', '_self') 
-    },
-    { 
-      label: 'Åben chat', 
-      icon: <MessageSquare className="h-3 w-3" />, 
-      action: () => navigate('/contact') 
-    },
-  ];
+  // Get contextual action buttons based on last assistant message
+  const getContextualActions = () => {
+    if (messages.length <= 1 || isLoading) return [];
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role !== 'assistant') return [];
+    
+    const content = lastMessage.content.toLowerCase();
+    const actions: { label: string; icon: React.ReactNode; action: () => void }[] = [];
+    
+    // Contact actions
+    if (content.includes('kontakt') || content.includes('ring') || content.includes('mail') || 
+        content.includes('71 78 65 75') || content.includes('hello@beautyboosters') || 
+        content.includes('medarbejder') || content.includes('support')) {
+      actions.push(
+        { label: 'Ring til os', icon: <Phone className="h-3 w-3" />, action: () => window.open('tel:+4571786575', '_self') },
+        { label: 'Send mail', icon: <Mail className="h-3 w-3" />, action: () => window.open('mailto:hello@beautyboosters.dk', '_self') }
+      );
+    }
+    
+    // Calendar/booking actions
+    if (content.includes('kalender') || content.includes('booking') || content.includes('tid') || content.includes('aftale')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Min kalender', icon: <Calendar className="h-3 w-3" />, action: () => navigate('/booster/calendar') });
+      } else if (userRole === 'admin') {
+        actions.push({ label: 'Se bookings', icon: <Calendar className="h-3 w-3" />, action: () => navigate('/admin/bookings') });
+      } else {
+        actions.push({ label: 'Book en tid', icon: <Calendar className="h-3 w-3" />, action: () => navigate('/services') });
+      }
+    }
+    
+    // Finance/money actions
+    if (content.includes('økonomi') || content.includes('indtjening') || content.includes('faktura') || 
+        content.includes('penge') || content.includes('betaling') || content.includes('omsætning')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Se økonomi', icon: <Wallet className="h-3 w-3" />, action: () => navigate('/booster/finance') });
+      } else if (userRole === 'admin') {
+        actions.push({ label: 'Økonomioversigt', icon: <Wallet className="h-3 w-3" />, action: () => navigate('/admin/finance') });
+      }
+    }
+    
+    // VAT/moms actions (booster specific)
+    if (content.includes('moms') || content.includes('skat') || content.includes('cvr')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Se momsdetaljer', icon: <FileText className="h-3 w-3" />, action: () => navigate('/booster/finance') });
+      }
+    }
+    
+    // Jobs actions
+    if (content.includes('job') || content.includes('opgave') || content.includes('ansøg')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Se ledige jobs', icon: <Briefcase className="h-3 w-3" />, action: () => navigate('/booster/jobs') });
+      } else if (userRole === 'admin') {
+        actions.push({ label: 'Administrer jobs', icon: <Briefcase className="h-3 w-3" />, action: () => navigate('/admin/jobs') });
+      }
+    }
+    
+    // Profile/portfolio actions
+    if (content.includes('profil') || content.includes('portfolio') || content.includes('billede')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Rediger profil', icon: <User className="h-3 w-3" />, action: () => navigate('/booster/profile') });
+        actions.push({ label: 'Min portfolio', icon: <Image className="h-3 w-3" />, action: () => navigate('/booster/portfolio') });
+      }
+    }
+    
+    // Settings actions
+    if (content.includes('indstilling') || content.includes('ændre') || content.includes('opdater')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Indstillinger', icon: <Settings className="h-3 w-3" />, action: () => navigate('/booster/settings') });
+      } else if (userRole === 'admin') {
+        actions.push({ label: 'Indstillinger', icon: <Settings className="h-3 w-3" />, action: () => navigate('/admin/settings') });
+      }
+    }
+    
+    // Boosters/stylists actions (customer)
+    if (content.includes('booster') || content.includes('stylist') || content.includes('artist') || content.includes('find')) {
+      if (userRole === 'customer') {
+        actions.push({ label: 'Se vores boosters', icon: <Users className="h-3 w-3" />, action: () => navigate('/stylists') });
+      }
+    }
+    
+    // Services actions (customer)
+    if (content.includes('service') || content.includes('makeup') || content.includes('hår') || 
+        content.includes('spraytan') || content.includes('behandling')) {
+      if (userRole === 'customer') {
+        actions.push({ label: 'Se services', icon: <Star className="h-3 w-3" />, action: () => navigate('/services') });
+      }
+    }
+    
+    // Giftcard actions
+    if (content.includes('gavekort') || content.includes('gave')) {
+      actions.push({ label: 'Køb gavekort', icon: <Gift className="h-3 w-3" />, action: () => navigate('/giftcards') });
+    }
+    
+    // Messages actions
+    if (content.includes('besked') || content.includes('skriv') || content.includes('chat')) {
+      if (userRole === 'booster') {
+        actions.push({ label: 'Mine beskeder', icon: <MessageSquare className="h-3 w-3" />, action: () => navigate('/booster/messages') });
+      } else if (userRole === 'admin') {
+        actions.push({ label: 'Beskeder', icon: <MessageSquare className="h-3 w-3" />, action: () => navigate('/admin/messages') });
+      }
+    }
+    
+    // Limit to max 3 buttons
+    return actions.slice(0, 3);
+  };
 
-  // Check if last assistant message mentions contact
-  const showContactButtons = messages.length > 1 && 
-    messages[messages.length - 1]?.role === 'assistant' &&
-    (messages[messages.length - 1]?.content.toLowerCase().includes('kontakt') ||
-     messages[messages.length - 1]?.content.toLowerCase().includes('ring') ||
-     messages[messages.length - 1]?.content.toLowerCase().includes('mail') ||
-     messages[messages.length - 1]?.content.toLowerCase().includes('71 78 65 75') ||
-     messages[messages.length - 1]?.content.toLowerCase().includes('hello@beautyboosters'));
+  const contextualActions = getContextualActions();
 
   const sendMessage = async () => {
     await sendMessageWithText(input);
@@ -339,10 +419,10 @@ const AIAssistant: React.FC = () => {
                 </div>
               )}
 
-              {/* Contact action buttons */}
-              {showContactButtons && !isLoading && (
+              {/* Contextual action buttons */}
+              {contextualActions.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {contactActions.map((action, i) => (
+                  {contextualActions.map((action, i) => (
                     <button
                       key={i}
                       onClick={action.action}
