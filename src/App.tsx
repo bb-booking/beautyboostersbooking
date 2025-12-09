@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CartProvider } from "@/contexts/CartContext";
 import Header from "@/components/layout/Header";
-import ChatWidget from "@/components/chat/ChatWidget";
+
 import SiteFooter from "@/components/layout/SiteFooter";
 import AIAssistant from "@/components/ai/AIAssistant";
 import Index from "./pages/Index";
@@ -142,7 +142,7 @@ const AppContent = () => {
         </Routes>
       </main>
       {showPublicHeader && <SiteFooter />}
-      {showPublicHeader && <ChatWidget />}
+      
       <AIAssistant />
     </div>
   );
