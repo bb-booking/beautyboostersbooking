@@ -184,13 +184,13 @@ const AdminInquiries = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${inquiry.email}`} className="text-primary hover:underline">
+                      <a href={`mailto:${inquiry.email}`} className="text-foreground hover:underline">
                         {inquiry.email}
                       </a>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <a href={`tel:${inquiry.telefon}`} className="text-primary hover:underline">
+                      <a href={`tel:${inquiry.telefon}`} className="text-foreground hover:underline">
                         {inquiry.telefon}
                       </a>
                     </div>
