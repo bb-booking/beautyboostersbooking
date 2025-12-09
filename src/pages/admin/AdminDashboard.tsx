@@ -1,12 +1,28 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, Users, Calendar, TrendingUp, DollarSign, Briefcase, AlertCircle } from "lucide-react";
+import { 
+  MessageSquare, 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  DollarSign, 
+  Briefcase, 
+  AlertCircle,
+  Star,
+  CalendarClock,
+  PiggyBank,
+  FileText,
+  Clock,
+  Send,
+  ExternalLink
+} from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, differenceInDays, addMonths } from "date-fns";
 import { da } from "date-fns/locale";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface DashboardStats {
   totalRevenue: number;
@@ -16,6 +32,8 @@ interface DashboardStats {
   activeBoosters: number;
   newInquiries: number;
   unpaidInvoices: number;
+  unreadMessages: number;
+  pendingReviews: number;
 }
 
 interface RecentBooking {
@@ -43,7 +61,28 @@ interface RecentInquiry {
   status: string;
 }
 
+interface StatusUpdate {
+  id: string;
+  type: 'vat' | 'invoice' | 'payout' | 'job' | 'inquiry' | 'message' | 'review';
+  title: string;
+  description: string;
+  urgent: boolean;
+  action?: string;
+  actionPath?: string;
+}
+
+interface Review {
+  id: string;
+  customerName: string;
+  boosterName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  replied: boolean;
+}
+
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalRevenue: 0,
     monthlyRevenue: 0,
@@ -52,11 +91,15 @@ const AdminDashboard = () => {
     activeBoosters: 0,
     newInquiries: 0,
     unpaidInvoices: 0,
+    unreadMessages: 0,
+    pendingReviews: 0,
   });
   const [loading, setLoading] = useState(true);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([]);
+  const [statusUpdates, setStatusUpdates] = useState<StatusUpdate[]>([]);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [servicesData, setServicesData] = useState<any[]>([]);
 
@@ -95,6 +138,18 @@ const AdminDashboard = () => {
           .from("invoices")
           .select("*");
 
+        // Fetch conversations for unread messages
+        const { data: conversations } = await supabase
+          .from("conversations")
+          .select("unread_admin_count");
+
+        // Fetch reviews
+        const { data: reviews } = await supabase
+          .from("booking_reviews")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
         // Calculate stats
         const totalRevenue = bookings?.reduce((sum, b) => sum + Number(b.amount || 0), 0) || 0;
         const monthlyRevenue = bookings?.filter(b => {
@@ -110,6 +165,7 @@ const AdminDashboard = () => {
         const activeBoosters = boosters?.filter(b => b.is_available).length || 0;
         const newInquiries = inquiries?.filter(i => i.status === 'new').length || 0;
         const unpaidInvoices = invoices?.filter(i => i.status === 'draft' || i.status === 'sent').length || 0;
+        const unreadMessages = conversations?.reduce((sum, c) => sum + (c.unread_admin_count || 0), 0) || 0;
 
         setStats({
           totalRevenue,
@@ -119,6 +175,8 @@ const AdminDashboard = () => {
           activeBoosters,
           newInquiries,
           unpaidInvoices,
+          unreadMessages,
+          pendingReviews: reviews?.length || 0,
         });
 
         // Recent bookings (last 5)
@@ -148,6 +206,84 @@ const AdminDashboard = () => {
           created_at: i.created_at,
           status: i.status,
         })) || []);
+
+        // Mock recent reviews
+        setRecentReviews([
+          { id: '1', customerName: 'Sarah M.', boosterName: 'Anna K.', rating: 5, comment: 'Fantastisk makeup!', date: '2024-12-05', replied: false },
+          { id: '2', customerName: 'Louise K.', boosterName: 'My Phung', rating: 4, comment: 'Meget professionel', date: '2024-12-03', replied: true },
+        ]);
+
+        // Generate status updates
+        const updates: StatusUpdate[] = [];
+
+        // VAT deadline (mock)
+        const nextVATDeadline = new Date(2025, 2, 1); // March 1
+        const daysUntilVAT = differenceInDays(nextVATDeadline, today);
+        if (daysUntilVAT <= 30 && daysUntilVAT > 0) {
+          updates.push({
+            id: 'vat-deadline',
+            type: 'vat',
+            title: 'Momsfrist nærmer sig',
+            description: `Q4 2024 moms skal indberettes inden ${format(nextVATDeadline, "d. MMMM", { locale: da })}`,
+            urgent: daysUntilVAT <= 14,
+            action: 'Se økonomi',
+            actionPath: '/admin/finance'
+          });
+        }
+
+        // Open jobs
+        if (openJobs > 0) {
+          updates.push({
+            id: 'open-jobs',
+            type: 'job',
+            title: `${openJobs} ledige jobs`,
+            description: 'Jobs der mangler at blive tildelt boosters',
+            urgent: openJobs > 5,
+            action: 'Se jobs',
+            actionPath: '/admin/jobs'
+          });
+        }
+
+        // New inquiries
+        if (newInquiries > 0) {
+          updates.push({
+            id: 'new-inquiries',
+            type: 'inquiry',
+            title: `${newInquiries} nye forespørgsler`,
+            description: 'Kunder venter på svar',
+            urgent: true,
+            action: 'Se forespørgsler',
+            actionPath: '/admin/inquiries'
+          });
+        }
+
+        // Unread messages
+        if (unreadMessages > 0) {
+          updates.push({
+            id: 'unread-messages',
+            type: 'message',
+            title: `${unreadMessages} ulæste beskeder`,
+            description: 'Beskeder fra kunder og boosters',
+            urgent: unreadMessages > 10,
+            action: 'Se beskeder',
+            actionPath: '/admin/messages'
+          });
+        }
+
+        // Unpaid invoices
+        if (unpaidInvoices > 0) {
+          updates.push({
+            id: 'unpaid-invoices',
+            type: 'invoice',
+            title: `${unpaidInvoices} ubetalte fakturaer`,
+            description: 'Fakturaer der kræver opfølgning',
+            urgent: unpaidInvoices > 3,
+            action: 'Se fakturaer',
+            actionPath: '/admin/invoices'
+          });
+        }
+
+        setStatusUpdates(updates);
 
         // Revenue data for last 6 months
         const monthsData = [];
@@ -283,6 +419,50 @@ const AdminDashboard = () => {
         </p>
       </div>
 
+      {/* STATUS UPDATES - Critical notifications */}
+      {statusUpdates.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              <CardTitle>Statusopdateringer</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {statusUpdates.map((update) => (
+                <div 
+                  key={update.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    update.urgent 
+                      ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' 
+                      : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {update.type === 'vat' && <PiggyBank className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
+                    {update.type === 'invoice' && <FileText className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
+                    {update.type === 'job' && <Briefcase className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-blue-600'}`} />}
+                    {update.type === 'inquiry' && <MessageSquare className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-pink-600'}`} />}
+                    {update.type === 'message' && <MessageSquare className="h-5 w-5 text-blue-600" />}
+                    {update.type === 'review' && <Star className="h-5 w-5 text-yellow-500" />}
+                    <div>
+                      <p className="font-medium text-sm">{update.title}</p>
+                      <p className="text-xs text-muted-foreground">{update.description}</p>
+                    </div>
+                  </div>
+                  {update.action && (
+                    <Button size="sm" variant={update.urgent ? "default" : "outline"} onClick={() => navigate(update.actionPath!)}>
+                      {update.action}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat, index) => (
@@ -308,6 +488,49 @@ const AdminDashboard = () => {
           </Link>
         ))}
       </div>
+
+      {/* Recent Reviews */}
+      {recentReviews.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              <CardTitle>Seneste anmeldelser</CardTitle>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/boosters")}>
+              Se alle
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentReviews.map((review) => (
+                <div key={review.id} className="flex items-start justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">{review.customerName}</span>
+                      <span className="text-muted-foreground text-xs">→</span>
+                      <span className="text-sm">{review.boosterName}</span>
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`h-3 w-3 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{review.comment}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{review.date}</p>
+                  </div>
+                  {!review.replied && (
+                    <Badge variant="secondary" className="text-xs">Afventer svar</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -452,9 +675,9 @@ const AdminDashboard = () => {
         </Link>
       </div>
 
-      {/* Action Items */}
+      {/* Action Items - Legacy block */}
       {(stats.openJobs > 0 || stats.newInquiries > 0 || stats.unpaidInvoices > 0) && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-orange-600" />
