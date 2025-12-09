@@ -53,9 +53,10 @@ const Services = () => {
     
     if (urlClient) {
       setClientType(urlClient as 'privat' | 'virksomhed');
+      sessionStorage.setItem('selectedClientType', urlClient);
     } else if (storedClient) {
       setClientType(storedClient as 'privat' | 'virksomhed');
-      sessionStorage.removeItem('selectedClientType');
+      // Keep the value in sessionStorage for the checkout flow
     }
     
     if (urlCategory) {
@@ -487,7 +488,10 @@ const Services = () => {
           </p>
           
           <div className="mb-6">
-            <RadioGroup value={clientType} onValueChange={setClientType} className="flex flex-wrap gap-6">
+            <RadioGroup value={clientType} onValueChange={(value) => {
+              setClientType(value);
+              sessionStorage.setItem('selectedClientType', value);
+            }} className="flex flex-wrap gap-6">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="privat" id="privat" />
                 <Label htmlFor="privat" className="text-sm font-medium">Privat</Label>
