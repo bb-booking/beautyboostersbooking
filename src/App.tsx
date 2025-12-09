@@ -62,6 +62,7 @@ import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import CustomerAddresses from "./pages/customer/CustomerAddresses";
 import CustomerFavorites from "./pages/customer/CustomerFavorites";
+import CustomerSettings from "./pages/customer/CustomerSettings";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const AppContent = () => {
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
           <Route path="/customer/addresses" element={<CustomerAddresses />} />
           <Route path="/customer/favorites" element={<CustomerFavorites />} />
+          <Route path="/customer/settings" element={<CustomerSettings />} />
           
           <Route path="/booster/login" element={<BoosterLogin />} />
           {/* Admin routes */}
