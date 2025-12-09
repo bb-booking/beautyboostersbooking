@@ -71,6 +71,7 @@ interface Job {
   location: string;
   date_needed: string;
   time_needed?: string;
+  client_type?: string; // 'privat' or 'virksomhed'
 }
 
 const AdminCalendar = () => {
@@ -170,7 +171,7 @@ const AdminCalendar = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('id, title, client_name, location, date_needed, time_needed')
+        .select('id, title, client_name, location, date_needed, time_needed, client_type')
         .in('status', ['assigned', 'in_progress']);
 
       if (error) throw error;
@@ -191,12 +192,22 @@ const AdminCalendar = () => {
     return matchesSearch && matchesLocation && matchesSpecialty && matchesSelected;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, clientType?: string) => {
+    // If there's a job with client_type, use client-type based colors for booked statuses
+    if (status === 'busy' && clientType) {
+      if (clientType === 'virksomhed') {
+        return 'bg-blue-100 text-blue-800 border-blue-300'; // Business = Blue
+      } else {
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'; // Private = Yellow
+      }
+    }
+    
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800 border-green-200';
-      case 'busy': return 'bg-red-100 text-red-800 border-red-200';
-      case 'vacation': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'sick': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'busy': return 'bg-yellow-100 text-yellow-800 border-yellow-300'; // Default to private yellow
+      case 'booked': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'vacation': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'sick': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -205,6 +216,7 @@ const AdminCalendar = () => {
     switch (status) {
       case 'available': return <CheckCircle className="h-3 w-3" />;
       case 'busy': return <XCircle className="h-3 w-3" />;
+      case 'booked': return <Calendar className="h-3 w-3" />;
       case 'vacation': return <Coffee className="h-3 w-3" />;
       case 'sick': return <AlertCircle className="h-3 w-3" />;
       default: return null;
@@ -215,6 +227,7 @@ const AdminCalendar = () => {
     switch (status) {
       case 'available': return 'Tilgængelig';
       case 'busy': return 'Optaget';
+      case 'booked': return 'Booket';
       case 'vacation': return 'Ferie';
       case 'sick': return 'Syg';
       default: return status;
@@ -701,9 +714,15 @@ const AdminCalendar = () => {
               </Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={getStatusColor('busy')}>
-                {getStatusIcon('busy')}
-                Optaget
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                <Calendar className="h-3 w-3 mr-1" />
+                Privat booking
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                <Calendar className="h-3 w-3 mr-1" />
+                Virksomhed booking
               </Badge>
             </div>
             <div className="flex items-center gap-2">

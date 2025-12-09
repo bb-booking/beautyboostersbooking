@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { Badge } from '@/components/ui/badge';
-import { GripVertical, MapPin } from 'lucide-react';
+import { GripVertical, MapPin, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Job {
@@ -8,6 +8,7 @@ interface Job {
   title: string;
   client_name?: string;
   location: string;
+  client_type?: string;
 }
 
 interface DraggableBookingProps {
@@ -17,7 +18,7 @@ interface DraggableBookingProps {
   endTime: string;
   job?: Job | null;
   notes?: string;
-  getStatusColor: (status: string) => string;
+  getStatusColor: (status: string, clientType?: string) => string;
   getStatusIcon: (status: string) => React.ReactNode;
 }
 
@@ -42,6 +43,10 @@ export function DraggableBooking({
       }
     : undefined;
 
+  const clientType = job?.client_type;
+  const isBooked = status === 'busy' || status === 'booked';
+  const isBusiness = clientType === 'virksomhed';
+
   return (
     <div
       ref={setNodeRef}
@@ -54,10 +59,10 @@ export function DraggableBooking({
       {...attributes}
     >
       <Badge 
-        className={`w-full ${getStatusColor(status)} flex items-center gap-1 mb-1`}
+        className={`w-full ${getStatusColor(status, clientType)} flex items-center gap-1 mb-1`}
       >
         <GripVertical className="h-3 w-3" />
-        {getStatusIcon(status)}
+        {isBooked ? (isBusiness ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />) : getStatusIcon(status)}
         <span className="truncate flex-1">
           {startTime.slice(0, 5)}-{endTime.slice(0, 5)}
         </span>
