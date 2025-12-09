@@ -557,7 +557,6 @@ export default function Checkout() {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-semibold">{item.name || item.service?.name || service.name}</h4>
-                      <p className="text-sm text-muted-foreground">{item.booster?.name || booster.name}</p>
                     </div>
                     <span className="font-semibold">{item.finalPrice ?? item.service?.price ?? service.price} DKK</span>
                   </div>
@@ -574,10 +573,12 @@ export default function Checkout() {
                 </div>
               ))}
 
-              {extraBoosters.length > 0 && (
+              {/* Show all selected boosters */}
+              {(booster || extraBoosters.length > 0) && (
                 <div className="p-3 rounded-md bg-muted/50">
-                  <span className="text-sm font-medium">Ekstra boosters:</span>
+                  <span className="text-sm font-medium">Valgte boosters:</span>
                   <div className="flex flex-wrap gap-2 mt-2">
+                    {booster && <Badge variant="outline">{booster.name}</Badge>}
                     {extraBoosters.map((b) => (
                       <Badge key={b.id} variant="outline">{b.name}</Badge>
                     ))}
