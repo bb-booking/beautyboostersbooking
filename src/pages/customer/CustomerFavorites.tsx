@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Heart, MapPin, Star, Briefcase, ArrowLeft } from "lucide-react";
+import { boosterImageOverrides } from "@/data/boosterImages";
+
+// Helper function to get booster image (same logic as Stylists page)
+const getBoosterImage = (name: string, portfolioImageUrl?: string): string => {
+  const normalizedName = name.toLowerCase().trim();
+  if (boosterImageOverrides[normalizedName]) {
+    return boosterImageOverrides[normalizedName];
+  }
+  return portfolioImageUrl || '/placeholder.svg';
+};
 
 interface FavoriteBooster {
   id: string;
@@ -133,13 +143,11 @@ const CustomerFavorites = () => {
               <Card key={favorite.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="relative mb-4">
-                    {booster.portfolio_image_url && (
-                      <img
-                        src={booster.portfolio_image_url}
-                        alt={booster.name}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                    )}
+                    <img
+                      src={getBoosterImage(booster.name, booster.portfolio_image_url)}
+                      alt={booster.name}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
                     <Button
                       variant="ghost"
                       size="icon"
