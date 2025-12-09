@@ -578,7 +578,7 @@ const AdminDashboard = () => {
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Link to="/admin/bookings">
+        <Link to="/admin/jobs">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg">Seneste bookings</CardTitle>
@@ -647,7 +647,7 @@ const AdminDashboard = () => {
           </Card>
         </Link>
 
-        <Link to="/admin/inquiries">
+        <Link to="/admin/jobs">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="text-lg">Seneste forespørgsler</CardTitle>

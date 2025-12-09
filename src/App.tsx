@@ -64,6 +64,20 @@ import CustomerAddresses from "./pages/customer/CustomerAddresses";
 import CustomerFavorites from "./pages/customer/CustomerFavorites";
 import CustomerSettings from "./pages/customer/CustomerSettings";
 
+// Salon imports
+import { SalonLayout } from "@/components/layout/SalonLayout";
+import SalonDashboard from "./pages/salon/SalonDashboard";
+import SalonCalendar from "./pages/salon/SalonCalendar";
+import SalonServices from "./pages/salon/SalonServices";
+import SalonTeam from "./pages/salon/SalonTeam";
+import SalonHours from "./pages/salon/SalonHours";
+import SalonFinance from "./pages/salon/SalonFinance";
+import SalonPayouts from "./pages/salon/SalonPayouts";
+import SalonSettings from "./pages/salon/SalonSettings";
+import SalonDiscountCodes from "./pages/salon/SalonDiscountCodes";
+import SalonLogin from "./pages/salon/SalonLogin";
+import SalonSignup from "./pages/salon/SalonSignup";
+
 const queryClient = new QueryClient();
 
 const AppContent = () => {
@@ -138,6 +152,21 @@ const AppContent = () => {
             <Route path="messages" element={<BoosterMessages />} />
             <Route path="settings" element={<BoosterSettings />} />
             <Route path="reviews" element={<BoosterReviews />} />
+          </Route>
+          {/* Salon routes */}
+          <Route path="/salon/login" element={<SalonLogin />} />
+          <Route path="/salon/signup" element={<SalonSignup />} />
+          <Route path="/salon" element={<SalonLayout />}>
+            <Route index element={<SalonDashboard />} />
+            <Route path="dashboard" element={<SalonDashboard />} />
+            <Route path="calendar" element={<SalonCalendar />} />
+            <Route path="services" element={<SalonServices />} />
+            <Route path="team" element={<SalonTeam />} />
+            <Route path="hours" element={<SalonHours />} />
+            <Route path="finance" element={<SalonFinance />} />
+            <Route path="payouts" element={<SalonPayouts />} />
+            <Route path="settings" element={<SalonSettings />} />
+            <Route path="discount-codes" element={<SalonDiscountCodes />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
