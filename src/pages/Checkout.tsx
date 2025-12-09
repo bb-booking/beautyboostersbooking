@@ -840,10 +840,10 @@ export default function Checkout() {
 
                   <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når en booster har accepteret din booking.
+                      <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når behandlingen er udført.
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Ved sen afbestilling eller udeblivelse opkræves 50% af beløbet.
+                      <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Afbestilling 12-24 timer før: 25% gebyr. Afbestilling 6-12 timer før: 50% gebyr. Afbestilling under 6 timer før eller udeblivelse: 100% af beløbet.
                     </p>
                   </div>
                 </CardContent>
