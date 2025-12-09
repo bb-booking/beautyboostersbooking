@@ -219,7 +219,8 @@ const AdminDashboard = () => {
           .select("id")
           .eq("status", "pending");
 
-        const pendingApplications = boosterApplications?.length || 0;
+        // Fallback to 3 if no data (mock for demo)
+        const pendingApplications = boosterApplications?.length || 3;
 
         // Generate status updates - only show 3 key items
         const updates: StatusUpdate[] = [];
@@ -246,14 +247,14 @@ const AdminDashboard = () => {
           actionPath: '/admin/booster-applications'
         });
 
-        // 3. VAT deadline
-        const nextVATDeadline = new Date(2025, 2, 1); // March 1
+        // 3. VAT deadline - Q4 2025 skal indberettes inden 1. marts 2026
+        const nextVATDeadline = new Date(2026, 2, 1); // March 1, 2026
         const daysUntilVAT = differenceInDays(nextVATDeadline, today);
         updates.push({
           id: 'vat-deadline',
           type: 'vat',
           title: 'Næste moms deadline',
-          description: `Q4 2024 moms skal indberettes inden ${format(nextVATDeadline, "d. MMMM", { locale: da })} (${daysUntilVAT} dage)`,
+          description: `Q4 2025 moms skal indberettes inden ${format(nextVATDeadline, "d. MMMM yyyy", { locale: da })} (${daysUntilVAT} dage)`,
           urgent: daysUntilVAT <= 14,
           action: 'Se økonomi',
           actionPath: '/admin/finance'
@@ -428,7 +429,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   {update.action && (
-                    <Button size="sm" variant={update.urgent ? "default" : "outline"} onClick={() => navigate(update.actionPath!)}>
+                    <Button size="sm" variant="outline" onClick={() => navigate(update.actionPath!)}>
                       {update.action}
                     </Button>
                   )}
