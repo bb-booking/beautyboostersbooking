@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { addDays, format, isEqual, startOfDay, startOfWeek } from "date-fns";
 import { da } from "date-fns/locale";
-import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX } from "lucide-react";
+import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound } from "lucide-react";
 
 interface BoosterEvent {
   id: string;
@@ -72,10 +72,10 @@ const MOCK_CUSTOMERS: Customer[] = [
 ];
 
 const MOCK_EVENTS: Omit<BoosterEvent, 'id'>[] = [
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', address: 'Vesterbrogade 45, København', client_type: 'privat' }) },
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS' }) },
-  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', address: 'Nørrebrogade 100, København', client_type: 'privat' }) },
-  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', address: 'DR Byen, Emil Holms Kanal 20, København', client_type: 'virksomhed', company_name: 'Danmarks Radio' }) },
+  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', customer_email: 'sarah@email.dk', address: 'Vesterbrogade 45, København', client_type: 'privat', people_count: 3, price: 2499, team_boosters: [] }) },
+  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', customer_email: 'kontakt@cphevents.dk', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS', people_count: 8, price: 12500, team_boosters: ['Josephine O.', 'Katrine J.'] }) },
+  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', customer_email: 'marie@email.dk', address: 'Nørrebrogade 100, København', client_type: 'privat', people_count: 1, price: 899, team_boosters: [] }) },
+  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', customer_email: 'booking@dr.dk', address: 'DR Byen, Emil Holms Kanal 20, København', client_type: 'virksomhed', company_name: 'Danmarks Radio', people_count: 5, price: 8500, team_boosters: ['Fay'] }) },
   { date: format(addDays(new Date(), 3), 'yyyy-MM-dd'), start_time: '07:00:00', end_time: '21:00:00', status: 'blocked', notes: JSON.stringify({ blocked: true, reason: 'Ferie' }) },
 ];
 
@@ -104,6 +104,8 @@ export default function BoosterCalendar() {
   const [form, setForm] = useState<CreateForm>(DEFAULT_FORM);
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<BoosterEvent | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<CreateForm>(DEFAULT_FORM);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockType, setBlockType] = useState<'time' | 'day'>('time');
   const [blockDate, setBlockDate] = useState<Date | null>(null);
@@ -314,22 +316,123 @@ export default function BoosterCalendar() {
         </div>
       </Card>
 
-      <Dialog open={!!selectedEvent} onOpenChange={(o) => { if (!o) setSelectedEvent(null); }}>
-        <DialogContent>
+      <Dialog open={!!selectedEvent} onOpenChange={(o) => { if (!o) { setSelectedEvent(null); setIsEditing(false); } }}>
+        <DialogContent className="max-w-lg">
           {selectedEvent && (() => {
             const meta = parseNotes(selectedEvent);
+            const teamBoosters = Array.isArray(meta.team_boosters) ? meta.team_boosters : [];
+            const peopleCount = meta.people_count || 1;
+            const price = meta.price || 0;
+            const durationMins = (timeToMinutes(selectedEvent.end_time) - timeToMinutes(selectedEvent.start_time));
+            const durationHours = Math.floor(durationMins / 60);
+            const durationMinsRest = durationMins % 60;
+            const durationStr = durationMinsRest > 0 ? `${durationHours}t ${durationMinsRest}m` : `${durationHours}t`;
+
+            if (isEditing) {
+              return (
+                <>
+                  <DialogHeader><DialogTitle>Rediger booking</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label className="text-foreground">Service</Label><Select value={editForm.service} onValueChange={(v) => setEditForm(f => ({ ...f, service: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Makeup Styling">Makeup Styling</SelectItem><SelectItem value="Hår Styling">Hår Styling</SelectItem><SelectItem value="Bryllup makeup">Bryllup makeup</SelectItem><SelectItem value="Event makeup">Event makeup</SelectItem><SelectItem value="SFX Makeup">SFX Makeup</SelectItem><SelectItem value="TV-produktion">TV-produktion</SelectItem></SelectContent></Select></div>
+                      <div><Label className="text-foreground">Varighed</Label><Select value={String(editForm.duration)} onValueChange={(v) => setEditForm(f => ({ ...f, duration: Number(v) }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="60">1 time</SelectItem><SelectItem value="120">2 timer</SelectItem><SelectItem value="180">3 timer</SelectItem><SelectItem value="240">4 timer</SelectItem></SelectContent></Select></div>
+                    </div>
+                    <div><Label className="text-foreground">Kunde</Label><Input value={editForm.customer_name} onChange={(e) => setEditForm(f => ({ ...f, customer_name: e.target.value }))} /></div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label className="text-foreground">Telefon</Label><Input value={editForm.customer_phone} onChange={(e) => setEditForm(f => ({ ...f, customer_phone: e.target.value }))} /></div>
+                      <div><Label className="text-foreground">Email</Label><Input value={editForm.customer_email} onChange={(e) => setEditForm(f => ({ ...f, customer_email: e.target.value }))} /></div>
+                    </div>
+                    <div><Label className="text-foreground">Adresse</Label><Input value={editForm.address} onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
+                    <div><Label className="text-foreground">Noter</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
+                    <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setIsEditing(false)}>Annuller</Button><Button onClick={() => { setIsEditing(false); }}>Gem ændringer</Button></div>
+                  </div>
+                </>
+              );
+            }
+
             return (
               <>
-                <DialogHeader><DialogTitle className="flex items-center gap-2">{meta.service || "Booking"}<Badge variant={meta.client_type === 'virksomhed' ? 'secondary' : 'outline'}>{meta.client_type === 'virksomhed' ? 'Virksomhed' : 'Privat'}</Badge></DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4 text-muted-foreground" /><span>{format(new Date(selectedEvent.date), "EEEE d. MMMM yyyy", { locale: da })}</span><span className="font-medium">{selectedEvent.start_time.slice(0,5)} – {selectedEvent.end_time.slice(0,5)}</span></div>
-                  <div className="flex items-center gap-2 text-sm"><User className="h-4 w-4 text-muted-foreground" /><span>{meta.customer_name || "Ikke angivet"}</span></div>
-                  {meta.company_name && <div className="flex items-center gap-2 text-sm"><Building2 className="h-4 w-4 text-muted-foreground" /><span>{meta.company_name}</span></div>}
-                  {meta.customer_phone && <div className="flex items-center gap-2 text-sm"><Phone className="h-4 w-4 text-muted-foreground" /><a href={`tel:${meta.customer_phone}`} className="text-primary hover:underline">{meta.customer_phone}</a></div>}
-                  {meta.customer_email && <div className="flex items-center gap-2 text-sm"><Mail className="h-4 w-4 text-muted-foreground" /><a href={`mailto:${meta.customer_email}`} className="text-primary hover:underline">{meta.customer_email}</a></div>}
-                  {meta.address && <div className="flex items-start gap-2 text-sm"><MapPin className="h-4 w-4 text-muted-foreground mt-0.5" /><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{meta.address}</a></div>}
-                  {meta.notes && <div className="bg-muted/50 rounded-lg p-3 text-sm"><p className="font-medium mb-1">Noter</p><p className="text-muted-foreground">{meta.notes}</p></div>}
-                  <div className="flex justify-end gap-2 pt-2"><Button variant="destructive" size="sm" onClick={() => deleteEvent(selectedEvent.id)}><Trash2 className="h-4 w-4 mr-1" /> Slet</Button><Button variant="outline" size="sm" onClick={() => setSelectedEvent(null)}>Luk</Button></div>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-foreground">
+                    {meta.service || "Booking"}
+                    <Badge variant={meta.client_type === 'virksomhed' ? 'secondary' : 'outline'} className="text-foreground">{meta.client_type === 'virksomhed' ? 'Virksomhed' : 'Privat'}</Badge>
+                    {teamBoosters.length > 0 && <Badge variant="secondary" className="gap-1 text-foreground"><UsersRound className="h-3 w-3" />Team</Badge>}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-1 text-foreground">
+                  <div className="grid grid-cols-[100px_1fr] gap-y-2 text-sm py-2">
+                    <span className="font-medium text-foreground">Tidspunkt:</span>
+                    <span className="text-foreground">{format(new Date(selectedEvent.date), "EEEE d. MMMM", { locale: da })}, {selectedEvent.start_time.slice(0,5)}–{selectedEvent.end_time.slice(0,5)}</span>
+                    
+                    <span className="font-medium text-foreground">Varighed:</span>
+                    <span className="text-foreground">{durationStr}</span>
+                    
+                    <span className="font-medium text-foreground">Kunde:</span>
+                    <span className="text-foreground">{meta.customer_name || "Ikke angivet"} {meta.customer_phone && `– ${meta.customer_phone}`}</span>
+                    
+                    {meta.company_name && (
+                      <>
+                        <span className="font-medium text-foreground">Virksomhed:</span>
+                        <span className="text-foreground">{meta.company_name}</span>
+                      </>
+                    )}
+                    
+                    <span className="font-medium text-foreground">Adresse:</span>
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{meta.address || '-'}</a>
+                    
+                    <span className="font-medium text-foreground">Service:</span>
+                    <span className="text-foreground">{meta.service} ({peopleCount} {peopleCount === 1 ? 'person' : 'personer'})</span>
+                    
+                    <span className="font-medium text-foreground">Pris:</span>
+                    <span className="text-foreground font-semibold">{price.toLocaleString('da-DK')} kr.</span>
+                    
+                    {teamBoosters.length > 0 && (
+                      <>
+                        <span className="font-medium text-foreground">Team:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {teamBoosters.map((b: string, i: number) => (
+                            <Badge key={i} variant="outline" className="text-xs text-foreground">{b}</Badge>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {meta.notes && (
+                    <div className="bg-muted/50 rounded-lg p-3 text-sm">
+                      <p className="font-medium mb-1 text-foreground">Noter</p>
+                      <p className="text-muted-foreground">{meta.notes}</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-4 border-t">
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { 
+                      setEditForm({
+                        service: meta.service || '',
+                        duration: durationMins,
+                        customer_type: 'existing',
+                        customer_id: '',
+                        customer_name: meta.customer_name || '',
+                        customer_phone: meta.customer_phone || '',
+                        customer_email: meta.customer_email || '',
+                        company_name: meta.company_name || '',
+                        client_type: meta.client_type || 'privat',
+                        address: meta.address || '',
+                        notes: meta.notes || '',
+                        look_images: [],
+                      });
+                      setIsEditing(true);
+                    }}>
+                      <Edit className="h-4 w-4" /> Rediger
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => { alert('Job frigivet til andre boosters i området!'); setSelectedEvent(null); }}>
+                      <Share2 className="h-4 w-4" /> Frigiv job
+                    </Button>
+                    <Button variant="destructive" size="sm" className="gap-1" onClick={() => deleteEvent(selectedEvent.id)}>
+                      <Trash2 className="h-4 w-4" /> Slet
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedEvent(null)}>Luk</Button>
+                  </div>
                 </div>
               </>
             );
