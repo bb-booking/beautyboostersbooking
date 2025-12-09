@@ -30,7 +30,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Forespørgsler", url: "/admin/inquiries", icon: MessageSquare },
   { title: "Jobs", url: "/admin/jobs", icon: Calendar },
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
   { title: "Booster Ansøgninger", url: "/admin/booster-applications", icon: Users },
@@ -129,10 +128,9 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminItems.map((item) => {
-                const badge =
+              const badge =
                   item.title === "Beskeder" ? counts.messages :
-                  item.title === "Forespørgsler" ? counts.inquiries :
-                  item.title === "Jobs" ? counts.jobs : 0;
+                  item.title === "Jobs" ? (counts.jobs + counts.inquiries) : 0;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>

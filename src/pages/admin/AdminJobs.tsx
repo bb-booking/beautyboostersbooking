@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { da } from "date-fns/locale";
 import { 
   Plus, 
   MapPin, 
@@ -24,7 +26,11 @@ import {
   Edit,
   CheckCircle,
   MessageSquare,
-  X
+  X,
+  Mail,
+  Phone,
+  Building,
+  DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import JobChat from "@/components/job/JobChat";
@@ -32,6 +38,25 @@ import InvoiceCreator from "@/components/invoice/InvoiceCreator";
 import AssignBoostersDialog, { BoosterOption } from "@/components/boosters/AssignBoostersDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+
+interface Inquiry {
+  id: string;
+  service_id: string | null;
+  navn: string;
+  email: string;
+  telefon: string;
+  virksomhed: string | null;
+  projekt_type: string | null;
+  start_dato: string | null;
+  slut_dato: string | null;
+  lokation: string | null;
+  antal_personer: number | null;
+  budget: string | null;
+  beskrivelse: string;
+  specielle_krav: string | null;
+  status: string;
+  created_at: string;
+}
 
 interface Job {
   id: string;
@@ -109,6 +134,11 @@ const AdminJobs = () => {
   const [selectedJobForAssign, setSelectedJobForAssign] = useState<Job | null>(null);
   const [showBoosterSelectionStep, setShowBoosterSelectionStep] = useState(false);
   const [selectedBoostersForNotification, setSelectedBoostersForNotification] = useState<Set<string>>(new Set());
+  
+  // Inquiries state
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiryFilter, setInquiryFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("jobs");
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -194,7 +224,79 @@ const AdminJobs = () => {
     fetchBoosters();
     fetchServices();
     fetchCompetenceTags();
+    fetchInquiries();
   }, []);
+
+  const fetchInquiries = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("inquiries")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching inquiries:", error);
+        return;
+      }
+
+      setInquiries(data || []);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const updateInquiryStatus = async (id: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("inquiries")
+        .update({ status: newStatus })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating inquiry:", error);
+        toast.error("Kunne ikke opdatere status");
+        return;
+      }
+
+      setInquiries(prev => 
+        prev.map(inquiry => 
+          inquiry.id === id ? { ...inquiry, status: newStatus } : inquiry
+        )
+      );
+
+      toast.success("Status opdateret");
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Der opstod en fejl");
+    }
+  };
+
+  const getInquiryStatusColor = (status: string) => {
+    switch (status) {
+      case "new": return "bg-blue-100 text-blue-800";
+      case "contacted": return "bg-yellow-100 text-yellow-800";
+      case "in_progress": return "bg-purple-100 text-purple-800";
+      case "completed": return "bg-green-100 text-green-800";
+      case "rejected": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getInquiryStatusText = (status: string) => {
+    switch (status) {
+      case "new": return "Ny";
+      case "contacted": return "Kontaktet";
+      case "in_progress": return "I gang";
+      case "completed": return "Afsluttet";
+      case "rejected": return "Afvist";
+      default: return status;
+    }
+  };
+
+  const filteredInquiries = inquiries.filter(inquiry => {
+    if (inquiryFilter === "all") return true;
+    return inquiry.status === inquiryFilter;
+  });
 
   const fetchServices = async () => {
     // Hardcoded services matching the ones from Services.tsx with duration
@@ -825,8 +927,25 @@ Eksempel på notifikation som booster vil modtage.`;
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-2xl font-bold">Job Management</h2>
-        <Dialog open={showCreateDialog || !!selectedJobForEdit} onOpenChange={(open) => {
+        <h2 className="text-2xl font-bold">Jobs</h2>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="jobs">Jobs</TabsTrigger>
+          <TabsTrigger value="inquiries">
+            Forespørgsler
+            {inquiries.filter(i => i.status === "new").length > 0 && (
+              <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">
+                {inquiries.filter(i => i.status === "new").length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="jobs" className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Dialog open={showCreateDialog || !!selectedJobForEdit} onOpenChange={(open) => {
           if (!open) {
             setShowCreateDialog(false);
             setSelectedJobForEdit(null);
@@ -1469,6 +1588,158 @@ Eksempel på notifikation som booster vil modtage.`;
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="inquiries" className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Select value={inquiryFilter} onValueChange={setInquiryFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Filtrer efter status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle forespørgsler</SelectItem>
+                <SelectItem value="new">Nye</SelectItem>
+                <SelectItem value="contacted">Kontaktet</SelectItem>
+                <SelectItem value="in_progress">I gang</SelectItem>
+                <SelectItem value="completed">Afsluttet</SelectItem>
+                <SelectItem value="rejected">Afvist</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-4">
+            {filteredInquiries.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    {inquiryFilter === "all" ? "Ingen forespørgsler endnu" : `Ingen ${getInquiryStatusText(inquiryFilter).toLowerCase()} forespørgsler`}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredInquiries.map((inquiry) => (
+                <Card key={inquiry.id}>
+                  <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <CardTitle className="text-lg">{inquiry.navn}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className={getInquiryStatusColor(inquiry.status)}>
+                          {getInquiryStatusText(inquiry.status)}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(inquiry.created_at), "dd MMM yyyy", { locale: da })}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <a href={`mailto:${inquiry.email}`} className="text-foreground hover:underline">
+                            {inquiry.email}
+                          </a>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <a href={`tel:${inquiry.telefon}`} className="text-foreground hover:underline">
+                            {inquiry.telefon}
+                          </a>
+                        </div>
+                        {inquiry.virksomhed && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <span>{inquiry.virksomhed}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        {inquiry.projekt_type && (
+                          <div className="text-sm">
+                            <span className="font-medium">Type:</span> {inquiry.projekt_type}
+                          </div>
+                        )}
+                        {inquiry.start_dato && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <span>{format(new Date(inquiry.start_dato), "dd MMM yyyy", { locale: da })}</span>
+                            {inquiry.slut_dato && (
+                              <span>- {format(new Date(inquiry.slut_dato), "dd MMM yyyy", { locale: da })}</span>
+                            )}
+                          </div>
+                        )}
+                        {inquiry.lokation && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span>{inquiry.lokation}</span>
+                          </div>
+                        )}
+                        {inquiry.antal_personer && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span>{inquiry.antal_personer} personer</span>
+                          </div>
+                        )}
+                        {inquiry.budget && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <span>{inquiry.budget}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <span className="font-medium text-sm">Beskrivelse:</span>
+                        <p className="text-sm text-muted-foreground mt-1">{inquiry.beskrivelse}</p>
+                      </div>
+                      {inquiry.specielle_krav && (
+                        <div>
+                          <span className="font-medium text-sm">Specielle krav:</span>
+                          <p className="text-sm text-muted-foreground mt-1">{inquiry.specielle_krav}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-4 border-t">
+                      <span className="text-sm font-medium">Status:</span>
+                      <Select
+                        value={inquiry.status}
+                        onValueChange={(value) => updateInquiryStatus(inquiry.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">Ny</SelectItem>
+                          <SelectItem value="contacted">Kontaktet</SelectItem>
+                          <SelectItem value="in_progress">I gang</SelectItem>
+                          <SelectItem value="completed">Afsluttet</SelectItem>
+                          <SelectItem value="rejected">Afvist</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <div className="ml-auto space-x-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`mailto:${inquiry.email}?subject=Re: Din forespørgsel til Beauty Boosters`}>
+                            Send email
+                          </a>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`tel:${inquiry.telefon}`}>Ring op</a>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Chat Dialog */}
       {selectedJobForChat && (

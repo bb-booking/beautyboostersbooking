@@ -29,7 +29,7 @@ import BoosterSignup from "./pages/BoosterSignup";
 
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminInquiries from "./pages/admin/AdminInquiries";
+
 import AdminBookers from "./pages/admin/AdminBookers";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminJobs from "./pages/admin/AdminJobs";
@@ -112,7 +112,6 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="inquiries" element={<AdminInquiries />} />
             <Route path="jobs" element={<AdminJobs />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="bookings" element={<AdminBookings />} />
