@@ -138,7 +138,8 @@ const AdminJobs = () => {
   // Inquiries state
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [inquiryFilter, setInquiryFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState("jobs");
+  const [activeTab, setActiveTab] = useState("all");
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>("all");
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -883,7 +884,11 @@ const AdminJobs = () => {
     
     const matchesStatus = statusFilter === "all" || job.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    const matchesClientType = activeTab === "all" || 
+                              (activeTab === "b2c" && job.client_type === "privat") ||
+                              (activeTab === "b2b" && job.client_type === "virksomhed");
+    
+    return matchesSearch && matchesStatus && matchesClientType;
   });
 
   const getEligibleBoosters = (job: Job) => {
@@ -932,7 +937,24 @@ Eksempel på notifikation som booster vil modtage.`;
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
+          <TabsTrigger value="all">
+            Alle
+            <Badge className="ml-2 bg-muted text-muted-foreground text-xs">
+              {jobs.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="b2c">
+            B2C (Privat)
+            <Badge className="ml-2 bg-muted text-muted-foreground text-xs">
+              {jobs.filter(j => j.client_type === 'privat').length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="b2b">
+            B2B (Virksomhed)
+            <Badge className="ml-2 bg-muted text-muted-foreground text-xs">
+              {jobs.filter(j => j.client_type === 'virksomhed').length}
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="inquiries">
             Forespørgsler
             {inquiries.filter(i => i.status === "new").length > 0 && (
@@ -943,7 +965,8 @@ Eksempel på notifikation som booster vil modtage.`;
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="jobs" className="space-y-6">
+        {activeTab !== "inquiries" && (
+          <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <Dialog open={showCreateDialog || !!selectedJobForEdit} onOpenChange={(open) => {
           if (!open) {
@@ -1588,7 +1611,8 @@ Eksempel på notifikation som booster vil modtage.`;
           </CardContent>
         </Card>
       )}
-        </TabsContent>
+        </div>
+        )}
 
         <TabsContent value="inquiries" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
