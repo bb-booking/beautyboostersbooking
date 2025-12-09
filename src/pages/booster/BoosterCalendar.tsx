@@ -43,6 +43,7 @@ type CreateForm = {
   customer_phone: string;
   customer_email: string;
   company_name: string;
+  cvr: string;
   client_type: 'privat' | 'virksomhed';
   address: string;
   notes: string;
@@ -58,6 +59,7 @@ const DEFAULT_FORM: CreateForm = {
   customer_phone: "",
   customer_email: "",
   company_name: "",
+  cvr: "",
   client_type: 'privat',
   address: "",
   notes: "",
@@ -112,6 +114,8 @@ export default function BoosterCalendar() {
   const [blockStartTime, setBlockStartTime] = useState('09:00');
   const [blockEndTime, setBlockEndTime] = useState('17:00');
   const [blockReason, setBlockReason] = useState('');
+  const [cvrLoading, setCvrLoading] = useState(false);
+  const [cvrError, setCvrError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -177,7 +181,51 @@ export default function BoosterCalendar() {
 
   const handleSelectCustomer = (customerId: string) => {
     const customer = MOCK_CUSTOMERS.find(c => c.id === customerId);
-    if (customer) setForm(f => ({ ...f, customer_id: customerId, customer_name: customer.name, customer_email: customer.email, customer_phone: customer.phone, client_type: customer.type, company_name: customer.company || '' }));
+    if (customer) setForm(f => ({ ...f, customer_id: customerId, customer_name: customer.name, customer_email: customer.email, customer_phone: customer.phone, client_type: customer.type, company_name: customer.company || '', cvr: '' }));
+  };
+
+  const handleCvrLookup = async (cvr: string) => {
+    setForm(f => ({ ...f, cvr }));
+    setCvrError(null);
+    
+    // Only lookup if CVR is exactly 8 digits
+    if (!/^\d{8}$/.test(cvr)) {
+      if (cvr.length > 0 && cvr.length !== 8) {
+        setCvrError('CVR skal være 8 cifre');
+      }
+      return;
+    }
+    
+    setCvrLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-cvr', {
+        body: { cvr }
+      });
+      
+      if (error) {
+        setCvrError('Kunne ikke verificere CVR');
+        return;
+      }
+      
+      if (data.error) {
+        setCvrError(data.error);
+        return;
+      }
+      
+      // Auto-fill company info from CVR data
+      setForm(f => ({
+        ...f,
+        company_name: data.name || '',
+        address: data.address ? `${data.address}, ${data.zipcode} ${data.city}` : f.address,
+        customer_phone: data.phone || f.customer_phone,
+        customer_email: data.email || f.customer_email
+      }));
+    } catch (err) {
+      console.error('CVR lookup error:', err);
+      setCvrError('Fejl ved CVR opslag');
+    } finally {
+      setCvrLoading(false);
+    }
   };
 
   const createEvent = async () => {
@@ -283,8 +331,32 @@ export default function BoosterCalendar() {
                           <div className="space-y-4">
                             <RadioGroup value={form.customer_type} onValueChange={(v) => setForm(f => ({ ...f, customer_type: v as 'new' | 'existing', customer_id: '' }))} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="new" id="new" /><Label htmlFor="new">Ny kunde</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="existing" id="existing" /><Label htmlFor="existing">Eksisterende kunde</Label></div></RadioGroup>
                             {form.customer_type === 'existing' && (<Select value={form.customer_id} onValueChange={handleSelectCustomer}><SelectTrigger><SelectValue placeholder="Vælg kunde..." /></SelectTrigger><SelectContent>{MOCK_CUSTOMERS.map(c => <SelectItem key={c.id} value={c.id}><div className="flex items-center gap-2">{c.type === 'virksomhed' ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}{c.name}</div></SelectItem>)}</SelectContent></Select>)}
-                            <RadioGroup value={form.client_type} onValueChange={(v) => setForm(f => ({ ...f, client_type: v as 'privat' | 'virksomhed' }))} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="privat" id="privat" /><Label htmlFor="privat"><User className="h-3 w-3 inline mr-1" />Privat</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="virksomhed" id="virksomhed" /><Label htmlFor="virksomhed"><Building2 className="h-3 w-3 inline mr-1" />Virksomhed</Label></div></RadioGroup>
-                            {form.client_type === 'virksomhed' && (<Input value={form.company_name} onChange={(e) => setForm(f => ({ ...f, company_name: e.target.value }))} placeholder="Virksomhedsnavn" />)}
+                            <RadioGroup value={form.client_type} onValueChange={(v) => setForm(f => ({ ...f, client_type: v as 'privat' | 'virksomhed', cvr: '', company_name: '' }))} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="privat" id="privat" /><Label htmlFor="privat"><User className="h-3 w-3 inline mr-1" />Privat</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="virksomhed" id="virksomhed" /><Label htmlFor="virksomhed"><Building2 className="h-3 w-3 inline mr-1" />Virksomhed</Label></div></RadioGroup>
+                            {form.client_type === 'virksomhed' && (
+                              <div className="space-y-2">
+                                <div className="relative">
+                                  <Input 
+                                    value={form.cvr} 
+                                    onChange={(e) => handleCvrLookup(e.target.value.replace(/\D/g, '').slice(0, 8))} 
+                                    placeholder="CVR-nummer (8 cifre)" 
+                                    maxLength={8}
+                                    className={cvrError ? 'border-destructive' : ''}
+                                  />
+                                  {cvrLoading && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                      <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                  )}
+                                </div>
+                                {cvrError && <p className="text-xs text-destructive">{cvrError}</p>}
+                                <Input 
+                                  value={form.company_name} 
+                                  onChange={(e) => setForm(f => ({ ...f, company_name: e.target.value }))} 
+                                  placeholder="Virksomhedsnavn" 
+                                  className={form.company_name && !cvrLoading ? 'bg-green-50 dark:bg-green-900/20 border-green-300' : ''}
+                                />
+                              </div>
+                            )}
                             <div className="grid grid-cols-2 gap-3"><Input value={form.customer_name} onChange={(e) => setForm(f => ({ ...f, customer_name: e.target.value }))} placeholder="Navn" /><Input value={form.customer_phone} onChange={(e) => setForm(f => ({ ...f, customer_phone: e.target.value }))} placeholder="Telefon" /></div>
                             <Input type="email" value={form.customer_email} onChange={(e) => setForm(f => ({ ...f, customer_email: e.target.value }))} placeholder="Email" />
                             <div className="grid grid-cols-2 gap-3"><Select value={form.service} onValueChange={(v) => setForm(f => ({ ...f, service: v }))}><SelectTrigger><SelectValue placeholder="Vælg service..." /></SelectTrigger><SelectContent><SelectItem value="Makeup Styling">Makeup Styling</SelectItem><SelectItem value="Hår Styling">Hår Styling</SelectItem><SelectItem value="Bryllup makeup">Bryllup makeup</SelectItem><SelectItem value="Event makeup">Event makeup</SelectItem><SelectItem value="SFX Makeup">SFX Makeup</SelectItem><SelectItem value="TV-produktion">TV-produktion</SelectItem></SelectContent></Select><Select value={String(form.duration)} onValueChange={(v) => setForm(f => ({ ...f, duration: Number(v) }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="60">1 time</SelectItem><SelectItem value="120">2 timer</SelectItem><SelectItem value="180">3 timer</SelectItem><SelectItem value="240">4 timer</SelectItem></SelectContent></Select></div>
@@ -445,6 +517,7 @@ export default function BoosterCalendar() {
                         customer_phone: meta.customer_phone || '',
                         customer_email: meta.customer_email || '',
                         company_name: meta.company_name || '',
+                        cvr: meta.cvr || '',
                         client_type: meta.client_type || 'privat',
                         address: meta.address || '',
                         notes: meta.notes || '',
