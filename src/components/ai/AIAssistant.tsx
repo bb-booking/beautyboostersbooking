@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Sparkles, User, Bot, Calendar, Wallet, HelpCircle, Clock, Star, MapPin, Gift, Users } from 'lucide-react';
+import { X, Send, Loader2, Lightbulb, User, Bot, Calendar, Wallet, HelpCircle, Clock, Star, MapPin, Gift, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -224,7 +224,7 @@ const AIAssistant: React.FC = () => {
         )}
         size="icon"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
+        {isOpen ? <X className="h-6 w-6" /> : <Lightbulb className="h-6 w-6" />}
       </Button>
 
       {/* Chat window */}
@@ -236,8 +236,8 @@ const AIAssistant: React.FC = () => {
             `bg-gradient-to-r ${getRoleGradient()}`
           )}>
             <div className="relative">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-2xl">
-                💜
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
+                <Lightbulb className="h-6 w-6" />
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-400" />
             </div>
@@ -270,12 +270,12 @@ const AIAssistant: React.FC = () => {
                 >
                   <div className={cn(
                     'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm',
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-pink-100 to-purple-100'
+                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600'
                   )}>
                     {msg.role === 'user' ? (
                       <User className="h-4 w-4" />
                     ) : (
-                      '💜'
+                      <Lightbulb className="h-4 w-4" />
                     )}
                   </div>
                   <div className={cn(
