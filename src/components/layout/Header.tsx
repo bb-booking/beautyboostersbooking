@@ -62,11 +62,9 @@ const Header = () => {
     <header className="border-b bg-primary backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center">
-          <img 
-            src="/lovable-uploads/1f1ad539-af97-40fc-9cac-5993cda97139.png" 
-            alt="BeautyBoosters Logo" 
-            className="h-12 w-auto mix-blend-multiply"
-          />
+          <span className="font-montserrat text-xl md:text-2xl tracking-tight text-primary-foreground">
+            <span className="font-normal">BEAUTY</span><span className="font-black">BOOSTERS</span>
+          </span>
         </Link>
         
         {/* Search bar in center */}
