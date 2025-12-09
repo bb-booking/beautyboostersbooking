@@ -173,7 +173,7 @@ const AdminBookings = () => {
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <a 
                         href={`mailto:${booking.customer_email}`}
-                        className="text-primary hover:text-primary/80"
+                        className="text-foreground hover:underline"
                       >
                         {booking.customer_email}
                       </a>
@@ -182,7 +182,7 @@ const AdminBookings = () => {
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <a 
                         href={`tel:${booking.customer_phone}`}
-                        className="text-primary hover:text-primary/80"
+                        className="text-foreground hover:underline"
                       >
                         {booking.customer_phone}
                       </a>

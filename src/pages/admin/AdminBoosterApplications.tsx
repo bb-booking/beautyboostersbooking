@@ -405,7 +405,7 @@ export default function AdminBoosterApplications() {
                     href={selectedApplication.portfolio_links} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline text-sm"
+                    className="text-foreground hover:underline text-sm"
                   >
                     {selectedApplication.portfolio_links}
                   </a>
