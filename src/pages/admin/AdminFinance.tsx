@@ -128,15 +128,17 @@ const AdminFinance = () => {
   };
 
   const fetchSalaryData = () => {
-    // Mock salary data - would come from database
+    // Mock salary data - boosters get 60% of service amount (eks. moms)
+    // December service revenue: 289.000 kr inkl. moms = 231.200 kr eks. moms
+    // 60% til boosters = 138.720 kr fordelt på 4 boosters
     const mockSalaries: SalaryEntry[] = [
-      { id: '1', boosterName: 'Anna K.', period: 'December 2024', grossAmount: 57600, taxDeduction: 14400, netAmount: 43200, status: 'pending', type: 'b-income' },
-      { id: '2', boosterName: 'My Phung', period: 'December 2024', grossAmount: 48000, taxDeduction: 12000, netAmount: 36000, status: 'pending', type: 'b-income' },
-      { id: '3', boosterName: 'Angelica', period: 'December 2024', grossAmount: 62400, taxDeduction: 0, netAmount: 62400, status: 'approved', type: 'cvr' },
-      { id: '4', boosterName: 'Marie S.', period: 'December 2024', grossAmount: 45000, taxDeduction: 0, netAmount: 45000, status: 'pending', type: 'cvr' },
-      { id: '5', boosterName: 'Anna K.', period: 'November 2024', grossAmount: 51200, taxDeduction: 12800, netAmount: 38400, status: 'paid', paymentDate: '2024-12-01', type: 'b-income' },
-      { id: '6', boosterName: 'My Phung', period: 'November 2024', grossAmount: 44800, taxDeduction: 11200, netAmount: 33600, status: 'paid', paymentDate: '2024-12-01', type: 'b-income' },
-      { id: '7', boosterName: 'Angelica', period: 'November 2024', grossAmount: 58000, taxDeduction: 0, netAmount: 58000, status: 'paid', paymentDate: '2024-12-01', type: 'cvr' },
+      { id: '1', boosterName: 'Anna K.', period: 'December 2024', grossAmount: 38400, taxDeduction: 9600, netAmount: 28800, status: 'pending', type: 'b-income' },
+      { id: '2', boosterName: 'My Phung', period: 'December 2024', grossAmount: 31200, taxDeduction: 7800, netAmount: 23400, status: 'pending', type: 'b-income' },
+      { id: '3', boosterName: 'Angelica', period: 'December 2024', grossAmount: 42000, taxDeduction: 0, netAmount: 42000, status: 'approved', type: 'cvr' },
+      { id: '4', boosterName: 'Marie S.', period: 'December 2024', grossAmount: 27120, taxDeduction: 0, netAmount: 27120, status: 'pending', type: 'cvr' },
+      { id: '5', boosterName: 'Anna K.', period: 'November 2024', grossAmount: 36000, taxDeduction: 9000, netAmount: 27000, status: 'paid', paymentDate: '2024-12-01', type: 'b-income' },
+      { id: '6', boosterName: 'My Phung', period: 'November 2024', grossAmount: 28800, taxDeduction: 7200, netAmount: 21600, status: 'paid', paymentDate: '2024-12-01', type: 'b-income' },
+      { id: '7', boosterName: 'Angelica', period: 'November 2024', grossAmount: 39600, taxDeduction: 0, netAmount: 39600, status: 'paid', paymentDate: '2024-12-01', type: 'cvr' },
     ];
     setSalaryEntries(mockSalaries);
   };
