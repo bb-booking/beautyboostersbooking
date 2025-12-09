@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import AssignBoostersDialog, { BoosterOption } from "@/components/boosters/AssignBoostersDialog";
 import { Badge } from "@/components/ui/badge";
 import SwipeToBook from "@/components/checkout/SwipeToBook";
+import PaymentLogos from "@/components/checkout/PaymentLogos";
 
 export default function Checkout() {
   const location = useLocation();
@@ -805,13 +806,7 @@ export default function Checkout() {
                 <CardContent>
                   <div className="p-4 bg-muted/50 rounded-lg mb-4">
                     <p className="text-sm text-muted-foreground mb-3">Vi accepterer:</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">Visa</Badge>
-                      <Badge variant="outline">Mastercard</Badge>
-                      <Badge variant="outline">Dankort</Badge>
-                      <Badge variant="outline">MobilePay</Badge>
-                      <Badge variant="outline">Apple Pay</Badge>
-                    </div>
+                    <PaymentLogos />
                   </div>
                   
                   {hasSavedCard && (
