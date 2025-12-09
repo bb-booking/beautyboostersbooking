@@ -115,6 +115,7 @@ const AppContent = () => {
             <Route path="jobs" element={<AdminJobs />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="bookings" element={<Navigate to="/admin/jobs" replace />} />
+            <Route path="inquiries" element={<Navigate to="/admin/jobs" replace />} />
             <Route path="finance" element={<AdminFinance />} />
             <Route path="invoices" element={<AdminInvoicesPage />} />
             <Route path="boosters" element={<AdminBoosters />} />
