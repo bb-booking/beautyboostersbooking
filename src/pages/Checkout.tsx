@@ -457,7 +457,7 @@ export default function Checkout() {
     }
   };
 
-  // CVR verification for business bookings
+  // CVR verification for business bookings - auto-fills company details
   const verifyCVR = async () => {
     if (!invoiceInfo.cvr || invoiceInfo.cvr.length !== 8) {
       toast.error('CVR-nummer skal være 8 cifre');
@@ -476,9 +476,13 @@ export default function Checkout() {
         return;
       }
 
+      // Auto-fill all company details from CVR
       setInvoiceInfo(prev => ({
         ...prev,
-        companyName: data.name || ''
+        companyName: data.name || '',
+        // Auto-fill email if available from CVR data
+        contactEmail: prev.contactEmail || data.email || '',
+        contactPhone: prev.contactPhone || data.phone || ''
       }));
       setCvrVerified(true);
       toast.success(`Verificeret: ${data.name}`);
@@ -648,7 +652,11 @@ export default function Checkout() {
     }
     return sum + (item.service?.price || service?.price || 0);
   }, 0);
-  const finalTotal = Math.max(0, cartTotal - discount);
+  
+  // Calculate VAT for business customers (25% moms on top)
+  const subtotalAfterDiscount = Math.max(0, cartTotal - discount);
+  const vatAmount = clientType === 'virksomhed' ? Math.round(subtotalAfterDiscount * 0.25) : 0;
+  const finalTotal = subtotalAfterDiscount + vatAmount;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -782,7 +790,7 @@ export default function Checkout() {
               <Separator />
               
               <div className="flex justify-between">
-                <span>Subtotal</span>
+                <span>Subtotal {clientType === 'virksomhed' ? '(eks. moms)' : ''}</span>
                 <span>{cartTotal} DKK</span>
               </div>
 
@@ -809,10 +817,24 @@ export default function Checkout() {
                 </div>
               )}
 
+              {/* Show VAT for business customers */}
+              {clientType === 'virksomhed' && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal efter rabat</span>
+                    <span>{subtotalAfterDiscount} DKK</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Moms (25%)</span>
+                    <span>+{vatAmount} DKK</span>
+                  </div>
+                </>
+              )}
+
               <Separator />
 
               <div className="flex justify-between items-center text-xl font-bold">
-                <span>Total at betale</span>
+                <span>Total {clientType === 'virksomhed' ? '(inkl. moms)' : 'at betale'}</span>
                 <span>{finalTotal} DKK</span>
               </div>
 
@@ -843,14 +865,14 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {clientType === 'virksomhed' ? (
-                  // Business invoice form
+                  // Business invoice form - CVR first for auto-fill
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="cvr">CVR-nummer *</Label>
                       <div className="flex gap-2">
                         <Input 
                           id="cvr" 
-                          placeholder="12345678"
+                          placeholder="12345678 - vi henter virksomhedsinfo automatisk"
                           value={invoiceInfo.cvr}
                           onChange={(e) => {
                             setInvoiceInfo(prev => ({ ...prev, cvr: e.target.value.replace(/\D/g, '').slice(0, 8) }));
@@ -864,15 +886,28 @@ export default function Checkout() {
                           onClick={verifyCVR}
                           disabled={verifyingCvr || invoiceInfo.cvr.length !== 8}
                         >
-                          {verifyingCvr ? 'Verificerer...' : cvrVerified ? <Check className="h-4 w-4" /> : 'Verificer'}
+                          {verifyingCvr ? 'Henter...' : cvrVerified ? <Check className="h-4 w-4" /> : 'Hent info'}
                         </Button>
                       </div>
-                      {cvrVerified && invoiceInfo.companyName && (
-                        <p className="text-sm text-green-600 flex items-center gap-1">
-                          <Check className="h-3 w-3" /> {invoiceInfo.companyName}
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Indtast CVR-nummer og klik "Hent info" for automatisk udfyldning
+                      </p>
                     </div>
+
+                    {/* Company name - shown after CVR verification, editable */}
+                    {cvrVerified && (
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName">Virksomhedsnavn</Label>
+                        <Input 
+                          id="companyName" 
+                          value={invoiceInfo.companyName}
+                          onChange={(e) => setInvoiceInfo(prev => ({ ...prev, companyName: e.target.value }))}
+                          className="bg-green-50 dark:bg-green-950/20 border-green-200"
+                        />
+                      </div>
+                    )}
+
+                    <Separator />
 
                     <div className="space-y-2">
                       <Label htmlFor="contactName">Kontaktperson *</Label>
@@ -1009,9 +1044,15 @@ export default function Checkout() {
                       <span>-{discount} DKK</span>
                     </div>
                   )}
+                  {clientType === 'virksomhed' && (
+                    <div className="flex justify-between text-sm">
+                      <span>Moms (25%)</span>
+                      <span>+{vatAmount} DKK</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total{clientType === 'virksomhed' ? ' (eks. moms)' : ''}</span>
+                    <span>Total {clientType === 'virksomhed' ? '(inkl. moms)' : ''}</span>
                     <span>{finalTotal} DKK</span>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
