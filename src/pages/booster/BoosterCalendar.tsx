@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { addDays, format, isEqual, startOfDay, startOfWeek } from "date-fns";
 import { da } from "date-fns/locale";
-import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound } from "lucide-react";
+import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound, MessageCircle, ImagePlus, StickyNote } from "lucide-react";
 
 interface BoosterEvent {
   id: string;
@@ -378,7 +378,7 @@ export default function BoosterCalendar() {
                     )}
                     
                     <span className="font-medium text-foreground">Adresse:</span>
-                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{meta.address || '-'}</a>
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-foreground underline hover:text-primary">{meta.address || '-'}</a>
                     
                     <span className="font-medium text-foreground">Service:</span>
                     <span className="text-foreground">{meta.service} ({peopleCount} {peopleCount === 1 ? 'person' : 'personer'})</span>
@@ -398,12 +398,41 @@ export default function BoosterCalendar() {
                     )}
                   </div>
 
-                  {meta.notes && (
-                    <div className="bg-muted/50 rounded-lg p-3 text-sm">
-                      <p className="font-medium mb-1 text-foreground">Noter</p>
-                      <p className="text-muted-foreground">{meta.notes}</p>
+                  {/* Look billeder */}
+                  {meta.look_images && Array.isArray(meta.look_images) && meta.look_images.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="font-medium text-sm text-foreground">Look billeder</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {meta.look_images.map((img: string, i: number) => (
+                          <div key={i} className="w-16 h-16 rounded border overflow-hidden">
+                            <img src={img} alt={`Look ${i + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
+
+                  {/* Noter sektion */}
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-medium text-foreground flex items-center gap-1"><StickyNote className="h-4 w-4" /> Noter</p>
+                      <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => {
+                        setEditForm(f => ({ ...f, notes: meta.notes || '' }));
+                        setIsEditing(true);
+                      }}><Edit className="h-3 w-3" /> Tilføj/rediger</Button>
+                    </div>
+                    <p className="text-muted-foreground">{meta.notes || 'Ingen noter tilføjet'}</p>
+                  </div>
+
+                  {/* Hurtigknapper */}
+                  <div className="flex flex-wrap gap-2 pt-3">
+                    <Button variant="default" size="sm" className="gap-1" onClick={() => alert('Chat åbner med kunden...')}>
+                      <MessageCircle className="h-4 w-4" /> Chat med kunde
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => alert('Vælg billede at uploade...')}>
+                      <ImagePlus className="h-4 w-4" /> Tilføj billede
+                    </Button>
+                  </div>
 
                   <div className="flex flex-wrap gap-2 pt-4 border-t">
                     <Button variant="outline" size="sm" className="gap-1" onClick={() => { 
