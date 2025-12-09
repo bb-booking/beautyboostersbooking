@@ -116,6 +116,9 @@ export default function BoosterCalendar() {
   const [blockReason, setBlockReason] = useState('');
   const [cvrLoading, setCvrLoading] = useState(false);
   const [cvrError, setCvrError] = useState<string | null>(null);
+  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
+  const [releaseReason, setReleaseReason] = useState('');
+  const [releaseLoading, setReleaseLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -225,6 +228,43 @@ export default function BoosterCalendar() {
       setCvrError('Fejl ved CVR opslag');
     } finally {
       setCvrLoading(false);
+    }
+  };
+
+  const handleReleaseJob = async (eventId: string, bookingId?: string) => {
+    if (!userId) return;
+    
+    setReleaseLoading(true);
+    try {
+      // If we have a real booking ID, use the edge function
+      if (bookingId && !bookingId.startsWith('mock-')) {
+        const { data, error } = await supabase.functions.invoke('release-job', {
+          body: { bookingId, boosterId: userId, reason: releaseReason }
+        });
+        
+        if (error) {
+          console.error('Error releasing job:', error);
+          alert('Kunne ikke frigive job. Prøv igen.');
+          return;
+        }
+        
+        alert(`Job frigivet! ${data?.notifiedBoosters || 0} boosters er blevet notificeret.`);
+      } else {
+        // For mock events, just remove from local state
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        alert('Job frigivet til andre boosters i området!');
+      }
+      
+      // Refresh events
+      if (userId) await fetchEvents(userId, date, view);
+      setSelectedEvent(null);
+      setReleaseDialogOpen(false);
+      setReleaseReason('');
+    } catch (err) {
+      console.error('Release job error:', err);
+      alert('Der opstod en fejl. Prøv igen.');
+    } finally {
+      setReleaseLoading(false);
     }
   };
 
@@ -527,9 +567,50 @@ export default function BoosterCalendar() {
                     }}>
                       <Edit className="h-4 w-4" /> Rediger
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => { alert('Job frigivet til andre boosters i området!'); setSelectedEvent(null); }}>
-                      <Share2 className="h-4 w-4" /> Frigiv job
-                    </Button>
+                    <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50">
+                          <Share2 className="h-4 w-4" /> Frigiv job
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle>Frigiv job</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Jobbet vil blive sendt ud til andre boosters i området, og admin vil blive notificeret.
+                          </p>
+                          <div>
+                            <Label>Årsag til frigivelse (valgfrit)</Label>
+                            <Textarea 
+                              value={releaseReason} 
+                              onChange={(e) => setReleaseReason(e.target.value)} 
+                              placeholder="F.eks. sygdom, dobbeltbooking..."
+                              rows={2}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setReleaseDialogOpen(false)}>
+                              Annuller
+                            </Button>
+                            <Button 
+                              variant="default" 
+                              className="bg-amber-500 hover:bg-amber-600"
+                              onClick={() => handleReleaseJob(selectedEvent.id, meta.booking_id)}
+                              disabled={releaseLoading}
+                            >
+                              {releaseLoading ? (
+                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              ) : (
+                                <Share2 className="h-4 w-4 mr-1" />
+                              )}
+                              Frigiv job
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     <Button variant="destructive" size="sm" className="gap-1" onClick={() => deleteEvent(selectedEvent.id)}>
                       <Trash2 className="h-4 w-4" /> Slet
                     </Button>
