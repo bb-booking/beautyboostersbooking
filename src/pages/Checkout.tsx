@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, User, CreditCard, Check, Pencil, Plus, Trash2, FileText } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,12 +24,26 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { booking, booster, service, bookingDetails, counts, isDirectBooking, extraBoosters: initialExtraBoosters, cartItems } = location.state || {};
   
+  // Check if this is a business booking
+  const [clientType, setClientType] = useState<'privat' | 'virksomhed'>('privat');
+  
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     email: '',
     phone: '',
     specialRequests: ''
   });
+
+  // Business invoice fields
+  const [invoiceInfo, setInvoiceInfo] = useState({
+    cvr: '',
+    companyName: '',
+    contactName: '',
+    contactEmail: '',
+    contactPhone: ''
+  });
+  const [cvrVerified, setCvrVerified] = useState(false);
+  const [verifyingCvr, setVerifyingCvr] = useState(false);
   
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,6 +85,14 @@ export default function Checkout() {
   // Simulated saved card (in production this would come from Stripe)
   const [hasSavedCard] = useState(true);
   const savedCard = { last4: '4242', brand: 'Visa' };
+
+  // Load client type from sessionStorage
+  useEffect(() => {
+    const storedClientType = sessionStorage.getItem('selectedClientType');
+    if (storedClientType === 'virksomhed') {
+      setClientType('virksomhed');
+    }
+  }, []);
 
   const timeSlots = Array.from({ length: 24 * 2 - 1 }).map((_, i) => {
     const hour = Math.floor(i / 2) + 0;
@@ -435,7 +457,120 @@ export default function Checkout() {
     }
   };
 
+  // CVR verification for business bookings
+  const verifyCVR = async () => {
+    if (!invoiceInfo.cvr || invoiceInfo.cvr.length !== 8) {
+      toast.error('CVR-nummer skal være 8 cifre');
+      return;
+    }
+
+    setVerifyingCvr(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-cvr', {
+        body: { cvr: invoiceInfo.cvr }
+      });
+
+      if (error) throw error;
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setInvoiceInfo(prev => ({
+        ...prev,
+        companyName: data.name || ''
+      }));
+      setCvrVerified(true);
+      toast.success(`Verificeret: ${data.name}`);
+    } catch (error: any) {
+      toast.error('Kunne ikke verificere CVR');
+    } finally {
+      setVerifyingCvr(false);
+    }
+  };
+
+  // Business invoice booking handler
+  const handleInvoiceBooking = async () => {
+    if (!invoiceInfo.cvr || !cvrVerified || !invoiceInfo.contactEmail || !invoiceInfo.contactName) {
+      toast.error('Udfyld venligst alle påkrævede faktura-felter');
+      return;
+    }
+    
+    if (!agreedToTerms) {
+      toast.error('Du skal acceptere handelsbetingelserne for at fortsætte');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      const bookingDate = selectedDate || booking.date;
+      const formattedDate = bookingDate instanceof Date 
+        ? bookingDate.toISOString().split('T')[0] 
+        : new Date(bookingDate).toISOString().split('T')[0];
+
+      // Create job for business (invoice-based) booking
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .insert({
+          title: service.name,
+          service_type: service.name,
+          location: addressQuery,
+          date_needed: formattedDate,
+          time_needed: selectedTime,
+          hourly_rate: Math.max(0, service.price - discount),
+          client_type: 'virksomhed',
+          client_name: invoiceInfo.companyName,
+          client_email: invoiceInfo.contactEmail,
+          client_phone: invoiceInfo.contactPhone,
+          description: `CVR: ${invoiceInfo.cvr}\nKontaktperson: ${invoiceInfo.contactName}\n${customerInfo.specialRequests || ''}`,
+          status: 'confirmed',
+          duration_hours: service.duration || 2,
+          boosters_needed: (counts?.boosters || 1),
+          assigned_booster_id: booster.id,
+          invoice_sent: false // Will be set true after admin approves and sends invoice
+        })
+        .select()
+        .single();
+
+      if (jobError) throw jobError;
+
+      toast.success('Booking bekræftet! Faktura sendes på behandlingsdagen.');
+      
+      navigate('/confirmation', {
+        state: {
+          booking: {
+            ...booking,
+            id: jobData.id,
+            date: bookingDate,
+            time: selectedTime
+          },
+          booster,
+          customerInfo: {
+            name: invoiceInfo.contactName,
+            email: invoiceInfo.contactEmail,
+            phone: invoiceInfo.contactPhone,
+            specialRequests: customerInfo.specialRequests
+          },
+          isBusinessBooking: true,
+          companyName: invoiceInfo.companyName,
+          cvr: invoiceInfo.cvr
+        }
+      });
+
+    } catch (error: any) {
+      toast.error(error.message || 'Der opstod en fejl under booking');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handlePayment = async () => {
+    // Business bookings use invoice flow
+    if (clientType === 'virksomhed') {
+      return handleInvoiceBooking();
+    }
+
     // If this is a direct booking from available slot, use handleDirectBooking
     if (isDirectBooking) {
       return handleDirectBooking();
@@ -692,58 +827,148 @@ export default function Checkout() {
         {/* Step 2: Customer Info & Payment */}
         {currentStep === 2 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Customer Information */}
+            {/* Customer Information - Different for private vs business */}
             <Card>
               <CardHeader>
-                <CardTitle>Dine oplysninger</CardTitle>
+                <CardTitle>
+                  {clientType === 'virksomhed' ? 'Fakturering' : 'Dine oplysninger'}
+                </CardTitle>
                 <CardDescription>
-                  {isLoggedIn && customerInfo.email 
-                    ? 'Vi har udfyldt dine oplysninger - tjek dem'
-                    : 'Udfyld kontaktoplysninger'}
+                  {clientType === 'virksomhed' 
+                    ? 'Udfyld virksomhedsoplysninger til fakturering'
+                    : (isLoggedIn && customerInfo.email 
+                      ? 'Vi har udfyldt dine oplysninger - tjek dem'
+                      : 'Udfyld kontaktoplysninger')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Fulde navn</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Indtast dit fulde navn"
-                    value={customerInfo.name}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="din@email.dk"
-                    value={customerInfo.email}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefonnummer</Label>
-                  <Input 
-                    id="phone" 
-                    placeholder="+45 12 34 56 78"
-                    value={customerInfo.phone}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="special-requests">Specielle ønsker (valgfrit)</Label>
-                  <Textarea 
-                    id="special-requests" 
-                    placeholder="Har du nogle specielle ønsker?"
-                    rows={3}
-                    value={customerInfo.specialRequests}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, specialRequests: e.target.value }))}
-                  />
-                </div>
+                {clientType === 'virksomhed' ? (
+                  // Business invoice form
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="cvr">CVR-nummer *</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          id="cvr" 
+                          placeholder="12345678"
+                          value={invoiceInfo.cvr}
+                          onChange={(e) => {
+                            setInvoiceInfo(prev => ({ ...prev, cvr: e.target.value.replace(/\D/g, '').slice(0, 8) }));
+                            setCvrVerified(false);
+                          }}
+                          maxLength={8}
+                        />
+                        <Button 
+                          type="button" 
+                          variant={cvrVerified ? "outline" : "default"}
+                          onClick={verifyCVR}
+                          disabled={verifyingCvr || invoiceInfo.cvr.length !== 8}
+                        >
+                          {verifyingCvr ? 'Verificerer...' : cvrVerified ? <Check className="h-4 w-4" /> : 'Verificer'}
+                        </Button>
+                      </div>
+                      {cvrVerified && invoiceInfo.companyName && (
+                        <p className="text-sm text-green-600 flex items-center gap-1">
+                          <Check className="h-3 w-3" /> {invoiceInfo.companyName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contactName">Kontaktperson *</Label>
+                      <Input 
+                        id="contactName" 
+                        placeholder="Dit navn"
+                        value={invoiceInfo.contactName}
+                        onChange={(e) => setInvoiceInfo(prev => ({ ...prev, contactName: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contactEmail">Faktura e-mail *</Label>
+                      <Input 
+                        id="contactEmail" 
+                        type="email" 
+                        placeholder="faktura@virksomhed.dk"
+                        value={invoiceInfo.contactEmail}
+                        onChange={(e) => setInvoiceInfo(prev => ({ ...prev, contactEmail: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contactPhone">Telefon</Label>
+                      <Input 
+                        id="contactPhone" 
+                        placeholder="+45 12 34 56 78"
+                        value={invoiceInfo.contactPhone}
+                        onChange={(e) => setInvoiceInfo(prev => ({ ...prev, contactPhone: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="special-requests">Specielle ønsker (valgfrit)</Label>
+                      <Textarea 
+                        id="special-requests" 
+                        placeholder="Har du nogle specielle ønsker?"
+                        rows={3}
+                        value={customerInfo.specialRequests}
+                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, specialRequests: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Fakturering:</strong> Faktura sendes automatisk til den angivne e-mail på behandlingsdagen. 
+                        Admin godkender fakturaen inden afsendelse, i tilfælde af ændringer til booking.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  // Private customer form
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Fulde navn</Label>
+                      <Input 
+                        id="name" 
+                        placeholder="Indtast dit fulde navn"
+                        value={customerInfo.name}
+                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="din@email.dk"
+                        value={customerInfo.email}
+                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefonnummer</Label>
+                      <Input 
+                        id="phone" 
+                        placeholder="+45 12 34 56 78"
+                        value={customerInfo.phone}
+                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="special-requests">Specielle ønsker (valgfrit)</Label>
+                      <Textarea 
+                        id="special-requests" 
+                        placeholder="Har du nogle specielle ønsker?"
+                        rows={3}
+                        value={customerInfo.specialRequests}
+                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, specialRequests: e.target.value }))}
+                      />
+                    </div>
+                  </>
+                )}
                 
                 <div className="flex items-start space-x-2">
                   <Checkbox 
@@ -752,7 +977,7 @@ export default function Checkout() {
                     onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
                   />
                   <Label htmlFor="terms" className="text-sm leading-relaxed">
-                    Jeg accepterer betalingsbetingelserne og{" "}
+                    Jeg accepterer {clientType === 'virksomhed' ? 'betalingsbetingelserne' : 'betalingsbetingelserne'} og{" "}
                     <a href="#" className="text-primary underline">privatlivspolitikken</a>
                   </Label>
                 </div>
@@ -786,7 +1011,7 @@ export default function Checkout() {
                   )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
+                    <span>Total{clientType === 'virksomhed' ? ' (eks. moms)' : ''}</span>
                     <span>{finalTotal} DKK</span>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
@@ -795,57 +1020,96 @@ export default function Checkout() {
                 </CardContent>
               </Card>
 
-              {/* Payment */}
+              {/* Payment - Different for private vs business */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Betalingsmetode
+                    {clientType === 'virksomhed' ? <FileText className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+                    {clientType === 'virksomhed' ? 'Bekræft booking' : 'Betalingsmetode'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="p-4 bg-muted/50 rounded-lg mb-4">
-                    <p className="text-sm text-muted-foreground mb-3">Vi accepterer:</p>
-                    <PaymentLogos />
-                  </div>
-                  
-                  {hasSavedCard && (
-                    <div className="p-3 bg-muted/30 rounded-lg mb-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        <span className="text-sm">Gemt kort: •••• {savedCard.last4}</span>
+                  {clientType === 'virksomhed' ? (
+                    // Business invoice flow
+                    <>
+                      <div className="p-4 bg-muted/50 rounded-lg mb-4">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          <strong>Fakturering på behandlingsdagen</strong>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Ved booking af virksomhedsydelser sendes faktura automatisk på dagen for behandlingen. 
+                          Admin gennemgår og godkender fakturaen inden afsendelse, så eventuelle ændringer til booking 
+                          (fx. flere timers behandling) kan medtages.
+                        </p>
                       </div>
-                      <Badge>{savedCard.brand}</Badge>
-                    </div>
-                  )}
 
-                  {hasSavedCard && agreedToTerms && customerInfo.name && customerInfo.email && customerInfo.phone ? (
-                    <SwipeToBook
-                      amount={finalTotal}
-                      onComplete={handlePayment}
-                      isProcessing={isProcessing}
-                      savedCard={savedCard || undefined}
-                    />
+                      <Button 
+                        className="w-full"
+                        size="lg" 
+                        onClick={handlePayment}
+                        disabled={isProcessing || !agreedToTerms || !cvrVerified || !invoiceInfo.contactEmail || !invoiceInfo.contactName}
+                      >
+                        {isProcessing ? 'Behandler...' : 'Bekræft booking'}
+                      </Button>
+
+                      <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Betaling:</strong> Faktura med betalingsfrist på 8 dage sendes efter behandlingen.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Afbestilling 12-24 timer før: 25% gebyr. 
+                          Afbestilling 6-12 timer før: 50% gebyr. Afbestilling under 6 timer før eller udeblivelse: 100% af beløbet.
+                        </p>
+                      </div>
+                    </>
                   ) : (
-                    <Button 
-                      className="w-full"
-                      size="lg" 
-                      onClick={handlePayment}
-                      disabled={isProcessing || !agreedToTerms || !customerInfo.name || !customerInfo.email || !customerInfo.phone}
-                    >
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      {isProcessing ? 'Behandler...' : `Betal ${finalTotal} DKK`}
-                    </Button>
-                  )}
+                    // Private card payment flow
+                    <>
+                      <div className="p-4 bg-muted/50 rounded-lg mb-4">
+                        <p className="text-sm text-muted-foreground mb-3">Vi accepterer:</p>
+                        <PaymentLogos />
+                      </div>
+                      
+                      {hasSavedCard && (
+                        <div className="p-3 bg-muted/30 rounded-lg mb-4 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            <span className="text-sm">Gemt kort: •••• {savedCard.last4}</span>
+                          </div>
+                          <Badge>{savedCard.brand}</Badge>
+                        </div>
+                      )}
 
-                  <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når behandlingen er udført.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Afbestilling 12-24 timer før: 25% gebyr. Afbestilling 6-12 timer før: 50% gebyr. Afbestilling under 6 timer før eller udeblivelse: 100% af beløbet.
-                    </p>
-                  </div>
+                      {hasSavedCard && agreedToTerms && customerInfo.name && customerInfo.email && customerInfo.phone ? (
+                        <SwipeToBook
+                          amount={finalTotal}
+                          onComplete={handlePayment}
+                          isProcessing={isProcessing}
+                          savedCard={savedCard || undefined}
+                        />
+                      ) : (
+                        <Button 
+                          className="w-full"
+                          size="lg" 
+                          onClick={handlePayment}
+                          disabled={isProcessing || !agreedToTerms || !customerInfo.name || !customerInfo.email || !customerInfo.phone}
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          {isProcessing ? 'Behandler...' : `Betal ${finalTotal} DKK`}
+                        </Button>
+                      )}
+
+                      <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når behandlingen er udført.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Afbestilling 12-24 timer før: 25% gebyr. 
+                          Afbestilling 6-12 timer før: 50% gebyr. Afbestilling under 6 timer før eller udeblivelse: 100% af beløbet.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
