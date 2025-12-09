@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Lightbulb, User, Bot, Calendar, Wallet, HelpCircle, Clock, Star, MapPin, Gift, Users } from 'lucide-react';
+import { X, Send, Loader2, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,11 +88,11 @@ const AIAssistant: React.FC = () => {
     if (isOpen && messages.length === 0) {
       let welcomeMessage = '';
       if (userRole === 'admin') {
-        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent 💜 Jeg holder styr på bookings, boosters og økonomi. Hvad kan jeg hjælpe dig med i dag?';
+        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent. Jeg holder styr på bookings, boosters og økonomi. Hvad kan jeg hjælpe dig med i dag?';
       } else if (userRole === 'booster') {
-        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent 💜 Jeg kan hjælpe dig med kalender, jobs, økonomi og momsfrister. Hvad har du brug for?';
+        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent. Jeg kan hjælpe dig med kalender, jobs, økonomi og momsfrister. Hvad har du brug for?';
       } else {
-        welcomeMessage = 'Hej! Jeg er Betty fra BeautyBoosters 💜 Jeg hjælper dig med at finde den perfekte booster og booke din næste behandling. Hvad drømmer du om?';
+        welcomeMessage = 'Hej! Jeg er Betty fra BeautyBoosters. Jeg hjælper dig med at finde den perfekte booster og booke din næste behandling. Hvad drømmer du om?';
       }
       setMessages([{ role: 'assistant', content: welcomeMessage }]);
       setShowQuickActions(true);
@@ -188,12 +188,40 @@ const AIAssistant: React.FC = () => {
       console.error('AI error:', error);
       setMessages(prev => [
         ...prev.filter(m => m.content !== ''),
-        { role: 'assistant', content: 'Ups! Der gik noget galt. Prøv igen, eller ring til os på +45 71 78 65 75 💜' }
+        { role: 'assistant', content: 'Ups! Der gik noget galt. Du kan kontakte os på +45 71 78 65 75 eller hello@beautyboosters.dk' }
       ]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Contact action buttons
+  const contactActions = [
+    { 
+      label: 'Ring til os', 
+      icon: <Phone className="h-3 w-3" />, 
+      action: () => window.open('tel:+4571786575', '_self') 
+    },
+    { 
+      label: 'Send mail', 
+      icon: <Mail className="h-3 w-3" />, 
+      action: () => window.open('mailto:hello@beautyboosters.dk', '_self') 
+    },
+    { 
+      label: 'Åben chat', 
+      icon: <MessageSquare className="h-3 w-3" />, 
+      action: () => navigate('/contact') 
+    },
+  ];
+
+  // Check if last assistant message mentions contact
+  const showContactButtons = messages.length > 1 && 
+    messages[messages.length - 1]?.role === 'assistant' &&
+    (messages[messages.length - 1]?.content.toLowerCase().includes('kontakt') ||
+     messages[messages.length - 1]?.content.toLowerCase().includes('ring') ||
+     messages[messages.length - 1]?.content.toLowerCase().includes('mail') ||
+     messages[messages.length - 1]?.content.toLowerCase().includes('71 78 65 75') ||
+     messages[messages.length - 1]?.content.toLowerCase().includes('hello@beautyboosters'));
 
   const sendMessage = async () => {
     await sendMessageWithText(input);
@@ -303,6 +331,22 @@ const AIAssistant: React.FC = () => {
                       key={i}
                       onClick={() => handleQuickAction(action)}
                       className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary"
+                    >
+                      {action.icon}
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Contact action buttons */}
+              {showContactButtons && !isLoading && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {contactActions.map((action, i) => (
+                    <button
+                      key={i}
+                      onClick={action.action}
+                      className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-all hover:bg-primary hover:text-primary-foreground"
                     >
                       {action.icon}
                       {action.label}
