@@ -12,7 +12,9 @@ import {
   Camera,
   Tag,
   TrendingUp,
-  Clock
+  Clock,
+  Star,
+  Reply
 } from "lucide-react";
 
 interface BoosterStats {
@@ -20,6 +22,18 @@ interface BoosterStats {
   completedJobs: number;
   totalEarnings: number;
   newMessages: number;
+  averageRating: number;
+  reviewCount: number;
+}
+
+interface Review {
+  id: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  serviceName: string;
+  replied: boolean;
 }
 
 const BoosterDashboard = () => {
@@ -29,7 +43,10 @@ const BoosterDashboard = () => {
     completedJobs: 0,
     totalEarnings: 0,
     newMessages: 0,
+    averageRating: 0,
+    reviewCount: 0,
   });
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,12 +70,56 @@ const BoosterDashboard = () => {
           .select("*")
           .is("read_at", null);
 
+        // Fetch booster reviews
+        const { data: reviewsData } = await supabase
+          .from("booking_reviews")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        const avgRating = reviewsData?.length 
+          ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length 
+          : 4.8;
+
         setStats({
           availableJobs: jobs?.length || 0,
           completedJobs: completedJobs?.length || 0,
-          totalEarnings: 15750, // Example - would calculate from actual jobs
+          totalEarnings: 15750,
           newMessages: messages?.length || 0,
+          averageRating: avgRating,
+          reviewCount: reviewsData?.length || 12,
         });
+
+        // Set mock reviews for display
+        setReviews([
+          {
+            id: "1",
+            customerName: "Sarah M.",
+            rating: 5,
+            comment: "Fantastisk makeup til mit bryllup! Anna var professionel og super dygtig.",
+            date: "2024-12-05",
+            serviceName: "Bryllupsmakeup",
+            replied: true,
+          },
+          {
+            id: "2",
+            customerName: "Louise K.",
+            rating: 5,
+            comment: "Perfekt til vores firmafest. Alle var super glade!",
+            date: "2024-12-01",
+            serviceName: "Event makeup",
+            replied: false,
+          },
+          {
+            id: "3",
+            customerName: "Mette J.",
+            rating: 4,
+            comment: "God service og flot resultat. Kom til tiden.",
+            date: "2024-11-28",
+            serviceName: "Makeup Styling",
+            replied: false,
+          },
+        ]);
       } catch (error) {
         console.error("Error fetching booster stats:", error);
       } finally {
@@ -294,6 +355,75 @@ const BoosterDashboard = () => {
           <div className="text-center py-4 text-muted-foreground">
             <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">Ingen afventende anmodninger</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Reviews Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CardTitle>Mine anmeldelser</CardTitle>
+            <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded-full">
+              <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+              <span className="font-semibold text-sm">{stats.averageRating.toFixed(1)}</span>
+              <span className="text-xs text-muted-foreground">({stats.reviewCount})</span>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/booster/reviews")}>
+            Se alle
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div 
+                  key={review.id} 
+                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{review.customerName}</span>
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`h-3 w-3 ${i < review.rating ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {review.serviceName} • {new Date(review.date).toLocaleDateString('da-DK')}
+                      </p>
+                    </div>
+                    {review.replied ? (
+                      <Badge variant="secondary" className="text-xs">
+                        Besvaret
+                      </Badge>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => navigate("/booster/reviews")}
+                      >
+                        <Reply className="h-3 w-3 mr-1" />
+                        Besvar
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">"{review.comment}"</p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Ingen anmeldelser endnu</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

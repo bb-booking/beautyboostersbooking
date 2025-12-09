@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Upload, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Camera, Trash2, FileText, Download, ExternalLink, BookOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface BoosterSettings {
@@ -366,6 +367,83 @@ export default function BoosterSettings() {
                   showRating: checked
                 }))}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Documents & Agreements */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Dokumenter & Aftaler
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Samarbejdsaftale</p>
+                  <p className="text-sm text-muted-foreground">Din kontrakt med Beauty Boosters</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  Underskrevet
+                </Badge>
+                <Button variant="ghost" size="sm">
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium">Personalehåndbog</p>
+                  <p className="text-sm text-muted-foreground">Retningslinjer og procedurer</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="secondary">
+                  Opdateret dec 2024
+                </Badge>
+                <Button variant="ghost" size="sm">
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-medium">GDPR & Databehandling</p>
+                  <p className="text-sm text-muted-foreground">Privatlivspolitik og databehandlingsaftale</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  Accepteret
+                </Badge>
+                <Button variant="ghost" size="sm">
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
