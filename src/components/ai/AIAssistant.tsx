@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageSquare, Briefcase, Settings, FileText, Image } from 'lucide-react';
+import { X, Send, Loader2, Lightbulb, User, Calendar, Wallet, Clock, Star, MapPin, Gift, Users, Phone, Mail, MessageCircle, MessageSquare, Briefcase, Settings, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -334,17 +334,17 @@ const AIAssistant: React.FC = () => {
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg transition-all hover:scale-110',
-          `bg-gradient-to-r ${getRoleGradient()}`
+          'fixed bottom-24 right-6 z-40 h-12 w-12 rounded-full shadow-lg transition-all hover:scale-105',
+          'bg-primary/80 hover:bg-primary text-primary-foreground'
         )}
         size="icon"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Lightbulb className="h-6 w-6" />}
+        {isOpen ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
       </Button>
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl border bg-background shadow-2xl">
+        <div className="fixed bottom-40 right-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl border bg-background shadow-2xl">
           {/* Header */}
           <div className={cn(
             'flex items-center gap-3 rounded-t-2xl p-4 text-white',
