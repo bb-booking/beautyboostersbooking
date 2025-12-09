@@ -838,9 +838,14 @@ export default function Checkout() {
                     </Button>
                   )}
 
-                  <p className="text-xs text-muted-foreground text-center mt-3">
-                    Bookingen bekræftes efter betaling gennemføres
-                  </p>
+                  <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når en booster har accepteret din booking.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Ved sen afbestilling eller udeblivelse opkræves 50% af beløbet.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
