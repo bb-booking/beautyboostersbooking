@@ -88,11 +88,11 @@ const AIAssistant: React.FC = () => {
     if (isOpen && messages.length === 0) {
       let welcomeMessage = '';
       if (userRole === 'admin') {
-        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent. Jeg holder styr på bookings, boosters og økonomi. Hvad kan jeg hjælpe dig med i dag?';
+        welcomeMessage = 'Hvad kan jeg hjælpe med? Bookings, boosters, økonomi?';
       } else if (userRole === 'booster') {
-        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent. Jeg kan hjælpe dig med kalender, jobs, økonomi og momsfrister. Hvad har du brug for?';
+        welcomeMessage = 'Hvad kan jeg hjælpe med? Kalender, jobs, økonomi?';
       } else {
-        welcomeMessage = 'Hej! Jeg er Betty fra BeautyBoosters. Jeg hjælper dig med at finde den perfekte booster og booke din næste behandling. Hvad drømmer du om?';
+        welcomeMessage = 'Hvad kan jeg hjælpe med? Booking, find booster, gavekort?';
       }
       setMessages([{ role: 'assistant', content: welcomeMessage }]);
       setShowQuickActions(true);
