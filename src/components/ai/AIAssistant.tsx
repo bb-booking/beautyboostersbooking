@@ -1,14 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Sparkles, User, Bot } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, User, Bot, Calendar, Wallet, HelpCircle, Clock, Star, MapPin, Gift, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+interface QuickAction {
+  label: string;
+  message: string;
+  icon: React.ReactNode;
+  route?: string;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
@@ -18,10 +25,11 @@ const AIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Determine user role based on current route
   const getUserRole = (): 'admin' | 'booster' | 'customer' => {
     if (location.pathname.startsWith('/admin')) return 'admin';
     if (location.pathname.startsWith('/booster')) return 'booster';
@@ -30,7 +38,31 @@ const AIAssistant: React.FC = () => {
 
   const userRole = getUserRole();
 
-  // Get friendly page name
+  const getQuickActions = (): QuickAction[] => {
+    if (userRole === 'admin') {
+      return [
+        { label: 'Dagens overblik', message: 'Giv mig et overblik over dagens bookings og vigtige opgaver', icon: <Calendar className="h-3 w-3" /> },
+        { label: 'Åbne jobs', message: 'Hvor mange åbne jobs har vi lige nu?', icon: <Users className="h-3 w-3" />, route: '/admin/jobs' },
+        { label: 'Økonomistatus', message: 'Hvad er vores omsætning denne måned?', icon: <Wallet className="h-3 w-3" />, route: '/admin/finance' },
+        { label: 'Nye ansøgninger', message: 'Er der nye booster-ansøgninger jeg skal gennemgå?', icon: <Star className="h-3 w-3" /> },
+      ];
+    } else if (userRole === 'booster') {
+      return [
+        { label: 'Min kalender', message: 'Vis mig mine kommende bookings', icon: <Calendar className="h-3 w-3" />, route: '/booster/calendar' },
+        { label: 'Momsfrister', message: 'Hvornår er mine næste momsfrister?', icon: <Clock className="h-3 w-3" /> },
+        { label: 'Min indtjening', message: 'Hvad har jeg tjent denne måned?', icon: <Wallet className="h-3 w-3" />, route: '/booster/finance' },
+        { label: 'Ledige jobs', message: 'Er der nye jobs jeg kan søge?', icon: <Star className="h-3 w-3" />, route: '/booster/jobs' },
+      ];
+    } else {
+      return [
+        { label: 'Book en tid', message: 'Jeg vil gerne booke en tid til makeup', icon: <Calendar className="h-3 w-3" />, route: '/services' },
+        { label: 'Find booster', message: 'Hjælp mig med at finde den rette booster', icon: <Users className="h-3 w-3" />, route: '/stylists' },
+        { label: 'Mine adresser', message: 'Hvordan gemmer jeg en adresse?', icon: <MapPin className="h-3 w-3" /> },
+        { label: 'Gavekort', message: 'Hvordan køber jeg et gavekort?', icon: <Gift className="h-3 w-3" />, route: '/giftcards' },
+      ];
+    }
+  };
+
   const getPageName = (): string => {
     const path = location.pathname;
     if (path === '/') return 'Forside';
@@ -52,29 +84,42 @@ const AIAssistant: React.FC = () => {
     }
   }, [messages]);
 
-  // Welcome message based on role
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       let welcomeMessage = '';
       if (userRole === 'admin') {
-        welcomeMessage = 'Hej! Jeg er din AI-assistent. Jeg kan hjælpe dig med dashboard, bookings, boosters, økonomi og meget mere. Hvad kan jeg hjælpe med?';
+        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent 💜 Jeg holder styr på bookings, boosters og økonomi. Hvad kan jeg hjælpe dig med i dag?';
       } else if (userRole === 'booster') {
-        welcomeMessage = 'Hej! Jeg er din AI-assistent. Jeg kan hjælpe dig med kalender, jobs, økonomi, moms og fakturering. Hvad kan jeg hjælpe med?';
+        welcomeMessage = 'Hej! Jeg er Betty, din personlige assistent 💜 Jeg kan hjælpe dig med kalender, jobs, økonomi og momsfrister. Hvad har du brug for?';
       } else {
-        welcomeMessage = 'Hej! Jeg er BeautyBoosters\' AI-assistent. Jeg kan hjælpe dig med at booke services, finde den rette booster, og besvare spørgsmål. Hvad leder du efter?';
+        welcomeMessage = 'Hej! Jeg er Betty fra BeautyBoosters 💜 Jeg hjælper dig med at finde den perfekte booster og booke din næste behandling. Hvad drømmer du om?';
       }
       setMessages([{ role: 'assistant', content: welcomeMessage }]);
+      setShowQuickActions(true);
     }
   }, [isOpen, userRole]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleQuickAction = (action: QuickAction) => {
+    setShowQuickActions(false);
+    if (action.route) {
+      navigate(action.route);
+    }
+    setInput(action.message);
+    setTimeout(() => {
+      const syntheticInput = action.message;
+      setInput('');
+      sendMessageWithText(syntheticInput);
+    }, 100);
+  };
 
-    const userMessage: Message = { role: 'user', content: input.trim() };
+  const sendMessageWithText = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage: Message = { role: 'user', content: text.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    setInput('');
     setIsLoading(true);
+    setShowQuickActions(false);
 
     let assistantContent = '';
 
@@ -100,7 +145,6 @@ const AIAssistant: React.FC = () => {
       const decoder = new TextDecoder();
       let textBuffer = '';
 
-      // Add empty assistant message to update
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (true) {
@@ -144,11 +188,16 @@ const AIAssistant: React.FC = () => {
       console.error('AI error:', error);
       setMessages(prev => [
         ...prev.filter(m => m.content !== ''),
-        { role: 'assistant', content: 'Beklager, der opstod en fejl. Prøv igen eller kontakt kundeservice.' }
+        { role: 'assistant', content: 'Ups! Der gik noget galt. Prøv igen, eller ring til os på +45 71 78 65 75 💜' }
       ]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const sendMessage = async () => {
+    await sendMessageWithText(input);
+    setInput('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -158,7 +207,7 @@ const AIAssistant: React.FC = () => {
     }
   };
 
-  const getRoleColor = () => {
+  const getRoleGradient = () => {
     if (userRole === 'admin') return 'from-purple-500 to-purple-600';
     if (userRole === 'booster') return 'from-primary to-primary/80';
     return 'from-pink-500 to-rose-500';
@@ -171,7 +220,7 @@ const AIAssistant: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg transition-all hover:scale-110',
-          `bg-gradient-to-r ${getRoleColor()}`
+          `bg-gradient-to-r ${getRoleGradient()}`
         )}
         size="icon"
       >
@@ -180,25 +229,36 @@ const AIAssistant: React.FC = () => {
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] rounded-2xl border bg-background shadow-2xl">
+        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl border bg-background shadow-2xl">
           {/* Header */}
           <div className={cn(
             'flex items-center gap-3 rounded-t-2xl p-4 text-white',
-            `bg-gradient-to-r ${getRoleColor()}`
+            `bg-gradient-to-r ${getRoleGradient()}`
           )}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-              <Bot className="h-5 w-5" />
+            <div className="relative">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-2xl">
+                💜
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-400" />
             </div>
-            <div>
-              <h3 className="font-semibold">AI Assistent</h3>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold">Betty</h3>
               <p className="text-xs opacity-90">
-                {userRole === 'admin' ? 'Admin Support' : userRole === 'booster' ? 'Booster Support' : 'Kunde Support'}
+                {userRole === 'admin' ? 'Din admin-assistent' : userRole === 'booster' ? 'Din booster-assistent' : 'Din beauty-assistent'}
               </p>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="h-8 w-8 text-white hover:bg-white/20"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Messages */}
-          <ScrollArea className="h-[350px] p-4" ref={scrollRef}>
+          <ScrollArea className="h-[320px] p-4" ref={scrollRef}>
             <div className="flex flex-col gap-3">
               {messages.map((msg, i) => (
                 <div
@@ -209,27 +269,47 @@ const AIAssistant: React.FC = () => {
                   )}
                 >
                   <div className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                    msg.role === 'user' ? 'bg-primary' : 'bg-muted'
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm',
+                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-pink-100 to-purple-100'
                   )}>
                     {msg.role === 'user' ? (
-                      <User className="h-4 w-4 text-primary-foreground" />
+                      <User className="h-4 w-4" />
                     ) : (
-                      <Bot className="h-4 w-4 text-muted-foreground" />
+                      '💜'
                     )}
                   </div>
                   <div className={cn(
-                    'max-w-[75%] rounded-2xl px-4 py-2 text-sm',
+                    'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
                     msg.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-foreground'
                   )}>
                     {msg.content || (isLoading && i === messages.length - 1 ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="flex items-center gap-1">
+                        <span className="animate-bounce">.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+                      </span>
                     ) : null)}
                   </div>
                 </div>
               ))}
+
+              {/* Quick actions */}
+              {showQuickActions && messages.length === 1 && !isLoading && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {getQuickActions().map((action, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleQuickAction(action)}
+                      className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary"
+                    >
+                      {action.icon}
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </ScrollArea>
 
@@ -240,15 +320,15 @@ const AIAssistant: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Skriv din besked..."
+                placeholder="Spørg Betty om noget..."
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 rounded-full"
               />
               <Button
                 onClick={sendMessage}
                 disabled={!input.trim() || isLoading}
                 size="icon"
-                className={cn(`bg-gradient-to-r ${getRoleColor()}`)}
+                className={cn('rounded-full', `bg-gradient-to-r ${getRoleGradient()}`)}
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -257,6 +337,9 @@ const AIAssistant: React.FC = () => {
                 )}
               </Button>
             </div>
+            <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              Betty er en AI og kan lave fejl. Kontakt os ved tvivl.
+            </p>
           </div>
         </div>
       )}
