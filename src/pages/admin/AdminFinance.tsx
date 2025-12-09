@@ -85,7 +85,7 @@ const AdminFinance = () => {
     revenueByMonth: []
   });
   const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState("3months");
+  const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [vatDeadlines, setVatDeadlines] = useState<VATDeadline[]>([]);
   const [salaryEntries, setSalaryEntries] = useState<SalaryEntry[]>([]);
 
@@ -145,83 +145,42 @@ const AdminFinance = () => {
 
   const fetchFinancialStats = async () => {
     try {
-      // Fetch completed jobs for revenue calculation
-      const { data: jobs, error: jobsError } = await supabase
-        .from('jobs')
-        .select(`
-          id,
-          hourly_rate,
-          duration_hours,
-          status,
-          created_at,
-          assigned_booster_id,
-          booster_profiles!jobs_assigned_booster_id_fkey(name)
-        `)
-        .eq('status', 'completed');
-
-      if (jobsError) throw jobsError;
-
-      // Calculate basic stats
-      const completedJobs = jobs?.length || 0;
-      const totalRevenue = jobs?.reduce((sum, job) => {
-        return sum + (job.hourly_rate * (job.duration_hours || 1));
-      }, 0) || 0;
-
-      // Calculate monthly revenue (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      // Mock data baseret på 60/40 split (boosters får 60% af service eks. moms)
+      // Total omsætning inkl. moms: 1.852.000 kr
+      // Eks. moms: 1.481.600 kr
+      // Booster løn (60%): 888.960 kr
+      // Platform (40%): 592.640 kr
       
-      const monthlyJobs = jobs?.filter(job => 
-        new Date(job.created_at) >= thirtyDaysAgo
-      ) || [];
+      // Period-baseret mock data
+      const periodMultipliers: Record<string, { revenue: number; jobs: number; label: string }> = {
+        'day': { revenue: 9600, jobs: 2, label: 'I dag' },
+        'week': { revenue: 67200, jobs: 12, label: 'Denne uge' },
+        'month': { revenue: 289000, jobs: 48, label: 'Denne måned' },
+        'year': { revenue: 1852000, jobs: 315, label: 'I år' },
+        'quarter': { revenue: 997000, jobs: 168, label: 'Q4 2025' },
+      };
       
-      const monthlyRevenue = monthlyJobs.reduce((sum, job) => {
-        return sum + (job.hourly_rate * (job.duration_hours || 1));
-      }, 0);
-
+      const currentPeriod = periodMultipliers[selectedPeriod] || periodMultipliers['month'];
+      const previousPeriod = periodMultipliers[selectedPeriod] || periodMultipliers['month'];
+      
+      const totalRevenue = currentPeriod.revenue;
+      const completedJobs = currentPeriod.jobs;
       const averageJobValue = completedJobs > 0 ? totalRevenue / completedJobs : 0;
-
-      // Calculate salary costs (mock - 60% of revenue goes to boosters)
-      const totalSalaryCosts = totalRevenue * 0.6;
       
-      // Calculate VAT - Salgsmoms (output VAT on revenue) and Købsmoms (input VAT on expenses)
-      const outputVAT = totalRevenue * 0.25; // 25% salgsmoms
-      const inputVAT = totalSalaryCosts * 0.05; // Estimated input VAT from purchases/expenses (mock)
-      const vatOwed = outputVAT - inputVAT; // Forventet skyldig moms = salgsmoms - købsmoms
+      // 60/40 split - boosters get 60% of revenue eks. moms
+      const revenueExMoms = totalRevenue / 1.25;
+      const totalSalaryCosts = revenueExMoms * 0.6;
       
-      // Tax reserve (estimate 22% corporate tax on profit)
-      const profit = totalRevenue - totalSalaryCosts;
+      // VAT calculations
+      const outputVAT = totalRevenue - revenueExMoms; // Salgsmoms
+      const inputVAT = totalSalaryCosts * 0.05; // Estimated købsmoms
+      const vatOwed = outputVAT - inputVAT;
+      
+      // Tax reserve
+      const profit = revenueExMoms - totalSalaryCosts;
       const taxReserve = profit * 0.22;
 
-      // Calculate top earning boosters
-      const boosterEarnings = new Map();
-      jobs?.forEach(job => {
-        if (job.assigned_booster_id && job.booster_profiles) {
-          const boosterId = job.assigned_booster_id;
-          const boosterName = Array.isArray(job.booster_profiles) 
-            ? job.booster_profiles[0]?.name 
-            : (job.booster_profiles as any)?.name;
-          const jobEarning = job.hourly_rate * (job.duration_hours || 1);
-          
-          if (!boosterEarnings.has(boosterId)) {
-            boosterEarnings.set(boosterId, {
-              name: boosterName || 'Unknown',
-              earnings: 0,
-              jobs_completed: 0
-            });
-          }
-          
-          const current = boosterEarnings.get(boosterId);
-          current.earnings += jobEarning;
-          current.jobs_completed += 1;
-        }
-      });
-
-      const topEarningBoosters = Array.from(boosterEarnings.values())
-        .sort((a, b) => b.earnings - a.earnings)
-        .slice(0, 5);
-
-      // Generate mock revenue by month data
+      // Generate revenue by month data
       const revenueByMonth = [
         { month: 'Jul', revenue: 245000, jobs: 42 },
         { month: 'Aug', revenue: 312000, jobs: 55 },
@@ -231,21 +190,25 @@ const AdminFinance = () => {
         { month: 'Dec', revenue: 289000, jobs: 48 }
       ];
 
+      // Top boosters (60% of their jobs' revenue eks. moms)
+      const topEarningBoosters = [
+        { name: 'Angelica', earnings: Math.round(312000 / 1.25 * 0.6), jobs_completed: 53 },
+        { name: 'Anna K.', earnings: Math.round(287000 / 1.25 * 0.6), jobs_completed: 48 },
+        { name: 'My Phung', earnings: Math.round(245000 / 1.25 * 0.6), jobs_completed: 42 },
+        { name: 'Marie S.', earnings: Math.round(198000 / 1.25 * 0.6), jobs_completed: 34 },
+      ];
+
       setStats({
-        totalRevenue: totalRevenue || 1852000, // Mock fallback
-        monthlyRevenue: monthlyRevenue || 289000,
-        completedJobs: completedJobs || 315,
-        averageJobValue: averageJobValue || 5880,
-        totalSalaryCosts: totalSalaryCosts || 1111200,
-        outputVAT: outputVAT || 463000, // Salgsmoms
-        inputVAT: inputVAT || 55560, // Købsmoms
-        vatOwed: vatOwed || 407440, // Forventet skyldig moms
-        taxReserve: taxReserve || 162976,
-        topEarningBoosters: topEarningBoosters.length > 0 ? topEarningBoosters : [
-          { name: 'Anna K.', earnings: 287000, jobs_completed: 48 },
-          { name: 'My Phung', earnings: 245000, jobs_completed: 42 },
-          { name: 'Angelica', earnings: 312000, jobs_completed: 53 },
-        ],
+        totalRevenue,
+        monthlyRevenue: totalRevenue,
+        completedJobs,
+        averageJobValue,
+        totalSalaryCosts,
+        outputVAT,
+        inputVAT,
+        vatOwed,
+        taxReserve,
+        topEarningBoosters,
         revenueByMonth
       });
 
@@ -323,10 +286,11 @@ const AdminFinance = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1month">Sidste måned</SelectItem>
-              <SelectItem value="3months">Sidste 3 måneder</SelectItem>
-              <SelectItem value="6months">Sidste 6 måneder</SelectItem>
-              <SelectItem value="1year">Sidste år</SelectItem>
+              <SelectItem value="day">I dag</SelectItem>
+              <SelectItem value="week">Denne uge</SelectItem>
+              <SelectItem value="month">Denne måned</SelectItem>
+              <SelectItem value="quarter">Dette kvartal</SelectItem>
+              <SelectItem value="year">I år</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" className="w-full sm:w-auto">
@@ -375,28 +339,24 @@ const AdminFinance = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
-                <p className="text-xs text-muted-foreground">Alle afsluttede jobs</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedPeriod === 'day' && 'I dag'}
+                  {selectedPeriod === 'week' && 'Denne uge'}
+                  {selectedPeriod === 'month' && 'Denne måned'}
+                  {selectedPeriod === 'quarter' && 'Dette kvartal'}
+                  {selectedPeriod === 'year' && 'I år'}
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Månedlig omsætning</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Booster løn (60%)</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.monthlyRevenue)}</div>
-                <div className="flex items-center text-xs">
-                  {revenueGrowth > 0 ? (
-                    <TrendingUp className="h-3 w-3 text-green-600 mr-1" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 text-red-600 mr-1" />
-                  )}
-                  <span className={revenueGrowth > 0 ? "text-green-600" : "text-red-600"}>
-                    {Math.abs(revenueGrowth).toFixed(1)}%
-                  </span>
-                  <span className="text-muted-foreground ml-1">fra sidste måned</span>
-                </div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalSalaryCosts)}</div>
+                <p className="text-xs text-muted-foreground">60% af omsætning eks. moms</p>
               </CardContent>
             </Card>
 
@@ -407,7 +367,13 @@ const AdminFinance = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.completedJobs}</div>
-                <p className="text-xs text-muted-foreground">Siden lancering</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedPeriod === 'day' && 'I dag'}
+                  {selectedPeriod === 'week' && 'Denne uge'}
+                  {selectedPeriod === 'month' && 'Denne måned'}
+                  {selectedPeriod === 'quarter' && 'Dette kvartal'}
+                  {selectedPeriod === 'year' && 'I år'}
+                </p>
               </CardContent>
             </Card>
 
