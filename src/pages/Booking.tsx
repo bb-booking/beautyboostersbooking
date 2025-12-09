@@ -503,13 +503,17 @@ const Booking = () => {
   const handleNextStep = () => {
     if (canProceed(currentStep) && currentStep < 3) {
       setCurrentStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (currentStep === 3) {
       handleProceedToCheckout();
     }
   };
 
   const handlePrevStep = () => {
-    if (currentStep > 1) setCurrentStep(prev => prev - 1);
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Loading state
