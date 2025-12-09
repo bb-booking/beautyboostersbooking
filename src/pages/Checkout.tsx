@@ -768,11 +768,8 @@ export default function Checkout() {
                 <CardContent className="space-y-3">
                   {allCartItems.map((item: any, index: number) => (
                     <div key={index} className="flex justify-between text-sm">
-                      <div>
-                        <span className="font-medium">{item.service?.name || service.name}</span>
-                        <span className="text-muted-foreground ml-2">({item.booster?.name || booster.name})</span>
-                      </div>
-                      <span>{item.service?.price || service.price} DKK</span>
+                      <span className="font-medium">{item.name || item.service?.name || service.name}</span>
+                      <span>{item.finalPrice ?? item.service?.price ?? service.price} DKK</span>
                     </div>
                   ))}
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
