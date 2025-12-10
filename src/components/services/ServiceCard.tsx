@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Plus, Minus } from "lucide-react";
+import { Clock, Plus, Minus, Sparkles, Scissors, Sun, Heart, GraduationCap, PartyPopper, Baby, Camera, Users, Palette } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -26,6 +25,24 @@ interface ServiceCardProps {
   onClick: () => void;
 }
 
+// Category colors and icons mapping
+const categoryConfig: Record<string, { color: string; bgColor: string; icon: React.ElementType }> = {
+  "Makeup & Hår": { color: "text-pink-700", bgColor: "bg-pink-50 border-pink-200", icon: Sparkles },
+  "Spraytan": { color: "text-amber-700", bgColor: "bg-amber-50 border-amber-200", icon: Sun },
+  "Konfirmation": { color: "text-purple-700", bgColor: "bg-purple-50 border-purple-200", icon: GraduationCap },
+  "Bryllup - Brudestyling": { color: "text-rose-700", bgColor: "bg-rose-50 border-rose-200", icon: Heart },
+  "Makeup Kurser": { color: "text-indigo-700", bgColor: "bg-indigo-50 border-indigo-200", icon: Palette },
+  "Event": { color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: PartyPopper },
+  "Børn": { color: "text-sky-700", bgColor: "bg-sky-50 border-sky-200", icon: Baby },
+  "Shoot/reklame": { color: "text-violet-700", bgColor: "bg-violet-50 border-violet-200", icon: Camera },
+  "Specialister til projekt": { color: "text-teal-700", bgColor: "bg-teal-50 border-teal-200", icon: Users },
+  "Makeup / styling til Event": { color: "text-fuchsia-700", bgColor: "bg-fuchsia-50 border-fuchsia-200", icon: PartyPopper },
+};
+
+const formatPrice = (price: number) => {
+  return price.toLocaleString('da-DK') + ' kr';
+};
+
 const ServiceCard = ({ 
   id,
   name, 
@@ -45,35 +62,30 @@ const ServiceCard = ({
   const [boosters, setBoosters] = useState(1);
   const [extraHours, setExtraHours] = useState(0);
 
+  const config = categoryConfig[category] || { color: "text-gray-700", bgColor: "bg-gray-50 border-gray-200", icon: Sparkles };
+  const CategoryIcon = config.icon;
+
   const calculatePrice = () => {
     if (isInquiry) return 0;
     
     let basePrice;
     
-    // For business services: use boosters logic
     if (clientType === "virksomhed") {
       basePrice = price * boosters;
     } else {
-      // For private services: use group pricing or base price per person, multiplied by number of boosters
       if (groupPricing && people <= 4) {
         basePrice = groupPricing[people as keyof typeof groupPricing];
       } else {
         basePrice = price * people;
       }
       
-      // For private services, if more than 1 booster, add cost for additional boosters
       if (boosters > 1) {
-        basePrice += (boosters - 1) * 999; // 999 DKK per additional booster
+        basePrice += (boosters - 1) * 999;
       }
     }
     
-    // Add extra hours cost
     if (hasExtraHours && extraHours > 0 && extraHourPrice) {
-      if (clientType === "virksomhed") {
-        basePrice += extraHours * extraHourPrice * boosters;
-      } else {
-        basePrice += extraHours * extraHourPrice * boosters;
-      }
+      basePrice += extraHours * extraHourPrice * boosters;
     }
     
     return basePrice;
@@ -82,12 +94,9 @@ const ServiceCard = ({
   const calculateDuration = () => {
     const baseDuration = duration + extraHours;
     
-    // Virksomhed: flere boosters arbejder parallelt, varigheden er pr. session
     if (clientType === "virksomhed") {
       return baseDuration;
     } else {
-      // Privat: Hvis der er flere personer end boosters, skal tiden ganges op
-      // Eksempel: 4 personer, 2 boosters = 2 runder = 2x varighed
       const rounds = Math.ceil(people / boosters);
       return baseDuration * rounds;
     }
@@ -108,16 +117,14 @@ const ServiceCard = ({
       totalDuration: calculateDuration(),
       groupPricing
     });
-    toast.success(`${name} lagt i kurv`);
+    toast.success(`${name} lagt i kurv ✨`);
   };
 
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Save counts and also add to cart for the new booking flow
     try {
       sessionStorage.setItem('selectedCounts', JSON.stringify({ people, boosters, extraHours }));
     } catch {}
-    // Add to cart so the new BoosterAssignment flow is used
     addToCart({
       id,
       name,
@@ -136,7 +143,7 @@ const ServiceCard = ({
 
   const incrementBoosters = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const maxBoosters = clientType === "virksomhed" ? 20 : people; // Max boosters = number of people for private
+    const maxBoosters = clientType === "virksomhed" ? 20 : people;
     if (boosters < maxBoosters) {
       setBoosters(prev => prev + 1);
     }
@@ -150,44 +157,46 @@ const ServiceCard = ({
   };
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-300">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg line-clamp-1">{name}</CardTitle>
-          <Badge variant="secondary">{category}</Badge>
-        </div>
-      </CardHeader>
+    <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-md overflow-hidden">
+      {/* Category Header */}
+      <div className={`px-4 py-2.5 ${config.bgColor} border-b flex items-center gap-2`}>
+        <CategoryIcon className={`h-4 w-4 ${config.color}`} />
+        <span className={`text-xs font-semibold uppercase tracking-wide ${config.color}`}>
+          {category}
+        </span>
+      </div>
       
-      <CardContent>
-        <p className="text-muted-foreground mb-4 line-clamp-2">{description}</p>
+      <CardContent className="pt-5 pb-4 px-5">
+        <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+          {name}
+        </h3>
+        <p className="text-muted-foreground text-sm mb-5 line-clamp-2 leading-relaxed">{description}</p>
         
-        {/* Boosters and Extra Hours selectors */}
+        {/* Selectors */}
         {!isInquiry && (
-          <div className="space-y-4 mb-4">
-            {/* People selector - only for private services */}
+          <div className="space-y-3 mb-5">
+            {/* People selector */}
             {clientType !== "virksomhed" && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Antal personer:</span>
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                <span className="text-sm font-medium">Antal personer</span>
+                <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-full hover:bg-primary/10"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (people > 1) {
-                        setPeople(prev => prev - 1);
-                      }
+                      if (people > 1) setPeople(prev => prev - 1);
                     }}
                     disabled={people <= 1}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-8 text-center font-medium">{people}</span>
+                  <span className="w-8 text-center font-semibold text-lg">{people}</span>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-full hover:bg-primary/10"
                     onClick={(e) => {
                       e.stopPropagation();
                       setPeople(prev => prev + 1);
@@ -199,25 +208,25 @@ const ServiceCard = ({
               </div>
             )}
 
-            {/* Boosters selector - for business services, or private services with more than 1 person */}
+            {/* Boosters selector */}
             {(clientType === "virksomhed" || (clientType === "privat" && people > 1)) && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Antal boosters:</span>
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                <span className="text-sm font-medium">Antal boosters</span>
+                <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-full hover:bg-primary/10"
                     onClick={decrementBoosters}
                     disabled={boosters <= 1}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-8 text-center font-medium">{boosters}</span>
+                  <span className="w-8 text-center font-semibold text-lg">{boosters}</span>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-full hover:bg-primary/10"
                     onClick={incrementBoosters}
                     disabled={clientType === "privat" && boosters >= people}
                   >
@@ -227,15 +236,15 @@ const ServiceCard = ({
               </div>
             )}
 
-            {/* Extra hours selector - only show for services with extra hours */}
+            {/* Extra hours selector */}
             {hasExtraHours && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Ekstra timer:</span>
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                <span className="text-sm font-medium">Ekstra timer</span>
+                <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-full hover:bg-primary/10"
                     onClick={(e) => {
                       e.stopPropagation();
                       setExtraHours(prev => Math.max(0, prev - 1));
@@ -244,11 +253,11 @@ const ServiceCard = ({
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-8 text-center font-medium">{extraHours}</span>
+                  <span className="w-8 text-center font-semibold text-lg">{extraHours}</span>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-full hover:bg-primary/10"
                     onClick={(e) => {
                       e.stopPropagation();
                       setExtraHours(prev => prev + 1);
@@ -262,22 +271,22 @@ const ServiceCard = ({
           </div>
         )}
         
-        <div className="flex items-center justify-between mb-4">
+        {/* Duration and Price */}
+        <div className="flex items-center justify-between pt-2 border-t border-muted/50">
           <div className="flex items-center text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 mr-1" />
-            {isInquiry ? "Tilpasset varighed" : `${calculateDuration()} timer`}
+            <Clock className="h-4 w-4 mr-1.5" />
+            {isInquiry ? "Tilpasset" : `${calculateDuration()} timer`}
           </div>
-        </div>
-        
-        <div className="text-lg font-semibold text-foreground">
-          {isInquiry ? "Send forespørgsel" : `${calculatePrice()} DKK`}
+          <div className="text-xl font-bold text-foreground">
+            {isInquiry ? "Forespørgsel" : formatPrice(calculatePrice())}
+          </div>
         </div>
       </CardContent>
       
-      <CardFooter className="gap-2">
+      <CardFooter className="px-5 pb-5 pt-0 gap-3">
         {isInquiry ? (
           <Button 
-            className="w-full"
+            className="w-full h-11"
             onClick={handleBookNow}
           >
             Send forespørgsel
@@ -285,16 +294,17 @@ const ServiceCard = ({
         ) : (
           <>
             <Button 
-              className="flex-1"
+              variant="outline"
+              className="flex-1 h-11 hover:bg-muted/50"
               onClick={handleAddToCart}
             >
               Læg i kurv
             </Button>
             <Button 
-              className="flex-1"
+              className="flex-[1.2] h-11 font-semibold"
               onClick={handleBookNow}
             >
-              Book Nu
+              Book nu
             </Button>
           </>
         )}
