@@ -70,6 +70,36 @@ serve(async (req) => {
       }
     }
 
+    // Fetch booster data from database for accurate responses
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    let boosterInfo = '';
+    try {
+      const { data: boosters } = await supabase
+        .from('booster_profiles')
+        .select('name, specialties, location, is_available')
+        .eq('is_available', true);
+      
+      if (boosters && boosters.length > 0) {
+        // Group boosters by specialty
+        const specialtyMap: Record<string, string[]> = {};
+        boosters.forEach(b => {
+          (b.specialties || []).forEach((s: string) => {
+            if (!specialtyMap[s]) specialtyMap[s] = [];
+            specialtyMap[s].push(b.name);
+          });
+        });
+        
+        boosterInfo = `\nAKTIVE BOOSTERS OG KOMPETENCER (fra database):\n`;
+        Object.entries(specialtyMap).forEach(([specialty, names]) => {
+          boosterInfo += `- ${specialty}: ${names.join(', ')} (${names.length} boosters)\n`;
+        });
+        boosterInfo += `\nTotal aktive boosters: ${boosters.length}\n`;
+      }
+    } catch (e) {
+      console.log('Could not fetch booster data:', e);
+    }
+
     // Build context-aware system prompt based on verified user role
     let systemPrompt = `Du er Betty, BeautyBoosters' venlige AI-assistent 💛
 
@@ -79,19 +109,18 @@ PERSONLIGHED:
 - Svar varmt men professionelt (målgruppe: kvinder 30+)
 
 VIGTIGE REGLER:
-1. DOBBELTTJEK altid dine svar - vær sikker på informationen er korrekt
-2. Hvis du er usikker, sig ærligt at du vil tjekke op på det
+1. DOBBELTTJEK altid dine svar mod data nedenfor - vær sikker på informationen er korrekt
+2. Brug ALTID den faktiske booster-data nedenfor til at svare på spørgsmål om kompetencer
 3. Hold svar korte (2-3 sætninger max) men venlige
 4. Nævn nøgleord så knapper vises: ansøg, bliv booster, kalender, økonomi, booking, profil, jobs, kontakt, adresse, service
-
+${boosterInfo}
 SERVICES:
 - B2C (Privat): Makeup Styling, Hår Styling, Bryllup, Spraytan
 - B2B (Virksomhed): Under "Specialister til projekt" finder man SFX-eksperter, Film/TV makeup, Event makeup osv.
-- SFX/Specialeffekt makeup ER tilgængeligt for virksomheder under "Specialister til projekt"
 
 EKSEMPLER PÅ SVAR:
+- "Hvem kan SFX?" → Tjek data ovenfor og nævn de specifikke boosters med SFX-kompetence
 - "Vil gerne være booster" → "Hvor spændende! ✨ Du kan ansøge direkte via Bliv Booster-siden."
-- "SFX makeup?" → "Ja, SFX-eksperter er tilgængelige for virksomheder under 'Specialister til projekt' 💄"
 - "Tale med nogen?" → "Selvfølgelig! 😊 Ring til os på +45 71 78 65 75 eller mail hello@beautyboosters.dk"
 
 KONTAKT: +45 71 78 65 75 / hello@beautyboosters.dk
