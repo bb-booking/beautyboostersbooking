@@ -43,4 +43,6 @@ export const boosterImageOverrides: Record<string, string> = {
   'trine': '/lovable-uploads/profiles/trine.png',
   'ulla': '/lovable-uploads/profiles/ulla.png',
   'yasmin': '/lovable-uploads/profiles/yasmin.png',
+  'louise bencard': '/lovable-uploads/profiles/louise-bencard.png',
+  'louise': '/lovable-uploads/profiles/louise-bencard.png',
 };
