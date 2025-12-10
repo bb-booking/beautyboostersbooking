@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react"
 import {
   Calendar,
   Camera,
@@ -21,8 +22,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { supabase } from "@/integrations/supabase/client"
 
 const menuItems = [
   {
@@ -80,6 +83,7 @@ const menuItems = [
 export function BoosterSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const [unreadMessages, setUnreadMessages] = useState(0)
 
   const isActive = (path: string) => {
     if (path === "/booster") {
@@ -94,6 +98,41 @@ export function BoosterSidebar() {
       : "hover:bg-accent hover:text-accent-foreground"
   }
 
+  // Fetch unread message count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      // Count unread messages in job_communications where booster hasn't read
+      const { data, error } = await supabase
+        .from('job_communications')
+        .select('id')
+        .neq('sender_type', 'booster')
+        .is('read_at', null)
+      
+      if (!error && data) {
+        setUnreadMessages(data.length)
+      }
+    }
+
+    fetchUnreadCount()
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('booster-unread-messages')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'job_communications' },
+        () => fetchUnreadCount()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
   return (
     <Sidebar className={state === "collapsed" ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
@@ -101,20 +140,24 @@ export function BoosterSidebar() {
           <SidebarGroupLabel>Beauty Boosters</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/booster"}
-                      className={getNavClasses(item.url)}
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {state !== "collapsed" && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                const badge = item.title === "Beskeder" ? unreadMessages : 0
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end={item.url === "/booster"}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {state !== "collapsed" && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                    {badge > 0 && <SidebarMenuBadge>{badge}</SidebarMenuBadge>}
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
