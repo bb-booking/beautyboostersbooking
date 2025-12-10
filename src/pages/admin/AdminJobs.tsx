@@ -1209,9 +1209,11 @@ Eksempel på notifikation som booster vil modtage.`;
                                 <span>{boosterEarningsPerPerson.toLocaleString('da-DK')} DKK</span>
                               </div>
                             )}
-                            {newJob.client_type === 'privat' && (
-                              <div className="text-xs text-muted-foreground">*Pris inkl. moms (25% moms fratrækkes først)</div>
-                            )}
+                            <div className="text-xs text-muted-foreground">
+                              {newJob.client_type === 'privat' 
+                                ? '*Pris inkl. moms (25% moms fratrækkes først)' 
+                                : '*Pris eks. moms (B2B)'}
+                            </div>
                           </>
                         );
                       })()}
