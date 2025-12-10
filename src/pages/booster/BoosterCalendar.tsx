@@ -17,10 +17,11 @@ import {
   Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, 
   Trash2, X, Ban, CalendarX, Users, Edit, Calendar, 
   ChevronLeft, ChevronRight, RefreshCw, Settings, MessageCircle,
-  Navigation, Copy, ExternalLink
+  Navigation, Copy, ExternalLink, Send, ImagePlus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface BoosterEvent {
   id: string;
@@ -71,6 +72,8 @@ export default function BoosterCalendar() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockDate, setBlockDate] = useState<Date | null>(null);
   const [blockReason, setBlockReason] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatEvent, setChatEvent] = useState<BoosterEvent | null>(null);
   
   // Swipe handling
   const touchStartX = useRef<number>(0);
@@ -324,7 +327,7 @@ export default function BoosterCalendar() {
       </div>
 
       {/* Event Detail Dialog */}
-      <Dialog open={!!selectedEvent} onOpenChange={(o) => !o && setSelectedEvent(null)}>
+      <Dialog open={!!selectedEvent && !chatOpen} onOpenChange={(o) => !o && setSelectedEvent(null)}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           {selectedEvent && <EventDetail 
             event={selectedEvent}
@@ -332,7 +335,27 @@ export default function BoosterCalendar() {
             onOpenMaps={openGoogleMaps}
             onCopy={copyToClipboard}
             onClose={() => setSelectedEvent(null)}
-            onOpenChat={() => { setSelectedEvent(null); navigate('/booster/messages'); }}
+            onOpenChat={() => { 
+              setChatEvent(selectedEvent);
+              setChatOpen(true);
+            }}
+            onOpenGroupChat={() => {
+              toast.info("Gruppechat oprettes...");
+              // TODO: Create group conversation
+              setSelectedEvent(null);
+              navigate('/booster/messages');
+            }}
+          />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Chat Dialog */}
+      <Dialog open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (!o) setChatEvent(null); }}>
+        <DialogContent className="max-w-md h-[600px] flex flex-col p-0">
+          {chatEvent && <CustomerChatDialog 
+            event={chatEvent}
+            parseNotes={parseNotes}
+            onClose={() => { setChatOpen(false); setChatEvent(null); }}
           />}
         </DialogContent>
       </Dialog>
@@ -678,7 +701,8 @@ function EventDetail({
   onOpenMaps,
   onCopy,
   onClose,
-  onOpenChat
+  onOpenChat,
+  onOpenGroupChat
 }: {
   event: BoosterEvent;
   parseNotes: (e: BoosterEvent) => EventMeta;
@@ -686,9 +710,11 @@ function EventDetail({
   onCopy: (text: string, label: string) => void;
   onClose: () => void;
   onOpenChat: () => void;
+  onOpenGroupChat: () => void;
 }) {
   const meta = parseNotes(event);
   const isVirksomhed = meta.client_type === 'virksomhed';
+  const hasTeam = meta.team_boosters && meta.team_boosters.length > 0;
   const durationMins = (() => {
     const [sh, sm] = (event.start_time || '00:00:00').split(':').map(Number);
     const [eh, em] = (event.end_time || '00:00:00').split(':').map(Number);
@@ -769,7 +795,6 @@ function EventDetail({
               </div>
             )}
             
-            {/* Email only - no phone for boosters */}
             {meta.customer_email && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -781,19 +806,22 @@ function EventDetail({
               </div>
             )}
 
-            {/* Chat info */}
-            <div className="p-2 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-              <MessageCircle className="h-4 w-4 inline mr-2" />
-              Brug chat-funktionen til at kontakte kunden
-            </div>
+            {meta.customer_phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <a href={`tel:${meta.customer_phone}`} className="text-primary hover:underline">
+                  {meta.customer_phone}
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Team Boosters */}
-        {meta.team_boosters && meta.team_boosters.length > 0 && (
+        {hasTeam && (
           <div className="space-y-2">
             <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-              Team ({meta.team_boosters.length + 1} boosters)
+              Team ({(meta.team_boosters?.length || 0) + 1} boosters)
             </h4>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-2 mb-2">
@@ -804,7 +832,7 @@ function EventDetail({
                 <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-800">
                   Dig
                 </Badge>
-                {meta.team_boosters.map((booster, idx) => (
+                {meta.team_boosters?.map((booster, idx) => (
                   <Badge key={idx} variant="outline">
                     {booster}
                   </Badge>
@@ -860,14 +888,218 @@ function EventDetail({
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2">
-          <Button variant="default" className="flex-1 gap-2" onClick={onOpenChat}>
-            <MessageCircle className="h-4 w-4" />
-            Chat
+        <div className="flex flex-col gap-2 pt-2">
+          <div className="flex gap-2">
+            <Button variant="default" className="flex-1 gap-2" onClick={onOpenChat}>
+              <MessageCircle className="h-4 w-4" />
+              Chat
+            </Button>
+            <Button variant="outline" className="flex-1 gap-2" onClick={() => onOpenMaps(meta.address as string || '')}>
+              <Navigation className="h-4 w-4" />
+              Navigation
+            </Button>
+          </div>
+          {hasTeam && (
+            <Button variant="secondary" className="w-full gap-2" onClick={onOpenGroupChat}>
+              <Users className="h-4 w-4" />
+              Opret gruppechat
+            </Button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Customer Chat Dialog Component
+function CustomerChatDialog({
+  event,
+  parseNotes,
+  onClose
+}: {
+  event: BoosterEvent;
+  parseNotes: (e: BoosterEvent) => EventMeta;
+  onClose: () => void;
+}) {
+  const meta = parseNotes(event);
+  const [messages, setMessages] = useState<Array<{
+    id: string;
+    sender: 'booster' | 'customer';
+    text: string;
+    timestamp: Date;
+    imageUrl?: string;
+  }>>([
+    {
+      id: '1',
+      sender: 'customer',
+      text: `Hej! Jeg glæder mig til ${meta.service || 'bookingen'}. Er der noget jeg skal forberede?`,
+      timestamp: new Date(Date.now() - 3600000)
+    },
+    {
+      id: '2',
+      sender: 'booster',
+      text: 'Hej! Tak for din besked. Sørg gerne for ren hud uden makeup, så er vi klar til at starte.',
+      timestamp: new Date(Date.now() - 3000000)
+    }
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    
+    const message = {
+      id: Date.now().toString(),
+      sender: 'booster' as const,
+      text: newMessage.trim(),
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, message]);
+    setNewMessage('');
+    
+    // TODO: Send message to backend
+    console.log('Sending message to customer:', { eventId: event.id, message: newMessage });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileName = `${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('chat-images')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-images')
+        .getPublicUrl(fileName);
+
+      const message = {
+        id: Date.now().toString(),
+        sender: 'booster' as const,
+        text: '',
+        timestamp: new Date(),
+        imageUrl: publicUrl
+      };
+      
+      setMessages(prev => [...prev, message]);
+      toast.success('Billede sendt');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Kunne ikke uploade billede');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  return (
+    <>
+      <DialogHeader className="p-4 border-b">
+        <DialogTitle className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarFallback className="bg-primary/10 text-primary">
+              {meta.customer_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'KU'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium truncate">{meta.customer_name || 'Kunde'}</div>
+            <div className="text-xs text-muted-foreground truncate">{meta.service}</div>
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
+            {meta.customer_phone && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                <a href={`tel:${meta.customer_phone}`}><Phone className="h-4 w-4" /></a>
+              </Button>
+            )}
+            {meta.customer_email && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                <a href={`mailto:${meta.customer_email}`}><Mail className="h-4 w-4" /></a>
+              </Button>
+            )}
+          </div>
+        </DialogTitle>
+      </DialogHeader>
+      
+      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <div className="space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.sender === 'booster' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                  msg.sender === 'booster'
+                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    : 'bg-muted rounded-bl-md'
+                }`}
+              >
+                {msg.imageUrl && (
+                  <img 
+                    src={msg.imageUrl} 
+                    alt="Vedhæftet billede" 
+                    className="max-w-full rounded-lg mb-2 cursor-pointer"
+                    onClick={() => window.open(msg.imageUrl, '_blank')}
+                  />
+                )}
+                {msg.text && <p className="text-sm">{msg.text}</p>}
+                <p className={`text-xs mt-1 ${msg.sender === 'booster' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                  {format(msg.timestamp, "HH:mm", { locale: da })}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+      
+      <div className="p-4 border-t">
+        <div className="flex gap-2">
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            className="hidden" 
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            <ImagePlus className="h-4 w-4" />
           </Button>
-          <Button variant="outline" className="flex-1 gap-2" onClick={() => onOpenMaps(meta.address as string || '')}>
-            <Navigation className="h-4 w-4" />
-            Navigation
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Skriv en besked..."
+            className="flex-1"
+          />
+          <Button onClick={handleSendMessage} disabled={!newMessage.trim() || uploading}>
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>
