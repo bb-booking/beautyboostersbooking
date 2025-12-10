@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, TouchEvent } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,14 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { addDays, format, isEqual, startOfDay, startOfWeek } from "date-fns";
+import { addDays, format, isEqual, startOfDay, startOfWeek, isToday, isSameDay } from "date-fns";
 import { da } from "date-fns/locale";
-import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound, MessageCircle, ImagePlus, StickyNote, RefreshCw, Settings } from "lucide-react";
+import { 
+  Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, 
+  Trash2, X, Ban, CalendarX, Users, Edit, Calendar, 
+  ChevronLeft, ChevronRight, RefreshCw, Settings, MessageCircle,
+  Navigation, Copy, ExternalLink
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { BookingChatDialog } from "@/components/booking/BookingChatDialog";
-import { ImageUploadDialog } from "@/components/booking/ImageUploadDialog";
-import { AddServiceDialog } from "@/components/booking/AddServiceDialog";
 import { toast } from "sonner";
 
 interface BoosterEvent {
@@ -28,108 +31,50 @@ interface BoosterEvent {
   notes: string | null;
 }
 
-type View = "day" | "week" | "month";
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  type: 'privat' | 'virksomhed';
-  company?: string;
+interface EventMeta {
+  service?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
+  address?: string;
+  client_type?: string;
+  company_name?: string;
+  people_count?: number;
+  price?: number;
+  blocked?: boolean;
+  reason?: string;
 }
 
-type CreateForm = {
-  service: string;
-  duration: number;
-  customer_type: 'new' | 'existing';
-  customer_id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_email: string;
-  company_name: string;
-  cvr: string;
-  client_type: 'privat' | 'virksomhed';
-  address: string;
-  notes: string;
-  look_images: string[];
-};
+type View = "day" | "week";
 
-const DEFAULT_FORM: CreateForm = {
-  service: "",
-  duration: 60,
-  customer_type: 'new',
-  customer_id: '',
-  customer_name: "",
-  customer_phone: "",
-  customer_email: "",
-  company_name: "",
-  cvr: "",
-  client_type: 'privat',
-  address: "",
-  notes: "",
-  look_images: [],
+const parseNotes = (e: BoosterEvent): EventMeta => { 
+  try { return e.notes ? JSON.parse(e.notes) : {}; } 
+  catch { return {}; } 
 };
-
-const MOCK_CUSTOMERS: Customer[] = [
-  { id: '1', name: 'Sarah Jensen', email: 'sarah@email.dk', phone: '+45 12345678', type: 'privat' },
-  { id: '2', name: 'Marie Andersen', email: 'marie@email.dk', phone: '+45 87654321', type: 'privat' },
-  { id: '3', name: 'Copenhagen Events', email: 'kontakt@cphevents.dk', phone: '+45 33221100', type: 'virksomhed', company: 'Copenhagen Events ApS' },
-  { id: '4', name: 'DR Studios', email: 'booking@dr.dk', phone: '+45 11223344', type: 'virksomhed', company: 'Danmarks Radio' },
-];
 
 const MOCK_EVENTS: Omit<BoosterEvent, 'id'>[] = [
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', customer_email: 'sarah@email.dk', address: 'Vesterbrogade 45, København', client_type: 'privat', people_count: 3, price: 2499, team_boosters: [] }) },
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', customer_email: 'kontakt@cphevents.dk', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS', people_count: 8, price: 12500, team_boosters: ['Josephine O.', 'Katrine J.'] }) },
-  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', customer_email: 'marie@email.dk', address: 'Nørrebrogade 100, København', client_type: 'privat', people_count: 1, price: 899, team_boosters: [] }) },
-  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', customer_email: 'booking@dr.dk', address: 'DR Byen, Emil Holms Kanal 20, København', client_type: 'virksomhed', company_name: 'Danmarks Radio', people_count: 5, price: 8500, team_boosters: ['Fay'] }) },
+  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', customer_email: 'sarah@email.dk', address: 'Vesterbrogade 45, København', client_type: 'privat', people_count: 3, price: 2499 }) },
+  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', customer_email: 'kontakt@cphevents.dk', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS', people_count: 8, price: 12500 }) },
+  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', customer_email: 'marie@email.dk', address: 'Nørrebrogade 100, København', client_type: 'privat', people_count: 1, price: 899 }) },
+  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', customer_email: 'booking@dr.dk', address: 'DR Byen, Emil Holms Kanal 20', client_type: 'virksomhed', company_name: 'Danmarks Radio', people_count: 5, price: 8500 }) },
   { date: format(addDays(new Date(), 3), 'yyyy-MM-dd'), start_time: '07:00:00', end_time: '21:00:00', status: 'blocked', notes: JSON.stringify({ blocked: true, reason: 'Ferie' }) },
 ];
 
-const parseEventNotes = (e: BoosterEvent): Record<string, unknown> => {
-  try { return e.notes ? JSON.parse(e.notes) : {}; } catch { return {}; }
-};
-
-const getBlockedDates = (events: BoosterEvent[]): Set<string> => {
-  const blocked = new Set<string>();
-  events.forEach(e => {
-    if (e.status === 'blocked') {
-      const meta = parseEventNotes(e);
-      if (meta.blocked && e.start_time === '07:00:00' && e.end_time === '21:00:00') {
-        blocked.add(e.date);
-      }
-    }
-  });
-  return blocked;
-};
-
 export default function BoosterCalendar() {
   const navigate = useNavigate();
-  const [view, setView] = useState<View>("week");
+  const [view, setView] = useState<View>("day");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [events, setEvents] = useState<BoosterEvent[]>([]);
-  const [openSlot, setOpenSlot] = useState<{ day: Date; time: string } | null>(null);
-  const [form, setForm] = useState<CreateForm>(DEFAULT_FORM);
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<BoosterEvent | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<CreateForm>(DEFAULT_FORM);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [blockType, setBlockType] = useState<'time' | 'day'>('time');
   const [blockDate, setBlockDate] = useState<Date | null>(null);
-  const [blockStartTime, setBlockStartTime] = useState('09:00');
-  const [blockEndTime, setBlockEndTime] = useState('17:00');
   const [blockReason, setBlockReason] = useState('');
-  const [cvrLoading, setCvrLoading] = useState(false);
-  const [cvrError, setCvrError] = useState<string | null>(null);
-  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
-  const [releaseReason, setReleaseReason] = useState('');
-  const [releaseLoading, setReleaseLoading] = useState(false);
-  const [chatDialogOpen, setChatDialogOpen] = useState(false);
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
-  const [currentBookingImages, setCurrentBookingImages] = useState<string[]>([]);
-  const [currentBookingServices, setCurrentBookingServices] = useState<any[]>([]);
+  
+  // Swipe handling
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -147,578 +92,630 @@ export default function BoosterCalendar() {
   }, [userId, date, view]);
 
   const fetchEvents = async (uid: string, baseDate: Date, v: View) => {
-    const start = v === "day" ? startOfDay(baseDate) : v === "week" ? startOfWeek(baseDate, { weekStartsOn: 1 }) : new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
-    const end = v === "day" ? addDays(start, 1) : v === "week" ? addDays(start, 7) : new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
-    const { data, error } = await supabase.from("booster_availability").select("id,date,start_time,end_time,status,notes").eq("booster_id", uid).gte("date", format(start, "yyyy-MM-dd")).lt("date", format(end, "yyyy-MM-dd")).order("date").order("start_time");
+    const start = v === "day" ? startOfDay(baseDate) : startOfWeek(baseDate, { weekStartsOn: 1 });
+    const end = v === "day" ? addDays(start, 1) : addDays(start, 7);
+    
+    const { data, error } = await supabase
+      .from("booster_availability")
+      .select("id,date,start_time,end_time,status,notes")
+      .eq("booster_id", uid)
+      .gte("date", format(start, "yyyy-MM-dd"))
+      .lt("date", format(end, "yyyy-MM-dd"))
+      .order("date")
+      .order("start_time");
+      
     if (!error && data) {
       const mockWithIds = MOCK_EVENTS.map((e, i) => ({ ...e, id: `mock-${i}` }));
-      const allEvents = [...(data as BoosterEvent[]), ...mockWithIds.filter(me => me.date >= format(start, "yyyy-MM-dd") && me.date < format(end, "yyyy-MM-dd"))];
+      const allEvents = [...(data as BoosterEvent[]), ...mockWithIds.filter(me => 
+        me.date >= format(start, "yyyy-MM-dd") && me.date < format(end, "yyyy-MM-dd")
+      )];
       setEvents(allEvents);
     }
   };
 
-  const times = useMemo(() => {
-    const arr: string[] = [];
-    for (let h = 7; h <= 21; h++) {
-      arr.push(`${String(h).padStart(2, "0")}:00`);
-      if (h !== 21) arr.push(`${String(h).padStart(2, "0")}:30`);
-    }
-    return arr;
-  }, []);
+  const getDayEvents = (d: Date) => 
+    events
+      .filter((e) => e.date === format(d, "yyyy-MM-dd"))
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   const days = useMemo(() => {
     if (view === "day") return [date];
-    if (view === "week") {
-      const monday = startOfWeek(date, { weekStartsOn: 1 });
-      return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
-    }
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    return Array.from({ length: endOfMonth.getDate() }).map((_, i) => addDays(startOfMonth, i));
+    const monday = startOfWeek(date, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
   }, [date, view]);
 
-  const getDayEvents = (d: Date) => events.filter((e) => e.date === format(d, "yyyy-MM-dd"));
-  const timeToMinutes = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-  const minutesToTime = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}:00`;
-
-  const slotIsBooked = (d: Date, time: string) => {
-    const key = format(d, "yyyy-MM-dd");
-    const minutes = timeToMinutes(time + ":00");
-    return events.some((e) => e.date === key && minutes >= timeToMinutes(e.start_time) && minutes < timeToMinutes(e.end_time));
+  // Touch handlers for swipe navigation
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
   };
 
-  const hasOverlap = (d: Date, startTime: string, durationMin: number) => {
-    const sNew = timeToMinutes(startTime + ":00");
-    const eNew = sNew + durationMin;
-    return getDayEvents(d).some((e) => { const s = timeToMinutes(e.start_time); const en = timeToMinutes(e.end_time); return s < eNew && sNew < en; });
+  const handleTouchMove = (e: TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
   };
 
-  const handleSelectCustomer = (customerId: string) => {
-    const customer = MOCK_CUSTOMERS.find(c => c.id === customerId);
-    if (customer) setForm(f => ({ ...f, customer_id: customerId, customer_name: customer.name, customer_email: customer.email, customer_phone: customer.phone, client_type: customer.type, company_name: customer.company || '', cvr: '' }));
-  };
-
-  const handleCvrLookup = async (cvr: string) => {
-    setForm(f => ({ ...f, cvr }));
-    setCvrError(null);
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
     
-    // Only lookup if CVR is exactly 8 digits
-    if (!/^\d{8}$/.test(cvr)) {
-      if (cvr.length > 0 && cvr.length !== 8) {
-        setCvrError('CVR skal være 8 cifre');
-      }
-      return;
-    }
-    
-    setCvrLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-cvr', {
-        body: { cvr }
-      });
-      
-      if (error) {
-        setCvrError('Kunne ikke verificere CVR');
-        return;
-      }
-      
-      if (data.error) {
-        setCvrError(data.error);
-        return;
-      }
-      
-      // Auto-fill company info from CVR data
-      setForm(f => ({
-        ...f,
-        company_name: data.name || '',
-        address: data.address ? `${data.address}, ${data.zipcode} ${data.city}` : f.address,
-        customer_phone: data.phone || f.customer_phone,
-        customer_email: data.email || f.customer_email
-      }));
-    } catch (err) {
-      console.error('CVR lookup error:', err);
-      setCvrError('Fejl ved CVR opslag');
-    } finally {
-      setCvrLoading(false);
-    }
-  };
-
-  const handleReleaseJob = async (eventId: string, bookingId?: string) => {
-    if (!userId) return;
-    
-    setReleaseLoading(true);
-    try {
-      // If we have a real booking ID, use the edge function
-      if (bookingId && !bookingId.startsWith('mock-')) {
-        const { data, error } = await supabase.functions.invoke('release-job', {
-          body: { bookingId, boosterId: userId, reason: releaseReason }
-        });
-        
-        if (error) {
-          console.error('Error releasing job:', error);
-          alert('Kunne ikke frigive job. Prøv igen.');
-          return;
-        }
-        
-        alert(`Job frigivet! ${data?.notifiedBoosters || 0} boosters er blevet notificeret.`);
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // Swipe left -> next day/week
+        navigateDate(1);
       } else {
-        // For mock events, just remove from local state
-        setEvents(prev => prev.filter(e => e.id !== eventId));
-        alert('Job frigivet til andre boosters i området!');
+        // Swipe right -> previous day/week
+        navigateDate(-1);
       }
-      
-      // Refresh events
-      if (userId) await fetchEvents(userId, date, view);
-      setSelectedEvent(null);
-      setReleaseDialogOpen(false);
-      setReleaseReason('');
-    } catch (err) {
-      console.error('Release job error:', err);
-      alert('Der opstod en fejl. Prøv igen.');
-    } finally {
-      setReleaseLoading(false);
     }
   };
 
-  const createEvent = async () => {
-    if (!userId || !openSlot || !form.service.trim() || form.duration <= 0) return;
-    if (hasOverlap(openSlot.day, openSlot.time, form.duration)) { alert("Tiden overlapper en eksisterende booking."); return; }
-    const startMins = timeToMinutes(openSlot.time + ":00");
-    const { error } = await supabase.from("booster_availability").insert({ booster_id: userId, date: format(openSlot.day, "yyyy-MM-dd"), start_time: minutesToTime(startMins), end_time: minutesToTime(startMins + form.duration), status: "booked", notes: JSON.stringify({ service: form.service, duration_minutes: form.duration, customer_name: form.customer_name, customer_phone: form.customer_phone, customer_email: form.customer_email, address: form.address, client_type: form.client_type, company_name: form.company_name, notes: form.notes, look_images: form.look_images }) });
-    if (!error) { setOpenSlot(null); setForm(DEFAULT_FORM); await fetchEvents(userId, date, view); }
+  const navigateDate = (direction: number) => {
+    const amount = view === "day" ? direction : direction * 7;
+    setDate(addDays(date, amount));
   };
 
-  const deleteEvent = async (id: string) => {
-    if (id.startsWith('mock-')) { setEvents(prev => prev.filter(e => e.id !== id)); setSelectedEvent(null); return; }
-    await supabase.from("booster_availability").delete().eq("id", id);
-    if (userId) await fetchEvents(userId, date, view);
-    setSelectedEvent(null);
-  };
-
-  const parseNotes = (e: BoosterEvent) => { try { return e.notes ? JSON.parse(e.notes) : {}; } catch { return {}; } };
-  const blockedDates = useMemo(() => getBlockedDates(events), [events]);
-  const isDayBlocked = (d: Date) => blockedDates.has(format(d, 'yyyy-MM-dd'));
-
-  const blockTime = async () => {
+  const blockDay = async () => {
     if (!userId || !blockDate) return;
-    const startTime = blockType === 'day' ? '07:00:00' : `${blockStartTime}:00`;
-    const endTime = blockType === 'day' ? '21:00:00' : `${blockEndTime}:00`;
-    const { error } = await supabase.from("booster_availability").insert({ booster_id: userId, date: format(blockDate, "yyyy-MM-dd"), start_time: startTime, end_time: endTime, status: "blocked", notes: JSON.stringify({ blocked: true, reason: blockReason }) });
-    if (!error) { setBlockDialogOpen(false); setBlockReason(''); await fetchEvents(userId, date, view); }
-  };
-
-  const unblockDay = async (d: Date) => {
-    if (!userId) return;
-    const blockedEvent = events.find(e => e.date === format(d, 'yyyy-MM-dd') && e.status === 'blocked');
-    if (blockedEvent) {
-      if (blockedEvent.id.startsWith('mock-')) setEvents(prev => prev.filter(e => e.id !== blockedEvent.id));
-      else { await supabase.from("booster_availability").delete().eq("id", blockedEvent.id); await fetchEvents(userId, date, view); }
+    const { error } = await supabase.from("booster_availability").insert({
+      booster_id: userId,
+      date: format(blockDate, "yyyy-MM-dd"),
+      start_time: '07:00:00',
+      end_time: '21:00:00',
+      status: "blocked",
+      notes: JSON.stringify({ blocked: true, reason: blockReason })
+    });
+    if (!error) {
+      setBlockDialogOpen(false);
+      setBlockReason('');
+      await fetchEvents(userId, date, view);
+      toast.success("Dag blokeret");
     }
   };
 
-  const getEventSpan = (e: BoosterEvent) => Math.ceil((timeToMinutes(e.end_time) - timeToMinutes(e.start_time)) / 30);
-  const headerTitle = view === "day" ? format(date, "d. MMMM yyyy", { locale: da }) : view === "week" ? `${format(days[0], "dd/MM/yyyy")} – ${format(days[days.length - 1], "dd/MM/yyyy")}` : format(date, "MMMM yyyy", { locale: da });
-  const slotHeight = 28;
+  const openGoogleMaps = (address: string) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} kopieret`);
+  };
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="h-full flex flex-col">
       <Helmet><title>Min kalender – Beauty Boosters</title></Helmet>
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold">Min kalender</h1>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDate(addDays(date, view === "day" ? -1 : view === "week" ? -7 : -30))}>Forrige</Button>
-            <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>I dag</Button>
-            <Button variant="outline" size="sm" onClick={() => setDate(addDays(date, view === "day" ? 1 : view === "week" ? 7 : 30))}>Næste</Button>
-          </div>
-          <Select value={view} onValueChange={(v) => setView(v as View)}><SelectTrigger className="w-full sm:w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="day">Dag</SelectItem><SelectItem value="week">Uge</SelectItem><SelectItem value="month">Måned</SelectItem></SelectContent></Select>
+      
+      {/* Header */}
+      <div className="px-4 py-3 border-b bg-card sticky top-0 z-20">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold">Min kalender</h1>
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1"
+            variant="ghost" 
+            size="sm"
             onClick={() => navigate('/booster/settings')}
           >
-            <RefreshCw className="h-4 w-4" /> 
-            Synkroniser kalender
+            <RefreshCw className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Synk</span>
           </Button>
-          <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-            <DialogTrigger asChild><Button variant="outline" size="sm" className="gap-1"><Ban className="h-4 w-4" /> Bloker tid</Button></DialogTrigger>
-            <DialogContent className="max-w-sm">
-              <DialogHeader><DialogTitle>Bloker tid</DialogTitle></DialogHeader>
-              <div className="space-y-4">
-                <RadioGroup value={blockType} onValueChange={(v) => setBlockType(v as 'time' | 'day')} className="flex gap-4">
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="time" id="block-time" /><Label htmlFor="block-time">Tidsrum</Label></div>
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="day" id="block-day" /><Label htmlFor="block-day">Hele dagen</Label></div>
-                </RadioGroup>
-                <div><Label>Dato</Label><Input type="date" value={blockDate ? format(blockDate, 'yyyy-MM-dd') : ''} onChange={(e) => setBlockDate(e.target.value ? new Date(e.target.value) : null)} /></div>
-                {blockType === 'time' && (<div className="grid grid-cols-2 gap-3"><div><Label>Fra</Label><Select value={blockStartTime} onValueChange={setBlockStartTime}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{times.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div><div><Label>Til</Label><Select value={blockEndTime} onValueChange={setBlockEndTime}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{times.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div></div>)}
-                <div><Label>Årsag (valgfrit)</Label><Input value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="F.eks. Ferie..." /></div>
-                <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setBlockDialogOpen(false)}>Annuller</Button><Button onClick={blockTime} disabled={!blockDate}><Ban className="h-4 w-4 mr-1" /> Bloker</Button></div>
-              </div>
-            </DialogContent>
-          </Dialog>
+        </div>
+        
+        {/* Navigation */}
+        <div className="flex items-center justify-between gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigateDate(-1)}
+            className="h-9 w-9"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          
+          <div className="flex-1 text-center">
+            <button 
+              onClick={() => setDate(startOfDay(new Date()))}
+              className="font-semibold text-lg hover:text-primary transition-colors"
+            >
+              {view === "day" 
+                ? format(date, "EEE d. MMM", { locale: da })
+                : `${format(days[0], "d. MMM", { locale: da })} - ${format(days[6], "d. MMM", { locale: da })}`
+              }
+            </button>
+            {isToday(date) && view === "day" && (
+              <Badge variant="secondary" className="ml-2 text-xs">I dag</Badge>
+            )}
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigateDate(1)}
+            className="h-9 w-9"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex gap-1 mt-3">
+          <Button
+            variant={view === "day" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setView("day")}
+            className="flex-1"
+          >
+            Dag
+          </Button>
+          <Button
+            variant={view === "week" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setView("week")}
+            className="flex-1"
+          >
+            Uge
+          </Button>
         </div>
       </div>
 
-      <Card className="p-2 overflow-x-auto">
-        <div className="text-sm text-muted-foreground mb-2 font-medium">{headerTitle}</div>
-        <div className="grid min-w-[600px]" style={{ gridTemplateColumns: `50px repeat(${days.length}, minmax(${view === 'day' ? '200px' : view === 'week' ? '100px' : '40px'}, 1fr))` }}>
-          <div className="sticky left-0 bg-card z-10" />
-          {days.map((d) => {
-            const dayBlocked = isDayBlocked(d);
-            return (
-              <div key={format(d, "yyyy-MM-dd")} className={`px-1 py-1 border-b font-medium text-[10px] md:text-xs text-center relative group ${isEqual(startOfDay(d), startOfDay(new Date())) ? 'bg-primary/10 text-primary' : ''} ${dayBlocked ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
-                <div className="flex items-center justify-center gap-1"><span>{format(d, "EEE", { locale: da })}</span>{dayBlocked && <CalendarX className="h-3 w-3 text-destructive" />}</div>
-                <div className="font-bold">{format(d, "d/M")}</div>
-                {!dayBlocked ? (<button className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded bg-destructive/10 hover:bg-destructive/20" onClick={() => { setBlockDate(d); setBlockType('day'); setBlockDialogOpen(true); }} title="Bloker hele dagen"><Ban className="h-3 w-3 text-destructive" /></button>) : (<button className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded bg-green-100 hover:bg-green-200 dark:bg-green-900/30" onClick={() => unblockDay(d)} title="Fjern blokering"><X className="h-3 w-3 text-green-600" /></button>)}
-              </div>
-            );
-          })}
+      {/* Calendar Content */}
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-auto"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {view === "day" ? (
+          <DayView 
+            date={date}
+            events={getDayEvents(date)}
+            parseNotes={parseNotes}
+            onSelectEvent={setSelectedEvent}
+            onBlockDay={() => { setBlockDate(date); setBlockDialogOpen(true); }}
+          />
+        ) : (
+          <WeekView
+            days={days}
+            events={events}
+            parseNotes={parseNotes}
+            onSelectDay={(d) => { setDate(d); setView("day"); }}
+            onSelectEvent={setSelectedEvent}
+          />
+        )}
+      </div>
 
-          {times.map((t) => (
-            <div key={`row-${t}`} className="contents">
-              <div className="sticky left-0 bg-card z-10 border-t px-1 text-[9px] text-muted-foreground flex items-center justify-end pr-2" style={{ height: slotHeight }}>{t}</div>
-              {days.map((d) => {
-                const dayKey = format(d, "yyyy-MM-dd");
-                const booked = slotIsBooked(d, t);
-                const startingHere = getDayEvents(d).filter((e) => e.start_time.startsWith(t));
-                return (
-                  <div key={`${dayKey}-${t}`} className={`border-t border-l group relative ${booked && startingHere.length === 0 ? "bg-primary/5" : ""}`} style={{ height: slotHeight }}>
-                    {!booked && (
-                      <Dialog open={!!(openSlot && isEqual(openSlot.day, d) && openSlot.time === t)} onOpenChange={(o) => { if (!o) setOpenSlot(null); }}>
-                        <DialogTrigger asChild><button className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-primary/5 hover:bg-primary/10" onClick={() => setOpenSlot({ day: d, time: t })}><Plus className="h-3 w-3 text-primary" /></button></DialogTrigger>
-                        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                          <DialogHeader><DialogTitle>Ny booking – {format(d, "EEEE d. MMMM", { locale: da })} kl. {t}</DialogTitle></DialogHeader>
-                          <div className="space-y-4">
-                            <RadioGroup value={form.customer_type} onValueChange={(v) => setForm(f => ({ ...f, customer_type: v as 'new' | 'existing', customer_id: '' }))} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="new" id="new" /><Label htmlFor="new">Ny kunde</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="existing" id="existing" /><Label htmlFor="existing">Eksisterende kunde</Label></div></RadioGroup>
-                            {form.customer_type === 'existing' && (<Select value={form.customer_id} onValueChange={handleSelectCustomer}><SelectTrigger><SelectValue placeholder="Vælg kunde..." /></SelectTrigger><SelectContent>{MOCK_CUSTOMERS.map(c => <SelectItem key={c.id} value={c.id}><div className="flex items-center gap-2">{c.type === 'virksomhed' ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}{c.name}</div></SelectItem>)}</SelectContent></Select>)}
-                            <RadioGroup value={form.client_type} onValueChange={(v) => setForm(f => ({ ...f, client_type: v as 'privat' | 'virksomhed', cvr: '', company_name: '' }))} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="privat" id="privat" /><Label htmlFor="privat"><User className="h-3 w-3 inline mr-1" />Privat</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="virksomhed" id="virksomhed" /><Label htmlFor="virksomhed"><Building2 className="h-3 w-3 inline mr-1" />Virksomhed</Label></div></RadioGroup>
-                            {form.client_type === 'virksomhed' && (
-                              <div className="space-y-2">
-                                <div className="relative">
-                                  <Input 
-                                    value={form.cvr} 
-                                    onChange={(e) => handleCvrLookup(e.target.value.replace(/\D/g, '').slice(0, 8))} 
-                                    placeholder="CVR-nummer (8 cifre)" 
-                                    maxLength={8}
-                                    className={cvrError ? 'border-destructive' : ''}
-                                  />
-                                  {cvrLoading && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                      <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                    </div>
-                                  )}
-                                </div>
-                                {cvrError && <p className="text-xs text-destructive">{cvrError}</p>}
-                                <Input 
-                                  value={form.company_name} 
-                                  onChange={(e) => setForm(f => ({ ...f, company_name: e.target.value }))} 
-                                  placeholder="Virksomhedsnavn" 
-                                  className={form.company_name && !cvrLoading ? 'bg-green-50 dark:bg-green-900/20 border-green-300' : ''}
-                                />
-                              </div>
-                            )}
-                            <div className="grid grid-cols-2 gap-3"><Input value={form.customer_name} onChange={(e) => setForm(f => ({ ...f, customer_name: e.target.value }))} placeholder="Navn" /><Input value={form.customer_phone} onChange={(e) => setForm(f => ({ ...f, customer_phone: e.target.value }))} placeholder="Telefon" /></div>
-                            <Input type="email" value={form.customer_email} onChange={(e) => setForm(f => ({ ...f, customer_email: e.target.value }))} placeholder="Email" />
-                            <div className="grid grid-cols-2 gap-3"><Select value={form.service} onValueChange={(v) => setForm(f => ({ ...f, service: v }))}><SelectTrigger><SelectValue placeholder="Vælg service..." /></SelectTrigger><SelectContent><SelectItem value="Makeup Styling">Makeup Styling</SelectItem><SelectItem value="Hår Styling">Hår Styling</SelectItem><SelectItem value="Bryllup makeup">Bryllup makeup</SelectItem><SelectItem value="Event makeup">Event makeup</SelectItem><SelectItem value="SFX Makeup">SFX Makeup</SelectItem><SelectItem value="TV-produktion">TV-produktion</SelectItem></SelectContent></Select><Select value={String(form.duration)} onValueChange={(v) => setForm(f => ({ ...f, duration: Number(v) }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="60">1 time</SelectItem><SelectItem value="120">2 timer</SelectItem><SelectItem value="180">3 timer</SelectItem><SelectItem value="240">4 timer</SelectItem></SelectContent></Select></div>
-                            <Input value={form.address} onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Adresse" />
-                            <div className="border-2 border-dashed rounded-lg p-4 text-center text-sm text-muted-foreground"><Image className="h-6 w-6 mx-auto mb-2" /><p>Træk billeder hertil</p></div>
-                            <Textarea value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Noter..." rows={2} />
-                            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOpenSlot(null)}>Annuller</Button><Button onClick={createEvent} disabled={!form.service.trim()}>Opret</Button></div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    {startingHere.map((e) => {
-                      const meta = parseNotes(e);
-                      const height = getEventSpan(e) * slotHeight - 2;
-                      return (
-                        <div key={e.id} className="absolute left-0 right-0 px-0.5 cursor-pointer z-10" style={{ height, top: 0 }} onClick={() => setSelectedEvent(e)}>
-                          <div className={`h-full w-full rounded text-[9px] p-1 flex flex-col overflow-hidden border ${e.status === 'blocked' ? 'bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-700' : meta.client_type === 'virksomhed' ? 'bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700' : 'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700'}`}>
-                            <div className="font-semibold truncate">{e.status === 'blocked' ? (meta.reason || 'Blokeret') : (meta.service || "Booking")}</div>
-                            {e.status !== 'blocked' && <div className="text-muted-foreground truncate">{meta.customer_name}</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Dialog open={!!selectedEvent} onOpenChange={(o) => { if (!o) { setSelectedEvent(null); setIsEditing(false); } }}>
-        <DialogContent className="max-w-lg">
-          {selectedEvent && (() => {
-            const meta = parseNotes(selectedEvent);
-            const teamBoosters = Array.isArray(meta.team_boosters) ? meta.team_boosters : [];
-            const peopleCount = meta.people_count || 1;
-            const price = meta.price || 0;
-            const durationMins = (timeToMinutes(selectedEvent.end_time) - timeToMinutes(selectedEvent.start_time));
-            const durationHours = Math.floor(durationMins / 60);
-            const durationMinsRest = durationMins % 60;
-            const durationStr = durationMinsRest > 0 ? `${durationHours}t ${durationMinsRest}m` : `${durationHours}t`;
-
-            if (isEditing) {
-              return (
-                <>
-                  <DialogHeader><DialogTitle>Rediger booking</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label className="text-foreground">Service</Label><Select value={editForm.service} onValueChange={(v) => setEditForm(f => ({ ...f, service: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Makeup Styling">Makeup Styling</SelectItem><SelectItem value="Hår Styling">Hår Styling</SelectItem><SelectItem value="Bryllup makeup">Bryllup makeup</SelectItem><SelectItem value="Event makeup">Event makeup</SelectItem><SelectItem value="SFX Makeup">SFX Makeup</SelectItem><SelectItem value="TV-produktion">TV-produktion</SelectItem></SelectContent></Select></div>
-                      <div><Label className="text-foreground">Varighed</Label><Select value={String(editForm.duration)} onValueChange={(v) => setEditForm(f => ({ ...f, duration: Number(v) }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="60">1 time</SelectItem><SelectItem value="120">2 timer</SelectItem><SelectItem value="180">3 timer</SelectItem><SelectItem value="240">4 timer</SelectItem></SelectContent></Select></div>
-                    </div>
-                    <div><Label className="text-foreground">Kunde</Label><Input value={editForm.customer_name} onChange={(e) => setEditForm(f => ({ ...f, customer_name: e.target.value }))} /></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label className="text-foreground">Telefon</Label><Input value={editForm.customer_phone} onChange={(e) => setEditForm(f => ({ ...f, customer_phone: e.target.value }))} /></div>
-                      <div><Label className="text-foreground">Email</Label><Input value={editForm.customer_email} onChange={(e) => setEditForm(f => ({ ...f, customer_email: e.target.value }))} /></div>
-                    </div>
-                    <div><Label className="text-foreground">Adresse</Label><Input value={editForm.address} onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
-                    <div><Label className="text-foreground">Noter</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
-                    <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setIsEditing(false)}>Annuller</Button><Button onClick={() => { setIsEditing(false); }}>Gem ændringer</Button></div>
-                  </div>
-                </>
-              );
-            }
-
-            return (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 text-foreground">
-                    {meta.service || "Booking"}
-                    <Badge variant={meta.client_type === 'virksomhed' ? 'secondary' : 'outline'} className="text-foreground">{meta.client_type === 'virksomhed' ? 'Virksomhed' : 'Privat'}</Badge>
-                    {teamBoosters.length > 0 && <Badge variant="secondary" className="gap-1 text-foreground"><UsersRound className="h-3 w-3" />Team</Badge>}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-1 text-foreground">
-                  <div className="grid grid-cols-[100px_1fr] gap-y-2 text-sm py-2">
-                    <span className="font-medium text-foreground">Tidspunkt:</span>
-                    <span className="text-foreground">{format(new Date(selectedEvent.date), "EEEE d. MMMM", { locale: da })}, {selectedEvent.start_time.slice(0,5)}–{selectedEvent.end_time.slice(0,5)}</span>
-                    
-                    <span className="font-medium text-foreground">Varighed:</span>
-                    <span className="text-foreground">{durationStr}</span>
-                    
-                    <span className="font-medium text-foreground">Kunde:</span>
-                    <span className="text-foreground">{meta.customer_name || "Ikke angivet"} {meta.customer_phone && `– ${meta.customer_phone}`}</span>
-                    
-                    {meta.company_name && (
-                      <>
-                        <span className="font-medium text-foreground">Virksomhed:</span>
-                        <span className="text-foreground">{meta.company_name}</span>
-                      </>
-                    )}
-                    
-                    <span className="font-medium text-foreground">Adresse:</span>
-                    <div className="flex items-center gap-2">
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`;
-                          window.open(url, '_blank', 'noopener,noreferrer');
-                        }}
-                        className="text-foreground underline hover:text-primary text-left"
-                      >
-                        {meta.address || '-'}
-                      </button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 px-2"
-                        onClick={() => {
-                          navigator.clipboard.writeText(meta.address || '');
-                          toast.success("Adresse kopieret til udklipsholderen");
-                        }}
-                      >
-                        Kopier
-                      </Button>
-                    </div>
-                    
-                    <span className="font-medium text-foreground">Service:</span>
-                    <span className="text-foreground">{meta.service} ({peopleCount} {peopleCount === 1 ? 'person' : 'personer'})</span>
-                    
-                    <span className="font-medium text-foreground">Pris:</span>
-                    <span className="text-foreground font-semibold">{price.toLocaleString('da-DK')} kr.</span>
-                    
-                    {teamBoosters.length > 0 && (
-                      <>
-                        <span className="font-medium text-foreground">Team:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {teamBoosters.map((b: string, i: number) => (
-                            <Badge key={i} variant="outline" className="text-xs text-foreground">{b}</Badge>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Look billeder */}
-                  {meta.look_images && Array.isArray(meta.look_images) && meta.look_images.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="font-medium text-sm text-foreground">Look billeder</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {meta.look_images.map((img: string, i: number) => (
-                          <div key={i} className="w-16 h-16 rounded border overflow-hidden">
-                            <img src={img} alt={`Look ${i + 1}`} className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Noter sektion */}
-                  <div className="bg-muted/50 rounded-lg p-3 text-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium text-foreground flex items-center gap-1"><StickyNote className="h-4 w-4" /> Noter</p>
-                      <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => {
-                        setEditForm(f => ({ ...f, notes: meta.notes || '' }));
-                        setIsEditing(true);
-                      }}><Edit className="h-3 w-3" /> Tilføj/rediger</Button>
-                    </div>
-                    <p className="text-muted-foreground">{meta.notes || 'Ingen noter tilføjet'}</p>
-                  </div>
-
-                  {/* Hurtigknapper */}
-                  <div className="flex flex-wrap gap-2 pt-3">
-                    <Button variant="default" size="sm" className="gap-1" onClick={() => setChatDialogOpen(true)}>
-                      <MessageCircle className="h-4 w-4" /> Chat med kunde
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => {
-                      setCurrentBookingImages(meta.look_images || []);
-                      setImageDialogOpen(true);
-                    }}>
-                      <ImagePlus className="h-4 w-4" /> Tilføj billede
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => {
-                      setCurrentBookingServices([{ 
-                        id: '1', 
-                        name: meta.service || '', 
-                        price: price, 
-                        peopleCount: peopleCount 
-                      }]);
-                      setServiceDialogOpen(true);
-                    }}>
-                      <Tag className="h-4 w-4" /> Tilføj service
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-4 border-t">
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { 
-                      setEditForm({
-                        service: meta.service || '',
-                        duration: durationMins,
-                        customer_type: 'existing',
-                        customer_id: '',
-                        customer_name: meta.customer_name || '',
-                        customer_phone: meta.customer_phone || '',
-                        customer_email: meta.customer_email || '',
-                        company_name: meta.company_name || '',
-                        cvr: meta.cvr || '',
-                        client_type: meta.client_type || 'privat',
-                        address: meta.address || '',
-                        notes: meta.notes || '',
-                        look_images: [],
-                      });
-                      setIsEditing(true);
-                    }}>
-                      <Edit className="h-4 w-4" /> Rediger
-                    </Button>
-                    <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50">
-                          <Share2 className="h-4 w-4" /> Frigiv job
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-sm">
-                        <DialogHeader>
-                          <DialogTitle>Frigiv job</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            Jobbet vil blive sendt ud til andre boosters i området, og admin vil blive notificeret.
-                          </p>
-                          <div>
-                            <Label>Årsag til frigivelse (valgfrit)</Label>
-                            <Textarea 
-                              value={releaseReason} 
-                              onChange={(e) => setReleaseReason(e.target.value)} 
-                              placeholder="F.eks. sygdom, dobbeltbooking..."
-                              rows={2}
-                            />
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setReleaseDialogOpen(false)}>
-                              Annuller
-                            </Button>
-                            <Button 
-                              variant="default" 
-                              className="bg-amber-500 hover:bg-amber-600"
-                              onClick={() => handleReleaseJob(selectedEvent.id, meta.booking_id)}
-                              disabled={releaseLoading}
-                            >
-                              {releaseLoading ? (
-                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              ) : (
-                                <Share2 className="h-4 w-4 mr-1" />
-                              )}
-                              Frigiv job
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    <Button variant="destructive" size="sm" className="gap-1" onClick={() => deleteEvent(selectedEvent.id)}>
-                      <Trash2 className="h-4 w-4" /> Slet
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedEvent(null)}>Luk</Button>
-                  </div>
-                </div>
-              </>
-            );
-          })()}
+      {/* Event Detail Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={(o) => !o && setSelectedEvent(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {selectedEvent && <EventDetail 
+            event={selectedEvent}
+            parseNotes={parseNotes}
+            onOpenMaps={openGoogleMaps}
+            onCopy={copyToClipboard}
+            onClose={() => setSelectedEvent(null)}
+          />}
         </DialogContent>
       </Dialog>
 
-      {/* Chat Dialog */}
-      {selectedEvent && (() => {
-        const meta = parseNotes(selectedEvent);
-        return (
-          <BookingChatDialog
-            open={chatDialogOpen}
-            onOpenChange={setChatDialogOpen}
-            customerName={meta.customer_name || 'Kunde'}
-            customerEmail={meta.customer_email}
-            customerPhone={meta.customer_phone}
-            bookingId={selectedEvent.id}
-            service={meta.service}
-          />
-        );
-      })()}
-
-      {/* Image Upload Dialog */}
-      <ImageUploadDialog
-        open={imageDialogOpen}
-        onOpenChange={setImageDialogOpen}
-        existingImages={currentBookingImages}
-        onImagesChange={(images) => {
-          setCurrentBookingImages(images);
-          // TODO: Save images to booking
-          toast.success('Billeder opdateret');
-        }}
-        bookingId={selectedEvent?.id}
-      />
-
-      {/* Add Service Dialog */}
-      <AddServiceDialog
-        open={serviceDialogOpen}
-        onOpenChange={setServiceDialogOpen}
-        existingServices={currentBookingServices}
-        onServicesChange={(services) => {
-          setCurrentBookingServices(services);
-          // TODO: Update booking with new services
-          toast.success('Services opdateret');
-        }}
-      />
+      {/* Block Day Dialog */}
+      <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Bloker dag</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {blockDate && format(blockDate, "EEEE d. MMMM", { locale: da })}
+            </p>
+            <div>
+              <Label>Årsag (valgfrit)</Label>
+              <Input 
+                value={blockReason} 
+                onChange={(e) => setBlockReason(e.target.value)} 
+                placeholder="F.eks. Ferie, Syg..." 
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setBlockDialogOpen(false)} className="flex-1">
+                Annuller
+              </Button>
+              <Button onClick={blockDay} className="flex-1">
+                <Ban className="h-4 w-4 mr-1" /> Bloker
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+// Day View Component - Agenda Style
+function DayView({ 
+  date, 
+  events, 
+  parseNotes,
+  onSelectEvent,
+  onBlockDay
+}: { 
+  date: Date;
+  events: BoosterEvent[];
+  parseNotes: (e: BoosterEvent) => EventMeta;
+  onSelectEvent: (e: BoosterEvent) => void;
+  onBlockDay: () => void;
+}) {
+  const bookedEvents = events.filter(e => e.status === 'booked');
+  const blockedEvents = events.filter(e => e.status === 'blocked');
+  const isDayBlocked = blockedEvents.some(e => e.start_time === '07:00:00' && e.end_time === '21:00:00');
+
+  if (isDayBlocked) {
+    const blockMeta = parseNotes(blockedEvents[0]);
+    return (
+      <div className="p-4 flex flex-col items-center justify-center h-full min-h-[300px]">
+        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+          <CalendarX className="h-8 w-8 text-destructive" />
+        </div>
+        <h3 className="font-semibold text-lg mb-1">Dag blokeret</h3>
+        <p className="text-muted-foreground text-center">
+          {blockMeta.reason || 'Ingen tilgængelige tider'}
+        </p>
+      </div>
+    );
+  }
+
+  if (bookedEvents.length === 0) {
+    return (
+      <div className="p-4 flex flex-col items-center justify-center h-full min-h-[300px]">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Calendar className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold text-lg mb-1">Ingen bookinger</h3>
+        <p className="text-muted-foreground text-center mb-4">
+          Du har ingen bookinger denne dag
+        </p>
+        <Button variant="outline" onClick={onBlockDay}>
+          <Ban className="h-4 w-4 mr-2" />
+          Bloker dag
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-3">
+      {bookedEvents.map((event) => {
+        const meta = parseNotes(event);
+        const isVirksomhed = meta.client_type === 'virksomhed';
+        
+        return (
+          <Card 
+            key={event.id}
+            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
+            onClick={() => onSelectEvent(event)}
+          >
+            <div className={`h-1.5 ${isVirksomhed ? 'bg-blue-500' : 'bg-amber-500'}`} />
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold">{event.start_time.slice(0, 5)}</span>
+                    <span className="text-muted-foreground">-</span>
+                    <span className="text-muted-foreground">{event.end_time.slice(0, 5)}</span>
+                  </div>
+                  <h3 className="font-medium text-lg truncate">{meta.service || 'Booking'}</h3>
+                  <p className="text-muted-foreground truncate">{meta.customer_name}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <Badge variant={isVirksomhed ? "default" : "secondary"} className="mb-1">
+                    {isVirksomhed ? 'B2B' : 'Privat'}
+                  </Badge>
+                  <p className="font-semibold text-primary">
+                    {(meta.price || 0).toLocaleString('da-DK')} kr
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{meta.address || 'Ingen adresse'}</span>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+      
+      <Button variant="outline" onClick={onBlockDay} className="w-full mt-4">
+        <Ban className="h-4 w-4 mr-2" />
+        Bloker resten af dagen
+      </Button>
+    </div>
+  );
+}
+
+// Week View Component - Mini Calendar with Events
+function WeekView({
+  days,
+  events,
+  parseNotes,
+  onSelectDay,
+  onSelectEvent
+}: {
+  days: Date[];
+  events: BoosterEvent[];
+  parseNotes: (e: BoosterEvent) => EventMeta;
+  onSelectDay: (d: Date) => void;
+  onSelectEvent: (e: BoosterEvent) => void;
+}) {
+  const getDayEvents = (d: Date) => 
+    events
+      .filter((e) => e.date === format(d, "yyyy-MM-dd"))
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  return (
+    <div className="p-4 space-y-2">
+      {days.map((day) => {
+        const dayEvents = getDayEvents(day);
+        const bookedEvents = dayEvents.filter(e => e.status === 'booked');
+        const isDayBlocked = dayEvents.some(e => e.status === 'blocked' && e.start_time === '07:00:00');
+        const today = isToday(day);
+        
+        return (
+          <Card 
+            key={format(day, 'yyyy-MM-dd')}
+            className={`overflow-hidden ${today ? 'ring-2 ring-primary' : ''}`}
+          >
+            {/* Day Header */}
+            <button 
+              className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+              onClick={() => onSelectDay(day)}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                  today ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                }`}>
+                  {format(day, 'd')}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">{format(day, 'EEEE', { locale: da })}</p>
+                  <p className="text-sm text-muted-foreground">{format(day, 'd. MMMM', { locale: da })}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isDayBlocked ? (
+                  <Badge variant="destructive">Blokeret</Badge>
+                ) : bookedEvents.length > 0 ? (
+                  <Badge>{bookedEvents.length} booking{bookedEvents.length > 1 ? 's' : ''}</Badge>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Ledig</span>
+                )}
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </button>
+            
+            {/* Events Preview */}
+            {bookedEvents.length > 0 && (
+              <div className="px-3 pb-3 space-y-2">
+                {bookedEvents.slice(0, 2).map((event) => {
+                  const meta = parseNotes(event);
+                  return (
+                    <button
+                      key={event.id}
+                      className="w-full p-2 rounded-lg bg-muted/50 text-left hover:bg-muted transition-colors flex items-center gap-3"
+                      onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
+                    >
+                      <div className={`w-1 h-10 rounded-full ${meta.client_type === 'virksomhed' ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="h-3 w-3" />
+                          <span>{event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}</span>
+                        </div>
+                        <p className="font-medium truncate">{meta.service || 'Booking'}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+                {bookedEvents.length > 2 && (
+                  <button 
+                    className="text-sm text-primary hover:underline pl-4"
+                    onClick={() => onSelectDay(day)}
+                  >
+                    +{bookedEvents.length - 2} flere bookinger
+                  </button>
+                )}
+              </div>
+            )}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// Event Detail Component
+function EventDetail({
+  event,
+  parseNotes,
+  onOpenMaps,
+  onCopy,
+  onClose
+}: {
+  event: BoosterEvent;
+  parseNotes: (e: BoosterEvent) => EventMeta;
+  onOpenMaps: (address: string) => void;
+  onCopy: (text: string, label: string) => void;
+  onClose: () => void;
+}) {
+  const meta = parseNotes(event);
+  const isVirksomhed = meta.client_type === 'virksomhed';
+  const durationMins = (() => {
+    const [sh, sm] = (event.start_time || '00:00:00').split(':').map(Number);
+    const [eh, em] = (event.end_time || '00:00:00').split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  })();
+  const hours = Math.floor(durationMins / 60);
+  const mins = durationMins % 60;
+  const durationStr = mins > 0 ? `${hours}t ${mins}m` : `${hours} timer`;
+
+  if (event.status === 'blocked') {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarX className="h-5 w-5 text-destructive" />
+            Blokeret
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-muted-foreground">
+            {meta.reason || 'Ingen årsag angivet'}
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {format(new Date(event.date), "EEEE d. MMMM yyyy", { locale: da })}
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <DialogTitle className="text-xl">{meta.service || 'Booking'}</DialogTitle>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={isVirksomhed ? "default" : "secondary"}>
+                {isVirksomhed ? 'Virksomhed' : 'Privat'}
+              </Badge>
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-primary">
+            {(meta.price || 0).toLocaleString('da-DK')} kr
+          </p>
+        </div>
+      </DialogHeader>
+
+      <div className="space-y-4 py-2">
+        {/* Time & Date */}
+        <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+          <Clock className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="font-medium">
+              {event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {format(new Date(event.date), "EEEE d. MMMM", { locale: da })} • {durationStr}
+            </p>
+          </div>
+        </div>
+
+        {/* Customer */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Kunde</h4>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>{meta.customer_name || 'Ikke angivet'}</span>
+              </div>
+            </div>
+            
+            {meta.company_name && (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span>{meta.company_name}</span>
+              </div>
+            )}
+            
+            {meta.customer_phone && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <a href={`tel:${meta.customer_phone}`} className="hover:underline">
+                    {meta.customer_phone}
+                  </a>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8"
+                  onClick={() => onCopy(meta.customer_phone as string, 'Telefon')}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            
+            {meta.customer_email && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <a href={`mailto:${meta.customer_email}`} className="hover:underline truncate">
+                    {meta.customer_email}
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Address */}
+        {meta.address && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Lokation</h4>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2 min-w-0 flex-1">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <span className="break-words">{meta.address}</span>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8"
+                  onClick={() => onCopy(meta.address as string, 'Adresse')}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8"
+                  onClick={() => onOpenMaps(meta.address as string)}
+                >
+                  <Navigation className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Service Details */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Detaljer</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Service</p>
+              <p className="font-medium">{meta.service || 'Ikke angivet'}</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Personer</p>
+              <p className="font-medium">{meta.people_count || 1}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2">
+          <Button variant="outline" className="flex-1 gap-2">
+            <MessageCircle className="h-4 w-4" />
+            Besked
+          </Button>
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => onOpenMaps(meta.address as string || '')}>
+            <Navigation className="h-4 w-4" />
+            Navigation
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }
