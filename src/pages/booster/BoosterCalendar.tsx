@@ -510,16 +510,29 @@ export default function BoosterCalendar() {
                     )}
                     
                     <span className="font-medium text-foreground">Adresse:</span>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`;
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      }}
-                      className="text-foreground underline hover:text-primary text-left"
-                    >
-                      {meta.address || '-'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`;
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="text-foreground underline hover:text-primary text-left"
+                      >
+                        {meta.address || '-'}
+                      </button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 px-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(meta.address || '');
+                          toast.success("Adresse kopieret til udklipsholderen");
+                        }}
+                      >
+                        Kopier
+                      </Button>
+                    </div>
                     
                     <span className="font-medium text-foreground">Service:</span>
                     <span className="text-foreground">{meta.service} ({peopleCount} {peopleCount === 1 ? 'person' : 'personer'})</span>
