@@ -47,15 +47,11 @@ const skillOptions = [
   "Events", "Makeup Kursus", "Spraytan"
 ];
 
-const transportOptions = [
-  "Cykel", "Offentlig transport", "Bil", "Flere forskellige"
-];
-
 const BoosterSignup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 7;
+  const totalSteps = 6;
   
   const [formData, setFormData] = useState<FormData>({
     skills: [],
@@ -119,56 +115,63 @@ const BoosterSignup = () => {
     setIsSubmitting(true);
     
     try {
+      // First create the booster application WITHOUT requiring auth
+      const { error: appError } = await supabase
+        .from('booster_applications')
+        .insert([{
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          skills: formData.skills,
+          business_type: formData.businessType,
+          cvr_number: formData.cvrNumber || null,
+          cpr_number: formData.cprNumber || null,
+          address: formData.address,
+          city: formData.city,
+          latitude: formData.latitude || null,
+          longitude: formData.longitude || null,
+          work_radius: formData.workRadius,
+          primary_transport: null,
+          education: formData.education as any,
+          years_experience: formData.yearsExperience,
+          portfolio_links: formData.portfolioLinks,
+          status: 'pending'
+        }]);
+
+      if (appError) {
+        console.error('Error creating booster application:', appError);
+        throw new Error('Kunne ikke oprette ansøgning: ' + appError.message);
+      }
+
+      // Then create the auth user
       const redirectUrl = `${window.location.origin}/booster/login`;
-      const { data: authData, error: signupError } = await supabase.auth.signUp({
+      const { error: signupError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: { emailRedirectTo: redirectUrl }
       });
-      if (signupError) throw signupError;
-
-      // Create booster application (pending admin approval)
-      if (authData.user) {
-        const { error: appError } = await supabase
-          .from('booster_applications')
-          .insert([{
-            user_id: authData.user.id,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            skills: formData.skills,
-            business_type: formData.businessType,
-            cvr_number: formData.cvrNumber,
-            cpr_number: formData.cprNumber,
-            address: formData.address,
-            city: formData.city,
-            latitude: formData.latitude || null,
-            longitude: formData.longitude || null,
-            work_radius: formData.workRadius,
-            primary_transport: formData.primaryTransport,
-            education: formData.education as any,
-            years_experience: formData.yearsExperience,
-            portfolio_links: formData.portfolioLinks,
-            status: 'pending'
-          }]);
-
-        if (appError) {
-          console.error('Error creating booster application:', appError);
-          throw new Error('Kunne ikke oprette ansøgning');
-        }
+      
+      if (signupError) {
+        console.error('Auth signup error:', signupError);
+        // Application was created, so still show success but mention email issue
+        toast({
+          title: "Ansøgning sendt!",
+          description: "Din ansøgning er modtaget. Der kan være et problem med e-mailbekræftelse, kontakt os hvis du ikke modtager en e-mail."
+        });
+      } else {
+        toast({
+          title: "Ansøgning sendt!",
+          description: "Tjek din e-mail for at bekræfte din konto. Vi gennemgår din ansøgning hurtigst muligt."
+        });
       }
-
-      toast({
-        title: "Ansøgning sendt!",
-        description: "Tjek din e-mail for at bekræfte din konto."
-      });
       
       // Wait a bit before navigating
       setTimeout(() => {
-        navigate("/booster/login");
-      }, 1500);
+        navigate("/");
+      }, 2000);
     } catch (e: any) {
       setIsSubmitting(false);
+      console.error('Submission error:', e);
       toast({ title: "Fejl ved oprettelse", description: e.message, variant: "destructive" });
     }
   };
@@ -246,9 +249,8 @@ const BoosterSignup = () => {
       );
       case 3: return formData.name && formData.email && formData.phone && formData.password && formData.password.length >= 6;
       case 4: return formData.address && formData.postalCode && formData.latitude !== null && formData.workRadius > 0;
-      case 5: return formData.primaryTransport;
-      case 6: return formData.yearsExperience > 0;
-      case 7: return formData.contractAccepted;
+      case 5: return formData.yearsExperience >= 0;
+      case 6: return formData.contractAccepted;
       default: return false;
     }
   };
@@ -491,35 +493,6 @@ const BoosterSignup = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Transport</h2>
-              <p className="text-muted-foreground">Hvad er dit primære transportmiddel?</p>
-            </div>
-            
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Vi bruger denne information til at beregne rejsetid mellem kunder og optimere din kalender.
-              </p>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {transportOptions.map((transport) => (
-                  <Badge
-                    key={transport}
-                    variant={formData.primaryTransport === transport ? "default" : "outline"}
-                    className="cursor-pointer p-3 text-center justify-center hover:bg-primary/20"
-                    onClick={() => setFormData(prev => ({ ...prev, primaryTransport: transport }))}
-                  >
-                    {transport}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 6:
-        return (
-          <div className="space-y-6">
-            <div>
               <h2 className="text-2xl font-bold mb-2">Uddannelse og erfaring</h2>
               <p className="text-muted-foreground">Fortæl os om din baggrund</p>
             </div>
@@ -633,7 +606,7 @@ const BoosterSignup = () => {
           </div>
         );
 
-      case 7:
+      case 6:
         return (
           <div className="space-y-6">
             <div>
