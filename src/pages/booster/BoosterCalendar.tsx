@@ -43,9 +43,10 @@ interface EventMeta {
   price?: number;
   blocked?: boolean;
   reason?: string;
+  team_boosters?: string[];
 }
 
-type View = "day" | "week";
+type View = "day" | "week" | "month";
 
 const parseNotes = (e: BoosterEvent): EventMeta => { 
   try { return e.notes ? JSON.parse(e.notes) : {}; } 
@@ -53,10 +54,10 @@ const parseNotes = (e: BoosterEvent): EventMeta => {
 };
 
 const MOCK_EVENTS: Omit<BoosterEvent, 'id'>[] = [
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', customer_email: 'sarah@email.dk', address: 'Vesterbrogade 45, København', client_type: 'privat', people_count: 3, price: 2499 }) },
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', customer_email: 'kontakt@cphevents.dk', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS', people_count: 8, price: 12500 }) },
-  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', customer_email: 'marie@email.dk', address: 'Nørrebrogade 100, København', client_type: 'privat', people_count: 1, price: 899 }) },
-  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', customer_email: 'booking@dr.dk', address: 'DR Byen, Emil Holms Kanal 20', client_type: 'virksomhed', company_name: 'Danmarks Radio', people_count: 5, price: 8500 }) },
+  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', customer_email: 'sarah@email.dk', address: 'Vesterbrogade 45, København', client_type: 'privat', people_count: 3, price: 2499, team_boosters: [] }) },
+  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', customer_email: 'kontakt@cphevents.dk', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS', people_count: 8, price: 12500, team_boosters: ['Josephine O.', 'Katrine J.'] }) },
+  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', customer_email: 'marie@email.dk', address: 'Nørrebrogade 100, København', client_type: 'privat', people_count: 1, price: 899, team_boosters: [] }) },
+  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', customer_email: 'booking@dr.dk', address: 'DR Byen, Emil Holms Kanal 20', client_type: 'virksomhed', company_name: 'Danmarks Radio', people_count: 5, price: 8500, team_boosters: ['Fay', 'Nanna'] }) },
   { date: format(addDays(new Date(), 3), 'yyyy-MM-dd'), start_time: '07:00:00', end_time: '21:00:00', status: 'blocked', notes: JSON.stringify({ blocked: true, reason: 'Ferie' }) },
 ];
 
@@ -92,22 +93,33 @@ export default function BoosterCalendar() {
   }, [userId, date, view]);
 
   const fetchEvents = async (uid: string, baseDate: Date, v: View) => {
-    const start = v === "day" ? startOfDay(baseDate) : startOfWeek(baseDate, { weekStartsOn: 1 });
-    const end = v === "day" ? addDays(start, 1) : addDays(start, 7);
+    let start: Date, end: Date;
+    
+    if (v === "day") {
+      start = startOfDay(baseDate);
+      end = addDays(start, 1);
+    } else if (v === "week") {
+      start = startOfWeek(baseDate, { weekStartsOn: 1 });
+      end = addDays(start, 7);
+    } else {
+      // Month view
+      start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+      end = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
+    }
     
     const { data, error } = await supabase
       .from("booster_availability")
       .select("id,date,start_time,end_time,status,notes")
       .eq("booster_id", uid)
       .gte("date", format(start, "yyyy-MM-dd"))
-      .lt("date", format(end, "yyyy-MM-dd"))
+      .lte("date", format(end, "yyyy-MM-dd"))
       .order("date")
       .order("start_time");
       
     if (!error && data) {
       const mockWithIds = MOCK_EVENTS.map((e, i) => ({ ...e, id: `mock-${i}` }));
       const allEvents = [...(data as BoosterEvent[]), ...mockWithIds.filter(me => 
-        me.date >= format(start, "yyyy-MM-dd") && me.date < format(end, "yyyy-MM-dd")
+        me.date >= format(start, "yyyy-MM-dd") && me.date <= format(end, "yyyy-MM-dd")
       )];
       setEvents(allEvents);
     }
@@ -120,8 +132,14 @@ export default function BoosterCalendar() {
 
   const days = useMemo(() => {
     if (view === "day") return [date];
-    const monday = startOfWeek(date, { weekStartsOn: 1 });
-    return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
+    if (view === "week") {
+      const monday = startOfWeek(date, { weekStartsOn: 1 });
+      return Array.from({ length: 7 }).map((_, i) => addDays(monday, i));
+    }
+    // Month view - return all days of the month
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return Array.from({ length: endOfMonth.getDate() }).map((_, i) => addDays(startOfMonth, i));
   }, [date, view]);
 
   // Touch handlers for swipe navigation
@@ -149,8 +167,14 @@ export default function BoosterCalendar() {
   };
 
   const navigateDate = (direction: number) => {
-    const amount = view === "day" ? direction : direction * 7;
-    setDate(addDays(date, amount));
+    if (view === "day") {
+      setDate(addDays(date, direction));
+    } else if (view === "week") {
+      setDate(addDays(date, direction * 7));
+    } else {
+      // Month view
+      setDate(new Date(date.getFullYear(), date.getMonth() + direction, 1));
+    }
   };
 
   const blockDay = async () => {
@@ -217,7 +241,9 @@ export default function BoosterCalendar() {
             >
               {view === "day" 
                 ? format(date, "EEE d. MMM", { locale: da })
-                : `${format(days[0], "d. MMM", { locale: da })} - ${format(days[6], "d. MMM", { locale: da })}`
+                : view === "week"
+                ? `${format(days[0], "d. MMM", { locale: da })} - ${format(days[days.length - 1], "d. MMM", { locale: da })}`
+                : format(date, "MMMM yyyy", { locale: da })
               }
             </button>
             {isToday(date) && view === "day" && (
@@ -235,7 +261,6 @@ export default function BoosterCalendar() {
           </Button>
         </div>
 
-        {/* View Toggle */}
         <div className="flex gap-1 mt-3">
           <Button
             variant={view === "day" ? "default" : "ghost"}
@@ -252,6 +277,14 @@ export default function BoosterCalendar() {
             className="flex-1"
           >
             Uge
+          </Button>
+          <Button
+            variant={view === "month" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setView("month")}
+            className="flex-1"
+          >
+            Måned
           </Button>
         </div>
       </div>
@@ -272,13 +305,20 @@ export default function BoosterCalendar() {
             onSelectEvent={setSelectedEvent}
             onBlockDay={() => { setBlockDate(date); setBlockDialogOpen(true); }}
           />
-        ) : (
+        ) : view === "week" ? (
           <WeekView
             days={days}
             events={events}
             parseNotes={parseNotes}
             onSelectDay={(d) => { setDate(d); setView("day"); }}
             onSelectEvent={setSelectedEvent}
+          />
+        ) : (
+          <MonthView
+            date={date}
+            events={events}
+            parseNotes={parseNotes}
+            onSelectDay={(d) => { setDate(d); setView("day"); }}
           />
         )}
       </div>
@@ -530,7 +570,107 @@ function WeekView({
   );
 }
 
-// Event Detail Component
+// Month View Component - Calendar Grid
+function MonthView({
+  date,
+  events,
+  parseNotes,
+  onSelectDay
+}: {
+  date: Date;
+  events: BoosterEvent[];
+  parseNotes: (e: BoosterEvent) => EventMeta;
+  onSelectDay: (d: Date) => void;
+}) {
+  const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const startDay = startOfMonth.getDay() === 0 ? 6 : startOfMonth.getDay() - 1; // Monday = 0
+  
+  const getDayEvents = (d: Date) => 
+    events.filter((e) => e.date === format(d, "yyyy-MM-dd"));
+
+  // Create calendar grid
+  const calendarDays: (Date | null)[] = [];
+  
+  // Add empty cells for days before the month starts
+  for (let i = 0; i < startDay; i++) {
+    calendarDays.push(null);
+  }
+  
+  // Add days of the month
+  for (let i = 1; i <= endOfMonth.getDate(); i++) {
+    calendarDays.push(new Date(date.getFullYear(), date.getMonth(), i));
+  }
+
+  const weekDays = ['man', 'tir', 'ons', 'tor', 'fre', 'lør', 'søn'];
+
+  return (
+    <div className="p-4">
+      {/* Week day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays.map(day => (
+          <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+      
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((day, index) => {
+          if (!day) {
+            return <div key={`empty-${index}`} className="aspect-square" />;
+          }
+          
+          const dayEvents = getDayEvents(day);
+          const bookedCount = dayEvents.filter(e => e.status === 'booked').length;
+          const isBlocked = dayEvents.some(e => e.status === 'blocked' && e.start_time === '07:00:00');
+          const today = isToday(day);
+          
+          return (
+            <button
+              key={format(day, 'yyyy-MM-dd')}
+              onClick={() => onSelectDay(day)}
+              className={`
+                aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5
+                transition-colors relative
+                ${today ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}
+                ${isBlocked ? 'bg-destructive/10' : ''}
+              `}
+            >
+              <span className={`text-sm font-medium ${today ? '' : ''}`}>
+                {format(day, 'd')}
+              </span>
+              {bookedCount > 0 && !isBlocked && (
+                <div className="flex gap-0.5">
+                  {Array.from({ length: Math.min(bookedCount, 3) }).map((_, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${today ? 'bg-primary-foreground' : 'bg-primary'}`} />
+                  ))}
+                </div>
+              )}
+              {isBlocked && (
+                <CalendarX className={`h-3 w-3 ${today ? 'text-primary-foreground' : 'text-destructive'}`} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground justify-center">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-primary" />
+          <span>Bookinger</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CalendarX className="h-3 w-3 text-destructive" />
+          <span>Blokeret</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EventDetail({
   event,
   parseNotes,
@@ -626,37 +766,50 @@ function EventDetail({
               </div>
             )}
             
-            {meta.customer_phone && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a href={`tel:${meta.customer_phone}`} className="hover:underline">
-                    {meta.customer_phone}
-                  </a>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8"
-                  onClick={() => onCopy(meta.customer_phone as string, 'Telefon')}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
-            
+            {/* Email only - no phone for boosters */}
             {meta.customer_email && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a href={`mailto:${meta.customer_email}`} className="hover:underline truncate">
-                    {meta.customer_email}
-                  </a>
+                  <span className="truncate text-muted-foreground">
+                    {meta.customer_email.replace(/(.{3}).*(@.*)/, '$1***$2')}
+                  </span>
                 </div>
               </div>
             )}
+
+            {/* Chat info */}
+            <div className="p-2 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+              <MessageCircle className="h-4 w-4 inline mr-2" />
+              Brug chat-funktionen til at kontakte kunden
+            </div>
           </div>
         </div>
+
+        {/* Team Boosters */}
+        {meta.team_boosters && meta.team_boosters.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              Team ({meta.team_boosters.length + 1} boosters)
+            </h4>
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-blue-800 dark:text-blue-200">Team opgave</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-800">
+                  Dig
+                </Badge>
+                {meta.team_boosters.map((booster, idx) => (
+                  <Badge key={idx} variant="outline">
+                    {booster}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Address */}
         {meta.address && (
@@ -706,9 +859,9 @@ function EventDetail({
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" className="flex-1 gap-2">
+          <Button variant="default" className="flex-1 gap-2">
             <MessageCircle className="h-4 w-4" />
-            Besked
+            Chat med kunde
           </Button>
           <Button variant="outline" className="flex-1 gap-2" onClick={() => onOpenMaps(meta.address as string || '')}>
             <Navigation className="h-4 w-4" />
