@@ -34,6 +34,7 @@ interface AssignBoostersDialogProps {
   time?: string;
   serviceCategory?: string;
   desiredCount?: number;
+  maxAllowed?: number; // Maximum total boosters allowed (boosters_needed)
   onAutoAssign: (selected: BoosterOption[]) => void;
   onConfirm: (selected: BoosterOption[]) => void;
 }
@@ -61,6 +62,7 @@ export default function AssignBoostersDialog({
   time,
   serviceCategory,
   desiredCount,
+  maxAllowed,
   onAutoAssign,
   onConfirm,
 }: AssignBoostersDialogProps) {
@@ -158,6 +160,14 @@ export default function AssignBoostersDialog({
   // Memoize assigned IDs as a Set for efficient lookup
   const assignedIdsSet = useMemo(() => new Set(alreadyAssignedIds), [assignedIdsKey]);
 
+  // Calculate how many more boosters can be selected
+  const remainingSlots = useMemo(() => {
+    if (typeof maxAllowed !== 'number') return Infinity;
+    return Math.max(0, maxAllowed - alreadyAssignedIds.length - selectedList.length);
+  }, [maxAllowed, alreadyAssignedIds.length, selectedList.length]);
+
+  const isAtLimit = remainingSlots === 0;
+
   const toggleSelect = (b: BoosterOption) => {
     // Don't allow toggling already assigned boosters
     if (assignedIdsSet.has(b.id)) return;
@@ -167,7 +177,15 @@ export default function AssignBoostersDialog({
       if (copy[b.id]) {
         delete copy[b.id];
       } else {
-        // No limit - users can select as many boosters as they want
+        // Check if we've reached the limit before adding
+        const currentCount = Object.keys(copy).length;
+        const maxSelectable = typeof maxAllowed === 'number' 
+          ? maxAllowed - alreadyAssignedIds.length 
+          : Infinity;
+        
+        if (currentCount >= maxSelectable) {
+          return copy; // Don't add more if at limit
+        }
         copy[b.id] = b;
       }
       return copy;
@@ -223,12 +241,15 @@ export default function AssignBoostersDialog({
                 ) : (
                   filtered.map((b) => {
                     const isAlreadyAssigned = assignedIdsSet.has(b.id);
+                    const isSelected = !!selected[b.id];
+                    const isDisabledByLimit = !isSelected && isAtLimit;
+                    const isDisabled = isAlreadyAssigned || isDisabledByLimit;
                     return (
-                      <label key={b.id} className={`flex items-center gap-3 p-2 rounded-md ${isAlreadyAssigned ? 'bg-accent/50 cursor-not-allowed opacity-60' : 'hover:bg-accent cursor-pointer'}`}>
+                      <label key={b.id} className={`flex items-center gap-3 p-2 rounded-md ${isDisabled ? 'bg-accent/50 cursor-not-allowed opacity-60' : 'hover:bg-accent cursor-pointer'}`}>
                         <Checkbox 
-                          checked={!!selected[b.id]} 
+                          checked={isSelected} 
                           onCheckedChange={() => toggleSelect(b)}
-                          disabled={isAlreadyAssigned}
+                          disabled={isDisabled}
                         />
                         <img
                           src={b.portfolio_image_url || "/placeholder.svg"}
@@ -260,8 +281,8 @@ export default function AssignBoostersDialog({
             </ScrollArea>
             <DialogFooter>
               <div className="flex-1 text-sm text-muted-foreground">
-                {typeof desiredCount === 'number' && desiredCount > 0
-                  ? `Valgt: ${selectedList.length} (minimum ${desiredCount} ønsket, ${alreadyAssignedIds.length} allerede tildelt)`
+                {typeof maxAllowed === 'number'
+                  ? `Tildelt: ${alreadyAssignedIds.length + selectedList.length}/${maxAllowed}${isAtLimit ? ' (maks nået)' : ''}`
                   : `Valgt: ${selectedList.length}`
                 }
               </div>
