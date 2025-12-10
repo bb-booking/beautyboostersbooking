@@ -332,6 +332,7 @@ export default function BoosterCalendar() {
             onOpenMaps={openGoogleMaps}
             onCopy={copyToClipboard}
             onClose={() => setSelectedEvent(null)}
+            onOpenChat={() => { setSelectedEvent(null); navigate('/booster/messages'); }}
           />}
         </DialogContent>
       </Dialog>
@@ -676,13 +677,15 @@ function EventDetail({
   parseNotes,
   onOpenMaps,
   onCopy,
-  onClose
+  onClose,
+  onOpenChat
 }: {
   event: BoosterEvent;
   parseNotes: (e: BoosterEvent) => EventMeta;
   onOpenMaps: (address: string) => void;
   onCopy: (text: string, label: string) => void;
   onClose: () => void;
+  onOpenChat: () => void;
 }) {
   const meta = parseNotes(event);
   const isVirksomhed = meta.client_type === 'virksomhed';
@@ -857,11 +860,10 @@ function EventDetail({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2 pt-2">
-          <Button variant="default" className="flex-1 gap-2">
+          <Button variant="default" className="flex-1 gap-2" onClick={onOpenChat}>
             <MessageCircle className="h-4 w-4" />
-            Chat med kunde
+            Chat
           </Button>
           <Button variant="outline" className="flex-1 gap-2" onClick={() => onOpenMaps(meta.address as string || '')}>
             <Navigation className="h-4 w-4" />

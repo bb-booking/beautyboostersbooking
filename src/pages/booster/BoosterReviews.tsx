@@ -165,57 +165,57 @@ export default function BoosterReviews() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Helmet>
         <title>Anmeldelser - BeautyBoosters</title>
       </Helmet>
 
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Anmeldelser</h1>
-        <p className="text-muted-foreground">Se hvad dine kunder siger om dit arbejde</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Anmeldelser</h1>
+        <p className="text-sm text-muted-foreground">Se hvad kunder siger</p>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <span className="text-2xl font-bold">{stats.averageRating}</span>
-              {renderStars(Math.round(stats.averageRating), 'sm')}
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <span className="text-lg sm:text-2xl font-bold">{stats.averageRating}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Gennemsnit</p>
+            {renderStars(Math.round(stats.averageRating), 'sm')}
+            <p className="text-xs text-muted-foreground mt-1">Gennemsnit</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-              <span className="text-2xl font-bold">{stats.totalReviews}</span>
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <span className="text-lg sm:text-2xl font-bold">{stats.totalReviews}</span>
             </div>
-            <p className="text-sm text-muted-foreground">I alt</p>
+            <p className="text-xs text-muted-foreground">I alt</p>
           </CardContent>
         </Card>
 
         <Card className={stats.pendingReplies > 0 ? "border-orange-300 dark:border-orange-800" : ""}>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Reply className="h-5 w-5 text-orange-500" />
-              <span className="text-2xl font-bold text-orange-600">{stats.pendingReplies}</span>
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Reply className="h-4 w-4 text-orange-500" />
+              <span className="text-lg sm:text-2xl font-bold text-orange-600">{stats.pendingReplies}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Afventer svar</p>
+            <p className="text-xs text-muted-foreground">Afventer</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-              <span className="text-2xl font-bold text-green-600">
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              <span className="text-lg sm:text-2xl font-bold text-green-600">
                 {Math.round(getRatingPercentage(5) + getRatingPercentage(4))}%
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Positive</p>
+            <p className="text-xs text-muted-foreground">Positive</p>
           </CardContent>
         </Card>
       </div>
@@ -266,54 +266,48 @@ export default function BoosterReviews() {
           ) : (
             <div className="space-y-6">
               {reviews.map((review) => (
-                <div key={review.id} className={`border-b last:border-b-0 pb-6 last:pb-0 ${!review.replied ? 'bg-orange-50/50 dark:bg-orange-950/20 -mx-6 px-6 py-4 rounded-lg' : ''}`}>
-                  <div className="flex items-start gap-4">
-                    <Avatar>
-                      <AvatarFallback>
+                <div key={review.id} className={`border-b last:border-b-0 pb-4 last:pb-0 ${!review.replied ? 'bg-orange-50/50 dark:bg-orange-950/20 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 rounded-lg' : ''}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <Avatar className="h-10 w-10 flex-shrink-0 hidden sm:flex">
+                      <AvatarFallback className="text-sm">
                         {review.clientName.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{review.clientName}</h4>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium text-sm">{review.clientName}</h4>
                             {review.verified && (
-                              <Badge variant="secondary" className="text-xs">
-                                Verificeret
-                              </Badge>
+                              <Badge variant="secondary" className="text-xs">Verificeret</Badge>
                             )}
                             {!review.replied && (
-                              <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
-                                Afventer svar
-                              </Badge>
+                              <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">Afventer</Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {renderStars(review.rating)}
-                            <Badge variant="outline" className="text-xs">
-                              {review.serviceType}
-                            </Badge>
+                            <Badge variant="outline" className="text-xs">{review.serviceType}</Badge>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
+                          <span className="text-xs text-muted-foreground">
                             {new Date(review.date).toLocaleDateString('da-DK')}
-                          </div>
+                          </span>
                           <Button 
                             variant={review.replied ? "ghost" : "default"} 
                             size="sm"
                             onClick={() => handleOpenReply(review)}
+                            className="text-xs"
                           >
-                            <Reply className="h-4 w-4 mr-1" />
-                            {review.replied ? "Rediger" : "Besvar"}
+                            <Reply className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">{review.replied ? "Rediger" : "Besvar"}</span>
                           </Button>
                         </div>
                       </div>
                       
-                      <p className="text-muted-foreground mb-3">"{review.comment}"</p>
+                      <p className="text-sm text-muted-foreground mb-2">"{review.comment}"</p>
 
                       {review.replied && review.reply && (
                         <div className="ml-4 border-l-2 border-primary pl-4 mt-3">

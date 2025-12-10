@@ -91,11 +91,11 @@ export default function BoosterPortfolio() {
   };
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Portfolio</h1>
-          <p className="text-muted-foreground">Vis dine bedste arbejder frem</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Portfolio</h1>
+          <p className="text-sm text-muted-foreground">Vis dine arbejder frem</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2">

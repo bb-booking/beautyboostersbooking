@@ -167,10 +167,10 @@ export default function BoosterSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Indstillinger</h1>
-        <p className="text-muted-foreground">Administrer din profil og kontooplysninger</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Indstillinger</h1>
+        <p className="text-sm text-muted-foreground">Administrer din konto</p>
       </div>
 
       <div className="grid gap-6">
@@ -199,7 +199,7 @@ export default function BoosterSettings() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">Fornavn</Label>
                 <Input
@@ -304,7 +304,7 @@ export default function BoosterSettings() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="regNumber">Registreringsnummer</Label>
                 <Input

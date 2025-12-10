@@ -45,11 +45,11 @@ export default function BoosterSkills() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Kompetencer</h1>
-        <p className="text-muted-foreground">
-          Vælg de kompetencer du mestrer - dette hjælper med at matche dig til relevante jobs
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Kompetencer</h1>
+        <p className="text-sm text-muted-foreground">
+          Vælg de kompetencer du mestrer
         </p>
       </div>
 
