@@ -193,9 +193,9 @@ const AdminJobs = () => {
 
   // Calculate BeautyBoosters cut and booster earnings
   const calculateEarnings = (price: number, clientType: 'privat' | 'virksomhed') => {
-    const priceAfterTax = clientType === 'privat' ? price * 0.8 : price; // 20% VAT only for private
+    const priceAfterTax = clientType === 'privat' ? price / 1.25 : price; // Remove 25% VAT for private customers
     const beautyBoostersCut = priceAfterTax * 0.4; // 40% to BeautyBoosters
-    const boosterEarnings = priceAfterTax - beautyBoostersCut;
+    const boosterEarnings = priceAfterTax * 0.6; // 60% to Booster
     
     return {
       priceAfterTax,
@@ -1199,12 +1199,12 @@ Eksempel på notifikation som booster vil modtage.`;
                               <span className="text-muted-foreground">BeautyBoosters (40%):</span>
                               <span className="font-medium">{Math.round(earnings.beautyBoostersCut).toLocaleString('da-DK')} DKK</span>
                             </div>
-                            <div className="flex justify-between text-green-700">
-                              <span>Booster indtjening pr. person:</span>
+                            <div className="flex justify-between">
+                              <span>Booster indtjening pr. person (60%):</span>
                               <span className="font-bold">{boosterEarningsPerPerson.toLocaleString('da-DK')} DKK</span>
                             </div>
                             {newJob.client_type === 'privat' && (
-                              <div className="text-xs text-orange-600">*Pris inkl. moms (20% moms fratrækkes først)</div>
+                              <div className="text-xs text-muted-foreground">*Pris inkl. moms (25% moms fratrækkes først)</div>
                             )}
                           </>
                         );
