@@ -142,7 +142,7 @@ const AppContent = () => {
           <Route path="/booster" element={<BoosterLayout />}>
             <Route index element={<BoosterCalendar />} />
             <Route path="dashboard" element={<BoosterDashboard />} />
-            <Route path="requests" element={<BoosterBookingRequests />} />
+            <Route path="requests" element={<Navigate to="/booster/jobs" replace />} />
             <Route path="jobs" element={<BoosterJobs />} />
             <Route path="calendar" element={<BoosterCalendar />} />
             <Route path="portfolio" element={<BoosterPortfolio />} />
