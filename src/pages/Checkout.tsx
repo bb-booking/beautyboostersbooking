@@ -447,6 +447,39 @@ export default function Checkout() {
         // Non-blocking - booking is still valid
       }
 
+      // Send booking confirmation email to customer (non-blocking)
+      supabase.functions.invoke('send-booking-confirmation', {
+        body: {
+          bookingId: bookingData.id,
+          customerEmail: customerInfo.email,
+          customerName: customerInfo.name,
+          serviceName: service.name,
+          boosterName: booster.name,
+          bookingDate: formattedDate,
+          bookingTime: selectedTime,
+          location: addressQuery,
+          amount: Math.max(0, service.price - discount),
+          specialRequests: customerInfo.specialRequests,
+          isBusinessBooking: false
+        }
+      }).catch(err => console.error('Error sending customer email:', err));
+
+      // Send notification to booster (non-blocking)
+      supabase.functions.invoke('send-booster-notification', {
+        body: {
+          boosterId: booster.id,
+          boosterName: booster.name,
+          customerName: customerInfo.name,
+          serviceName: service.name,
+          bookingDate: formattedDate,
+          bookingTime: selectedTime,
+          location: addressQuery,
+          amount: Math.max(0, service.price - discount),
+          specialRequests: customerInfo.specialRequests,
+          bookingId: bookingData.id
+        }
+      }).catch(err => console.error('Error sending booster notification:', err));
+
       toast.success('Booking bekræftet!');
       
       navigate('/confirmation', {
@@ -551,6 +584,39 @@ export default function Checkout() {
         .single();
 
       if (jobError) throw jobError;
+
+      // Send booking confirmation email to customer (non-blocking)
+      supabase.functions.invoke('send-booking-confirmation', {
+        body: {
+          bookingId: jobData.id,
+          customerEmail: invoiceInfo.contactEmail,
+          customerName: invoiceInfo.contactName,
+          serviceName: service.name,
+          boosterName: booster.name,
+          bookingDate: formattedDate,
+          bookingTime: selectedTime,
+          location: addressQuery,
+          amount: Math.max(0, service.price - discount),
+          specialRequests: customerInfo.specialRequests,
+          isBusinessBooking: true
+        }
+      }).catch(err => console.error('Error sending customer email:', err));
+
+      // Send notification to booster (non-blocking)
+      supabase.functions.invoke('send-booster-notification', {
+        body: {
+          boosterId: booster.id,
+          boosterName: booster.name,
+          customerName: invoiceInfo.contactName,
+          serviceName: service.name,
+          bookingDate: formattedDate,
+          bookingTime: selectedTime,
+          location: addressQuery,
+          amount: Math.max(0, service.price - discount),
+          specialRequests: customerInfo.specialRequests,
+          bookingId: jobData.id
+        }
+      }).catch(err => console.error('Error sending booster notification:', err));
 
       toast.success('Booking bekræftet! Faktura sendes på behandlingsdagen.');
       

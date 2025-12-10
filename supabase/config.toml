@@ -102,3 +102,9 @@ verify_jwt = false
 
 [functions.approve-booster-application]
 verify_jwt = true
+
+[functions.send-booking-confirmation]
+verify_jwt = false
+
+[functions.send-booster-notification]
+verify_jwt = false
