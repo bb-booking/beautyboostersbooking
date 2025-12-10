@@ -348,7 +348,7 @@ const AIAssistant: React.FC = () => {
         )}
         size="icon"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
+        {isOpen ? <X className="h-6 w-6" /> : <span className="text-2xl">🙋🏼‍♀️</span>}
       </Button>
 
       {/* Chat window */}
@@ -361,7 +361,7 @@ const AIAssistant: React.FC = () => {
           )}>
             <div className="relative">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
-                <Lightbulb className="h-6 w-6" />
+                <span className="text-2xl">🙋🏼‍♀️</span>
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-400" />
             </div>
@@ -399,7 +399,7 @@ const AIAssistant: React.FC = () => {
                     {msg.role === 'user' ? (
                       <User className="h-4 w-4" />
                     ) : (
-                      <Lightbulb className="h-4 w-4" />
+                      <span className="text-sm">🙋🏼‍♀️</span>
                     )}
                   </div>
                   <div className={cn(
