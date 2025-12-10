@@ -19,9 +19,11 @@ import {
   Mail, 
   Calendar,
   Briefcase,
-  Bell
+  Bell,
+  Smartphone
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { PushNotificationMockup } from "@/components/booster/PushNotificationMockup";
 
 interface Job {
   id: string;
@@ -67,6 +69,7 @@ export default function BoosterJobs() {
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("requests");
+  const [showPushDemo, setShowPushDemo] = useState(false);
 
   useEffect(() => {
     fetchAvailableJobs();
@@ -222,17 +225,40 @@ export default function BoosterJobs() {
         <title>Jobs - BeautyBoosters</title>
       </Helmet>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Jobs</h1>
           <p className="text-muted-foreground">Anmodninger og ledige jobs</p>
         </div>
-        {totalPendingItems > 0 && (
-          <Badge variant="default" className="text-sm">
-            {totalPendingItems} {totalPendingItems === 1 ? 'job' : 'jobs'}
-          </Badge>
-        )}
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPushDemo(true)}
+            className="gap-2"
+          >
+            <Smartphone className="h-4 w-4" />
+            <span className="hidden sm:inline">Demo Push</span>
+            <span className="sm:hidden">Demo</span>
+          </Button>
+          {totalPendingItems > 0 && (
+            <Badge variant="default" className="text-sm">
+              {totalPendingItems} {totalPendingItems === 1 ? 'job' : 'jobs'}
+            </Badge>
+          )}
+        </div>
       </div>
+
+      {/* Push Notification Mockup for Investor Demo */}
+      <PushNotificationMockup
+        isVisible={showPushDemo}
+        onClose={() => setShowPushDemo(false)}
+        onAccept={() => {
+          console.log("Demo: Job accepted");
+        }}
+        onReject={() => {
+          console.log("Demo: Job rejected");
+        }}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6">
