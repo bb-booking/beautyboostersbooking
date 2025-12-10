@@ -119,6 +119,7 @@ export default function BoosterFinance() {
   const [recentJobs, setRecentJobs] = useState<JobEarning[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
+  const [activeTab, setActiveTab] = useState('invoicing');
   const [boosterProfile, setBoosterProfile] = useState<BoosterProfile>({
     hasCVR: true,
     cvrNumber: '12345678',
@@ -639,11 +640,27 @@ export default function BoosterFinance() {
         </Card>
       </div>
 
-      <Tabs defaultValue="invoicing" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        {/* Mobile: Dropdown */}
+        <div className="sm:hidden">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Vælg sektion" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="invoicing">Fakturering</SelectItem>
+              <SelectItem value="jobs">Jobs</SelectItem>
+              <SelectItem value="payouts">Udbetalinger</SelectItem>
+              <SelectItem value="statistics">Statistik</SelectItem>
+              <SelectItem value="documents">Lønsedler</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Desktop: Tabs */}
+        <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="invoicing" className="flex items-center gap-1">
             <Send className="h-4 w-4" />
-            <span className="hidden sm:inline">Fakturering</span>
+            Fakturering
           </TabsTrigger>
           <TabsTrigger value="jobs">Jobs</TabsTrigger>
           <TabsTrigger value="payouts">Udbetalinger</TabsTrigger>
@@ -668,9 +685,9 @@ export default function BoosterFinance() {
             <CardContent>
               <div className="space-y-3">
                 {monthlyInvoices.map((invoice) => (
-                  <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                  <div key={invoice.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
                         invoice.status === 'draft' ? 'bg-yellow-500/10' :
                         invoice.status === 'sent' ? 'bg-blue-500/10' :
                         invoice.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
@@ -681,33 +698,38 @@ export default function BoosterFinance() {
                           invoice.status === 'paid' ? 'text-green-600' : 'text-muted-foreground'
                         }`} />
                       </div>
-                      <div>
-                        <p className="font-medium">{invoice.period}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Frist: {format(invoice.dueDate, "d. MMMM yyyy", { locale: da })}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium">{invoice.period}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Frist: {format(invoice.dueDate, "d. MMM yyyy", { locale: da })}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-bold">{invoice.amount.toLocaleString('da-DK')} kr</p>
+                            <Badge variant={getInvoiceStatusColor(invoice.status)} className="text-xs">
+                              {invoice.status === 'draft' ? 'Kladde' :
+                               invoice.status === 'sent' ? 'Sendt' :
+                               invoice.status === 'pending' ? 'Afventer' : 'Betalt'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          {invoice.status === 'draft' && (
+                            <Button size="sm" onClick={() => handleSendMonthlyInvoice(invoice.id)} className="w-full sm:w-auto">
+                              <Send className="h-4 w-4 mr-2" />
+                              Send faktura
+                            </Button>
+                          )}
+                          {invoice.status !== 'draft' && (
+                            <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-bold">{invoice.amount.toLocaleString('da-DK')} kr</p>
-                        <Badge variant={getInvoiceStatusColor(invoice.status)}>
-                          {invoice.status === 'draft' ? 'Kladde' :
-                           invoice.status === 'sent' ? 'Sendt' :
-                           invoice.status === 'pending' ? 'Afventer' : 'Betalt'}
-                        </Badge>
-                      </div>
-                      {invoice.status === 'draft' && (
-                        <Button size="sm" onClick={() => handleSendMonthlyInvoice(invoice.id)}>
-                          <Send className="h-4 w-4 mr-2" />
-                          Send
-                        </Button>
-                      )}
-                      {invoice.status !== 'draft' && (
-                        <Button size="sm" variant="ghost">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}

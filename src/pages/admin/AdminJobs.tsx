@@ -936,7 +936,22 @@ Eksempel på notifikation som booster vil modtage.`;
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        {/* Mobile: Dropdown */}
+        <div className="sm:hidden">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Vælg kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle ({jobs.length})</SelectItem>
+              <SelectItem value="b2c">B2C Privat ({jobs.filter(j => j.client_type === 'privat').length})</SelectItem>
+              <SelectItem value="b2b">B2B Virksomhed ({jobs.filter(j => j.client_type === 'virksomhed').length})</SelectItem>
+              <SelectItem value="inquiries">Forespørgsler ({inquiries.filter(i => i.status === "new").length})</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Desktop: Tabs */}
+        <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="all">
             Alle
             <Badge className="ml-2 bg-muted text-muted-foreground text-xs">
