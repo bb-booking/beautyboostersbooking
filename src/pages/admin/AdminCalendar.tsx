@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
@@ -16,34 +14,14 @@ import {
   Calendar as CalendarIcon,
   Search, 
   Filter,
-  Users,
-  Clock,
   MapPin,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Coffee,
-  Grid,
-  List,
-  Eye,
-  EyeOff,
   ChevronLeft,
   ChevronRight,
-  GripVertical
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { 
-  DndContext, 
-  DragOverlay, 
-  useSensor, 
-  useSensors, 
-  PointerSensor, 
-  closestCenter, 
-  DragEndEvent, 
-  DragStartEvent 
-} from '@dnd-kit/core';
-import { DraggableBooking } from '@/components/calendar/DraggableBooking';
-import { DroppableTimeSlot } from '@/components/calendar/DroppableTimeSlot';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { boosterImageOverrides } from "@/data/boosterImages";
 
 interface BoosterProfile {
   id: string;
@@ -51,6 +29,7 @@ interface BoosterProfile {
   location: string;
   specialties: string[];
   is_available: boolean;
+  portfolio_image_url?: string;
 }
 
 interface BoosterAvailability {
@@ -59,7 +38,7 @@ interface BoosterAvailability {
   date: string;
   start_time: string;
   end_time: string;
-  status: 'available' | 'busy' | 'vacation' | 'sick';
+  status: 'available' | 'busy' | 'vacation' | 'sick' | 'blocked';
   job_id?: string;
   notes?: string;
 }
@@ -71,7 +50,8 @@ interface Job {
   location: string;
   date_needed: string;
   time_needed?: string;
-  client_type?: string; // 'privat' or 'virksomhed'
+  client_type?: string;
+  service_type?: string;
 }
 
 const AdminCalendar = () => {
@@ -80,34 +60,16 @@ const AdminCalendar = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // View controls
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('week');
   
-  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [specialtyFilter, setSpecialtyFilter] = useState<string>("all");
-  const [selectedBoosters, setSelectedBoosters] = useState<string[]>([]);
-  const [showOnlySelected, setShowOnlySelected] = useState(false);
-  
-  // Drag and drop
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
 
   const locations = ["København", "Aarhus", "Odense", "Aalborg", "Esbjerg", "Randers", "Kolding", "Horsens"];
 
   useEffect(() => {
     fetchBoosters();
-    fetchAvailability();
     fetchJobs();
   }, []);
 
@@ -142,12 +104,9 @@ const AdminCalendar = () => {
       if (viewMode === 'day') {
         startDate = selectedDate;
         endDate = addDays(selectedDate, 1);
-      } else if (viewMode === 'week') {
+      } else {
         startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
         endDate = endOfWeek(selectedDate, { weekStartsOn: 1 });
-      } else {
-        startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-        endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
       }
 
       const { data, error } = await supabase
@@ -159,11 +118,10 @@ const AdminCalendar = () => {
       if (error) throw error;
       setAvailability((data || []).map(item => ({
         ...item,
-        status: item.status as 'available' | 'busy' | 'vacation' | 'sick'
+        status: item.status as 'available' | 'busy' | 'vacation' | 'sick' | 'blocked'
       })));
     } catch (error) {
       console.error('Error fetching availability:', error);
-      toast.error('Fejl ved hentning af tilgængelighed');
     }
   };
 
@@ -171,8 +129,8 @@ const AdminCalendar = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('id, title, client_name, location, date_needed, time_needed, client_type')
-        .in('status', ['assigned', 'in_progress']);
+        .select('id, title, client_name, location, date_needed, time_needed, client_type, service_type')
+        .in('status', ['assigned', 'in_progress', 'open']);
 
       if (error) throw error;
       setJobs(data || []);
@@ -181,58 +139,13 @@ const AdminCalendar = () => {
     }
   };
 
-  const filteredBoosters = boosters.filter(booster => {
-    const matchesSearch = booster.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booster.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesLocation = locationFilter === "all" || booster.location === locationFilter;
-    const matchesSpecialty = specialtyFilter === "all" || booster.specialties.includes(specialtyFilter);
-    const matchesSelected = !showOnlySelected || selectedBoosters.includes(booster.id);
-    
-    return matchesSearch && matchesLocation && matchesSpecialty && matchesSelected;
-  });
-
-  const getStatusColor = (status: string, clientType?: string) => {
-    // If there's a job with client_type, use client-type based colors for booked statuses
-    if (status === 'busy' && clientType) {
-      if (clientType === 'virksomhed') {
-        return 'bg-blue-100 text-blue-800 border-blue-300'; // Business = Blue
-      } else {
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'; // Private = Yellow
-      }
-    }
-    
-    switch (status) {
-      case 'available': return 'bg-green-100 text-green-800 border-green-200';
-      case 'busy': return 'bg-yellow-100 text-yellow-800 border-yellow-300'; // Default to private yellow
-      case 'booked': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'vacation': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'sick': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'available': return <CheckCircle className="h-3 w-3" />;
-      case 'busy': return <XCircle className="h-3 w-3" />;
-      case 'booked': return <Calendar className="h-3 w-3" />;
-      case 'vacation': return <Coffee className="h-3 w-3" />;
-      case 'sick': return <AlertCircle className="h-3 w-3" />;
-      default: return null;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'available': return 'Tilgængelig';
-      case 'busy': return 'Optaget';
-      case 'booked': return 'Booket';
-      case 'vacation': return 'Ferie';
-      case 'sick': return 'Syg';
-      default: return status;
-    }
-  };
+  const filteredBoosters = useMemo(() => {
+    return boosters.filter(booster => {
+      const matchesSearch = booster.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLocation = locationFilter === "all" || booster.location === locationFilter;
+      return matchesSearch && matchesLocation;
+    });
+  }, [boosters, searchTerm, locationFilter]);
 
   const getBoosterAvailabilityForDate = (boosterId: string, date: Date) => {
     return availability.filter(a => 
@@ -245,531 +158,305 @@ const AdminCalendar = () => {
     return jobId ? jobs.find(j => j.id === jobId) : null;
   };
 
-  const toggleBoosterSelection = (boosterId: string) => {
-    setSelectedBoosters(prev => 
-      prev.includes(boosterId) 
-        ? prev.filter(id => id !== boosterId)
-        : [...prev, boosterId]
-    );
-  };
-
-  const selectAllVisible = () => {
-    setSelectedBoosters(filteredBoosters.map(b => b.id));
-  };
-
-  const clearSelection = () => {
-    setSelectedBoosters([]);
-  };
-
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const days = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 30;
+  const navigateDate = (direction: 'prev' | 'next') => {
+    const days = viewMode === 'day' ? 1 : 7;
     setSelectedDate(prev => addDays(prev, direction === 'next' ? days : -days));
   };
 
   const getDaysToShow = () => {
     if (viewMode === 'day') {
       return [selectedDate];
-    } else if (viewMode === 'week') {
-      return eachDayOfInterval({
-        start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
-        end: endOfWeek(selectedDate, { weekStartsOn: 1 })
-      });
-    } else {
-      // Show entire month
-      const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-      const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-      return eachDayOfInterval({
-        start: startOfMonth,
-        end: endOfMonth
-      });
     }
+    return eachDayOfInterval({
+      start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
+      end: endOfWeek(selectedDate, { weekStartsOn: 1 })
+    });
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    // Parse IDs: availability-{availabilityId}
-    const availabilityId = (active.id as string).replace('availability-', '');
-    const newBoosterId = (over.id as string).replace('booster-', '').split('-')[0];
-
-    try {
-      // Update the booster_availability record
-      const { error } = await supabase
-        .from('booster_availability')
-        .update({ booster_id: newBoosterId })
-        .eq('id', availabilityId);
-
-      if (error) throw error;
-
-      toast.success('Booking flyttet til ny booster');
-      fetchAvailability();
-    } catch (error) {
-      console.error('Error moving booking:', error);
-      toast.error('Kunne ikke flytte booking');
-    }
-  };
-
-  const getUniqueSpecialties = () => {
-    const allSpecialties = boosters.flatMap(b => b.specialties);
-    return [...new Set(allSpecialties)];
-  };
-
-  const getTimeSlots = () => {
+  const timeSlots = useMemo(() => {
     const slots = [];
-    for (let hour = 7; hour <= 21; hour++) {
+    for (let hour = 6; hour <= 20; hour++) {
       slots.push(`${hour.toString().padStart(2, '0')}:00`);
-      if (hour < 21) {
-        slots.push(`${hour.toString().padStart(2, '0')}:30`);
-      }
     }
     return slots;
-  };
+  }, []);
 
   const timeToMinutes = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   };
 
-  const isTimeInSlot = (slotTime: string, startTime: string, endTime: string) => {
-    const slotMinutes = timeToMinutes(slotTime);
-    const startMinutes = timeToMinutes(startTime);
-    const endMinutes = timeToMinutes(endTime);
-    return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+  const getBookingsStartingAtTime = (boosterId: string, date: Date, timeSlot: string) => {
+    const dayAvailability = getBoosterAvailabilityForDate(boosterId, date);
+    return dayAvailability.filter(avail => {
+      const startHour = avail.start_time.slice(0, 5);
+      return startHour === timeSlot && (avail.status === 'busy' || avail.job_id);
+    });
   };
+
+  const isSlotBlocked = (boosterId: string, date: Date, timeSlot: string) => {
+    const dayAvailability = getBoosterAvailabilityForDate(boosterId, date);
+    const slotMinutes = timeToMinutes(timeSlot);
+    
+    return dayAvailability.some(avail => {
+      if (avail.status === 'vacation' || avail.status === 'sick' || avail.status === 'blocked') {
+        const startMinutes = timeToMinutes(avail.start_time);
+        const endMinutes = timeToMinutes(avail.end_time);
+        return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      }
+      return false;
+    });
+  };
+
+  const isSlotOccupied = (boosterId: string, date: Date, timeSlot: string) => {
+    const dayAvailability = getBoosterAvailabilityForDate(boosterId, date);
+    const slotMinutes = timeToMinutes(timeSlot);
+    
+    return dayAvailability.some(avail => {
+      if (avail.status === 'busy' || avail.job_id) {
+        const startMinutes = timeToMinutes(avail.start_time);
+        const endMinutes = timeToMinutes(avail.end_time);
+        return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      }
+      return false;
+    });
+  };
+
+  const getBookingDuration = (avail: BoosterAvailability) => {
+    const startMinutes = timeToMinutes(avail.start_time);
+    const endMinutes = timeToMinutes(avail.end_time);
+    return (endMinutes - startMinutes) / 60; // hours
+  };
+
+  const getBoosterImage = (booster: BoosterProfile) => {
+    if (booster.portfolio_image_url) return booster.portfolio_image_url;
+    const nameLower = booster.name.toLowerCase();
+    return boosterImageOverrides[nameLower] || boosterImageOverrides[nameLower.split(' ')[0]] || null;
+  };
+
+  const daysToShow = getDaysToShow();
+  const weekNumber = format(selectedDate, 'w', { locale: da });
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Kalender Oversigt</h2>
-        <div className="grid gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-32 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="flex items-center justify-center h-[80vh]">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
-  const daysToShow = getDaysToShow();
-  const activeAvailability = activeId 
-    ? availability.find(a => `availability-${a.id}` === activeId)
-    : null;
-  const activeJob = activeAvailability?.job_id 
-    ? getJobForAvailability(activeAvailability.job_id)
-    : null;
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Kalender Oversigt</h2>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline">
-            {filteredBoosters.length} boosters
-          </Badge>
-          {selectedBoosters.length > 0 && (
-            <Badge>
-              {selectedBoosters.length} valgt
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {/* Controls Row */}
-      <div className="flex flex-wrap items-center gap-4 p-4 bg-muted/20 rounded-lg">
-        {/* Search */}
-        <div className="relative flex-1 min-w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Søg boosters..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+    <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between py-3 px-4 border-b bg-background shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Søg boosters..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+          
+          <Select value={locationFilter} onValueChange={setLocationFilter}>
+            <SelectTrigger className="w-40 h-9">
+              <Filter className="h-3 w-3 mr-2" />
+              <SelectValue placeholder="Lokation" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle byer</SelectItem>
+              {locations.map(location => (
+                <SelectItem key={location} value={location}>{location}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Date Navigation */}
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => navigateWeek('prev')}>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9" onClick={() => navigateDate('prev')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-56">
+              <Button variant="outline" className="h-9 min-w-[180px]">
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 {viewMode === 'day' 
-                  ? format(selectedDate, 'dd/MM/yyyy', { locale: da })
-                  : viewMode === 'week' 
-                  ? `Uge ${format(selectedDate, 'w', { locale: da })} - ${format(selectedDate, 'yyyy')}`
-                  : format(selectedDate, 'MMMM yyyy', { locale: da })
+                  ? format(selectedDate, 'd. MMMM yyyy', { locale: da })
+                  : `Uge ${weekNumber} · ${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'd. MMM', { locale: da })} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'd. MMM', { locale: da })}`
                 }
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0" align="center">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
                 initialFocus
-                className={cn("p-3 pointer-events-auto")}
               />
             </PopoverContent>
           </Popover>
           
-          <Button variant="outline" size="sm" onClick={() => navigateWeek('next')}>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => navigateDate('next')}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-        </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={viewMode === 'day' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('day')}
-          >
-            Dag
-          </Button>
-          <Button
-            variant={viewMode === 'week' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('week')}
-          >
-            Uge
-          </Button>
-          <Button
-            variant={viewMode === 'month' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('month')}
-          >
-            Måned
-          </Button>
-        </div>
-
-        {/* Layout Toggle */}
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={layoutMode === 'grid' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setLayoutMode('grid')}
-          >
-            <Grid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={layoutMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setLayoutMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters Row */}
-      <div className="flex flex-wrap items-center gap-4">
-        <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-48">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Lokation" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle lokationer</SelectItem>
-            {locations.map(location => (
-              <SelectItem key={location} value={location}>{location}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Speciale" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle specialer</SelectItem>
-            {getUniqueSpecialties().map(specialty => (
-              <SelectItem key={specialty} value={specialty}>{specialty}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="showOnlySelected"
-            checked={showOnlySelected}
-            onCheckedChange={(checked) => setShowOnlySelected(!!checked)}
-          />
-          <Label htmlFor="showOnlySelected" className="text-sm">
-            Vis kun valgte
-          </Label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={selectAllVisible}>
-            Vælg alle synlige
-          </Button>
-          <Button variant="outline" size="sm" onClick={clearSelection}>
-            Ryd valg
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowOnlySelected(!showOnlySelected)}
-          >
-            {showOnlySelected ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center border rounded-md overflow-hidden ml-2">
+            <Button
+              variant={viewMode === 'day' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-9 rounded-none"
+              onClick={() => setViewMode('day')}
+            >
+              Dag
+            </Button>
+            <Button
+              variant={viewMode === 'week' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-9 rounded-none"
+              onClick={() => setViewMode('week')}
+            >
+              Uge
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Calendar Grid */}
-      {viewMode === 'day' ? (
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <div className="inline-block min-w-full">
-                <div style={{ display: 'grid', gridTemplateColumns: `80px repeat(${filteredBoosters.length}, minmax(150px, 1fr))` }}>
-                  {/* Header Row */}
-                  <div className="p-3 font-medium border-b border-r bg-muted sticky left-0 z-20">
-                    Tid
-                  </div>
-                  {filteredBoosters.map(booster => (
-                    <div key={booster.id} className="p-3 border-b border-r bg-muted">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={selectedBoosters.includes(booster.id)}
-                          onCheckedChange={() => toggleBoosterSelection(booster.id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate text-sm">{booster.name}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {booster.location}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Time Rows */}
-                  {getTimeSlots().map(timeSlot => (
-                    <>
-                      <div key={`time-${timeSlot}`} className="p-2 border-b border-r text-sm font-medium bg-muted/50 sticky left-0 z-10">
-                        {timeSlot}
-                      </div>
-                       {filteredBoosters.map(booster => {
-                        const dayAvailability = getBoosterAvailabilityForDate(booster.id, selectedDate);
-                        const slotAvailability = dayAvailability.find(avail => 
-                          isTimeInSlot(timeSlot, avail.start_time, avail.end_time)
-                        );
-                        
-                        return (
-                          <DroppableTimeSlot 
-                            key={`${booster.id}-${timeSlot}`}
-                            boosterId={booster.id}
-                            timeSlot={timeSlot}
-                            date={selectedDate}
-                          >
-                            {slotAvailability && isTimeInSlot(timeSlot, slotAvailability.start_time, slotAvailability.end_time) && (
-                              timeSlot === slotAvailability.start_time.slice(0, 5) ? (
-                                <DraggableBooking
-                                  availabilityId={slotAvailability.id}
-                                  status={slotAvailability.status}
-                                  startTime={slotAvailability.start_time}
-                                  endTime={slotAvailability.end_time}
-                                  job={getJobForAvailability(slotAvailability.job_id)}
-                                  notes={slotAvailability.notes}
-                                  getStatusColor={getStatusColor}
-                                  getStatusIcon={getStatusIcon}
-                                />
-                              ) : (
-                                <div className={`h-full ${getStatusColor(slotAvailability.status)} opacity-30`}></div>
-                              )
-                            )}
-                          </DroppableTimeSlot>
-                        );
-                      })}
-                    </>
-                  ))}
-                </div>
-              </div>
+      <div className="flex-1 overflow-auto">
+        <div className="min-w-max">
+          {/* Sticky Header with Boosters */}
+          <div 
+            className="sticky top-0 z-20 bg-background border-b"
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: `60px repeat(${filteredBoosters.length}, minmax(140px, 1fr))` 
+            }}
+          >
+            <div className="p-2 text-xs font-medium text-muted-foreground border-r flex items-center justify-center">
+              Uge {weekNumber}
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {/* Date Headers */}
-          <div style={{ display: 'grid', gridTemplateColumns: `150px repeat(${daysToShow.length}, 1fr)` }} className="gap-2">
-            <div className="p-3 font-medium bg-muted rounded">Booster</div>
-            {daysToShow.map(day => (
-              <div key={day.toISOString()} className="p-3 text-center bg-muted rounded">
-                <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
-                <div className="text-sm text-muted-foreground">{format(day, 'd/M')}</div>
+            {filteredBoosters.map(booster => (
+              <div key={booster.id} className="p-2 border-r flex flex-col items-center gap-1">
+                <Avatar className="h-8 w-8 ring-2 ring-green-500 ring-offset-1">
+                  <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
+                  <AvatarFallback className="text-xs bg-primary/10">
+                    {booster.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs font-medium truncate max-w-full">{booster.name.split(' ')[0]} {booster.name.split(' ')[1]?.[0]}.</span>
               </div>
             ))}
           </div>
 
-          {/* Booster Rows */}
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {filteredBoosters.map(booster => (
-              <Card key={booster.id} className={`${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
-                <CardContent className="p-0">
-                  <div style={{ display: 'grid', gridTemplateColumns: `150px repeat(${daysToShow.length}, 1fr)` }} className="gap-2 p-2">
-                    {/* Booster Info */}
-                    <div className="p-3 border rounded bg-background">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={selectedBoosters.includes(booster.id)}
-                          onCheckedChange={() => toggleBoosterSelection(booster.id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate text-sm">{booster.name}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {booster.location}
-                          </div>
-                          <Badge 
-                            className={`text-xs mt-1 ${booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                          >
-                            {booster.is_available ? 'Aktiv' : 'Inaktiv'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Daily Availability */}
-                    {daysToShow.map(day => {
-                      const dayAvailability = getBoosterAvailabilityForDate(booster.id, day);
+          {/* Time Slots Grid */}
+          {timeSlots.map(timeSlot => (
+            <div 
+              key={timeSlot}
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: `60px repeat(${filteredBoosters.length}, minmax(140px, 1fr))` 
+              }}
+              className="border-b border-border/50"
+            >
+              {/* Time Label */}
+              <div className="p-1 text-xs text-muted-foreground border-r bg-muted/30 flex items-start justify-end pr-2 pt-1">
+                {timeSlot}
+              </div>
+              
+              {/* Booster Slots */}
+              {filteredBoosters.map(booster => {
+                const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
+                const isBlocked = isSlotBlocked(booster.id, selectedDate, timeSlot);
+                const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
+                
+                return (
+                  <div 
+                    key={`${booster.id}-${timeSlot}`}
+                    className={cn(
+                      "border-r min-h-[48px] relative",
+                      isBlocked && "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,hsl(var(--muted)/0.5)_4px,hsl(var(--muted)/0.5)_8px)]",
+                      !isBlocked && !isOccupied && "bg-background hover:bg-muted/20 transition-colors"
+                    )}
+                  >
+                    {bookingsStarting.map(avail => {
+                      const job = getJobForAvailability(avail.job_id);
+                      const duration = getBookingDuration(avail);
+                      const isPrivate = job?.client_type !== 'virksomhed';
                       
                       return (
-                        <DroppableTimeSlot
-                          key={day.toISOString()}
-                          boosterId={booster.id}
-                          timeSlot="full-day"
-                          date={day}
+                        <div
+                          key={avail.id}
+                          className={cn(
+                            "absolute left-1 right-1 rounded-md p-1.5 overflow-hidden cursor-pointer transition-shadow hover:shadow-md z-10",
+                            "border-l-4",
+                            isPrivate 
+                              ? "bg-amber-50 border-l-amber-400" 
+                              : "bg-blue-50 border-l-blue-400"
+                          )}
+                          style={{ 
+                            height: `${Math.max(duration * 48 - 4, 44)}px`,
+                            top: '2px'
+                          }}
                         >
-                          {dayAvailability.length > 0 ? (
-                            <div className="space-y-1">
-                              {dayAvailability.map(avail => {
-                                const job = getJobForAvailability(avail.job_id);
-                                return (
-                                  <DraggableBooking
-                                    key={avail.id}
-                                    availabilityId={avail.id}
-                                    status={avail.status}
-                                    startTime={avail.start_time}
-                                    endTime={avail.end_time}
-                                    job={job}
-                                    notes={avail.notes}
-                                    getStatusColor={getStatusColor}
-                                    getStatusIcon={getStatusIcon}
-                                  />
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground text-center py-3">
-                              Ingen data
+                          <div className="text-[10px] font-semibold text-muted-foreground">
+                            {avail.start_time.slice(0, 5)} - {avail.end_time.slice(0, 5)}
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <User className="h-3 w-3 text-foreground/70" />
+                            <span className="text-xs font-medium truncate">
+                              {job?.client_name || 'Kunde'}
+                            </span>
+                            {isPrivate ? (
+                              <Badge variant="outline" className="h-4 text-[9px] px-1 bg-amber-100 border-amber-300 text-amber-700">ny</Badge>
+                            ) : (
+                              <Badge variant="outline" className="h-4 text-[9px] px-1 bg-blue-100 border-blue-300 text-blue-700">B2B</Badge>
+                            )}
+                          </div>
+                          {duration > 1 && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                              {job?.service_type || job?.title || 'Service'}
                             </div>
                           )}
-                        </DroppableTimeSlot>
+                          {duration > 1.5 && job?.location && (
+                            <div className="flex items-center gap-0.5 mt-0.5">
+                              <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground truncate">{job.location}</span>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Status Legend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Status Forklaring</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <Badge className={getStatusColor('available')}>
-                {getStatusIcon('available')}
-                Tilgængelig
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                <Calendar className="h-3 w-3 mr-1" />
-                Privat booking
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                <Calendar className="h-3 w-3 mr-1" />
-                Virksomhed booking
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className={getStatusColor('vacation')}>
-                {getStatusIcon('vacation')}
-                Ferie
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className={getStatusColor('sick')}>
-                {getStatusIcon('sick')}
-                Syg
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {filteredBoosters.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <h3 className="text-lg font-medium mb-2">Ingen boosters fundet</h3>
-            <p className="text-muted-foreground">
-              Ingen boosters matcher dine søgekriterier
-            </p>
-          </CardContent>
-        </Card>
-      )}
-      
-      <DragOverlay>
-        {activeId && activeAvailability ? (
-          <div className="bg-background p-2 rounded shadow-lg border">
-            <DraggableBooking
-              availabilityId={activeAvailability.id}
-              status={activeAvailability.status}
-              startTime={activeAvailability.start_time}
-              endTime={activeAvailability.end_time}
-              job={activeJob}
-              notes={activeAvailability.notes}
-              getStatusColor={getStatusColor}
-              getStatusIcon={getStatusIcon}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
+      {/* Legend */}
+      <div className="border-t bg-muted/30 py-2 px-4 flex items-center gap-6 text-xs shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-amber-50 border-l-4 border-l-amber-400 rounded-sm" />
+          <span className="text-muted-foreground">Privat booking</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-50 border-l-4 border-l-blue-400 rounded-sm" />
+          <span className="text-muted-foreground">Virksomhed (B2B)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,hsl(var(--muted))_2px,hsl(var(--muted))_4px)] rounded-sm border" />
+          <span className="text-muted-foreground">Ikke tilgængelig</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-background border rounded-sm" />
+          <span className="text-muted-foreground">Ledig</span>
+        </div>
+      </div>
     </div>
-    </DndContext>
   );
 };
 
