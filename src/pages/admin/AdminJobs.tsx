@@ -1200,9 +1200,15 @@ Eksempel på notifikation som booster vil modtage.`;
                               <span className="font-medium">{Math.round(earnings.beautyBoostersCut).toLocaleString('da-DK')} DKK</span>
                             </div>
                             <div className="flex justify-between">
-                              <span>Booster indtjening pr. person (60%):</span>
-                              <span className="font-bold">{boosterEarningsPerPerson.toLocaleString('da-DK')} DKK</span>
+                              <span>Total til boosters (60%):</span>
+                              <span className="font-bold">{Math.round(earnings.boosterEarnings).toLocaleString('da-DK')} DKK</span>
                             </div>
+                            {newJob.boosters_needed > 1 && (
+                              <div className="flex justify-between text-muted-foreground">
+                                <span>Pr. booster:</span>
+                                <span>{boosterEarningsPerPerson.toLocaleString('da-DK')} DKK</span>
+                              </div>
+                            )}
                             {newJob.client_type === 'privat' && (
                               <div className="text-xs text-muted-foreground">*Pris inkl. moms (25% moms fratrækkes først)</div>
                             )}
