@@ -42,7 +42,7 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions.capture-payment]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-payment-intent]
 verify_jwt = false
