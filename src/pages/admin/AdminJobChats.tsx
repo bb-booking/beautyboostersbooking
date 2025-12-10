@@ -5,58 +5,73 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, MessageSquare, ArrowLeft, Shield } from "lucide-react";
+import { Search, MessageSquare, ArrowLeft, Users } from "lucide-react";
 import JobChat from "@/components/job/JobChat";
 
-interface JobWithMessages {
+interface JobWithChat {
   id: string;
   title: string;
   client_name: string | null;
+  client_email: string | null;
   date_needed: string;
   status: string;
   message_count: number;
-  unread_count: number;
+  last_message_at: string | null;
+  assigned_boosters: string[];
 }
 
-export default function BoosterMessages() {
-  const [jobs, setJobs] = useState<JobWithMessages[]>([]);
+export default function AdminJobChats() {
+  const [jobs, setJobs] = useState<JobWithChat[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchJobsWithMessages();
+    fetchJobsWithChats();
   }, []);
 
-  const fetchJobsWithMessages = async () => {
+  const fetchJobsWithChats = async () => {
     try {
-      // For demo, get all jobs with communications
-      // In real app, filter by booster_id
-      const { data: jobs, error } = await supabase
+      // Get all jobs
+      const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
-        .select('id, title, client_name, date_needed, status')
+        .select(`
+          id, title, client_name, client_email, date_needed, status
+        `)
         .order('date_needed', { ascending: false });
 
-      if (error) throw error;
+      if (jobsError) throw jobsError;
 
       // Get message counts for each job
-      const jobsWithCounts = await Promise.all(
-        (jobs || []).map(async (job) => {
-          const { data: messages } = await supabase
+      const jobsWithChatInfo = await Promise.all(
+        (jobsData || []).map(async (job) => {
+          const { data: messages, error } = await supabase
             .from('job_communications')
-            .select('id, read_at, sender_type')
+            .select('id, created_at')
+            .eq('job_id', job.id)
+            .order('created_at', { ascending: false });
+
+          const { data: assignments } = await supabase
+            .from('job_booster_assignments')
+            .select('booster_id')
             .eq('job_id', job.id);
+
+          const { data: boosters } = await supabase
+            .from('booster_profiles')
+            .select('id, name')
+            .in('id', (assignments || []).map(a => a.booster_id));
 
           return {
             ...job,
             message_count: messages?.length || 0,
-            unread_count: messages?.filter(m => !m.read_at && m.sender_type !== 'booster').length || 0
+            last_message_at: messages?.[0]?.created_at || null,
+            assigned_boosters: (boosters || []).map(b => b.name)
           };
         })
       );
 
       // Filter to only jobs with messages
-      const jobsWithMessages = jobsWithCounts.filter(j => j.message_count > 0);
+      const jobsWithMessages = jobsWithChatInfo.filter(j => j.message_count > 0);
       setJobs(jobsWithMessages);
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -67,17 +82,19 @@ export default function BoosterMessages() {
 
   const filteredJobs = jobs.filter(job =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    job.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.client_email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Beskeder</h1>
-        <p className="text-sm text-muted-foreground">Chat med kunder om jobs</p>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+        <h1 className="text-xl sm:text-2xl font-bold">Job Chats</h1>
       </div>
+      <p className="text-sm text-muted-foreground">Overvåg kommunikation mellem boosters og kunder</p>
 
       {/* Mobile: Show either list or chat */}
       <div className="lg:hidden">
@@ -87,7 +104,7 @@ export default function BoosterMessages() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Søg jobs..."
+                  placeholder="Søg job..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -99,32 +116,33 @@ export default function BoosterMessages() {
                 {loading ? (
                   <div className="p-4 text-sm text-muted-foreground">Indlæser...</div>
                 ) : filteredJobs.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
-                    <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Ingen beskeder endnu</p>
-                    <p className="text-xs">Beskeder fra kunder vises her</p>
-                  </div>
+                  <div className="p-4 text-sm text-muted-foreground">Ingen job chats fundet</div>
                 ) : (
                   <div className="divide-y">
                     {filteredJobs.map((job) => (
                       <div
                         key={job.id}
                         onClick={() => setSelectedJobId(job.id)}
-                        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors"
+                        className="flex items-start gap-3 p-3 cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors"
                       >
                         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <MessageSquare className="h-5 w-5 text-primary" />
                         </div>
-                        
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium text-sm truncate">{job.title}</p>
-                            {job.unread_count > 0 && (
-                              <Badge variant="default" className="text-xs px-1.5 py-0">{job.unread_count}</Badge>
-                            )}
+                            <Badge variant="secondary" className="text-xs px-1.5">{job.message_count}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
-                            {job.client_name || 'Kunde'} • {new Date(job.date_needed).toLocaleDateString('da-DK')}
+                            {job.client_name || job.client_email || 'Ukendt kunde'}
+                          </p>
+                          {job.assigned_boosters.length > 0 && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              Boosters: {job.assigned_boosters.join(', ')}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(job.date_needed).toLocaleDateString('da-DK')}
                           </p>
                         </div>
                       </div>
@@ -136,27 +154,30 @@ export default function BoosterMessages() {
           </Card>
         ) : (
           <div className="space-y-3">
-            <Button variant="ghost" size="sm" onClick={() => setSelectedJobId(null)} className="gap-2 -ml-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedJobId(null)} className="gap-2">
               <ArrowLeft className="h-4 w-4" /> Tilbage
             </Button>
-            <div className="text-sm mb-2">
+            <div className="text-sm">
               <p className="font-medium">{selectedJob?.title}</p>
-              <p className="text-muted-foreground text-xs">{selectedJob?.client_name || 'Kunde'}</p>
+              <p className="text-muted-foreground">{selectedJob?.client_name || selectedJob?.client_email}</p>
+              {selectedJob?.assigned_boosters && selectedJob.assigned_boosters.length > 0 && (
+                <p className="text-muted-foreground">Boosters: {selectedJob.assigned_boosters.join(', ')}</p>
+              )}
             </div>
-            <JobChat jobId={selectedJobId} userType="booster" />
+            <JobChat jobId={selectedJobId} userType="admin" readOnly />
           </div>
         )}
       </div>
 
       {/* Desktop: Side-by-side layout */}
-      <div className="hidden lg:grid lg:grid-cols-3 gap-6 h-[600px]">
-        <Card className="lg:col-span-1">
+      <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+        <Card className="col-span-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Job Samtaler</CardTitle>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Søg jobs..."
+                placeholder="Søg job..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -164,35 +185,37 @@ export default function BoosterMessages() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[450px]">
+            <ScrollArea className="h-[500px]">
               {loading ? (
                 <div className="p-4 text-sm text-muted-foreground">Indlæser...</div>
               ) : filteredJobs.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Ingen beskeder endnu</p>
-                  <p className="text-xs">Beskeder fra kunder vises her</p>
-                </div>
+                <div className="p-4 text-sm text-muted-foreground">Ingen job chats fundet</div>
               ) : (
                 <div className="divide-y">
                   {filteredJobs.map((job) => (
                     <div
                       key={job.id}
                       onClick={() => setSelectedJobId(job.id)}
-                      className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-accent transition-colors ${selectedJobId === job.id ? 'bg-accent' : ''}`}
+                      className={`flex items-start gap-3 p-4 cursor-pointer hover:bg-accent transition-colors ${
+                        selectedJobId === job.id ? 'bg-accent' : ''
+                      }`}
                     >
                       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <MessageSquare className="h-5 w-5 text-primary" />
                       </div>
-                      
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium truncate">{job.title}</p>
-                          {job.unread_count > 0 && (
-                            <Badge variant="default" className="text-xs px-2 py-0">{job.unread_count}</Badge>
-                          )}
+                          <Badge variant="secondary" className="text-xs">{job.message_count}</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{job.client_name || 'Kunde'}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {job.client_name || job.client_email || 'Ukendt kunde'}
+                        </p>
+                        {job.assigned_boosters.length > 0 && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            Boosters: {job.assigned_boosters.join(', ')}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           {new Date(job.date_needed).toLocaleDateString('da-DK')}
                         </p>
@@ -205,35 +228,28 @@ export default function BoosterMessages() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 flex flex-col">
+        <div className="col-span-2">
           {selectedJobId ? (
-            <div className="flex-1 p-4">
-              <div className="text-sm mb-3">
+            <div className="space-y-3">
+              <div className="text-sm">
                 <p className="font-medium">{selectedJob?.title}</p>
-                <p className="text-muted-foreground text-xs">{selectedJob?.client_name || 'Kunde'}</p>
+                <p className="text-muted-foreground">{selectedJob?.client_name || selectedJob?.client_email}</p>
+                {selectedJob?.assigned_boosters && selectedJob.assigned_boosters.length > 0 && (
+                  <p className="text-muted-foreground">Boosters: {selectedJob.assigned_boosters.join(', ')}</p>
+                )}
               </div>
-              <JobChat jobId={selectedJobId} userType="booster" />
+              <JobChat jobId={selectedJobId} userType="admin" readOnly />
             </div>
           ) : (
-            <div className="flex items-center justify-center flex-1">
-              <div className="text-center">
-                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Vælg en samtale for at begynde</p>
+            <Card className="h-[500px] flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Vælg et job for at se chatten</p>
               </div>
-            </div>
+            </Card>
           )}
-        </Card>
-      </div>
-
-      <Card className="p-4">
-        <div className="flex items-start gap-3">
-          <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">Privat kommunikation</p>
-            <p>Kundernes kontaktoplysninger er skjult. Brug chatten til at kommunikere om job detaljer, looks og inspiration. Admin kan se beskeder ved behov.</p>
-          </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
