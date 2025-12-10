@@ -141,8 +141,8 @@ const ServiceCard = ({
   };
 
   return (
-    <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-md overflow-hidden">
-      <CardContent className="pt-5 pb-4 px-5">
+    <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-md overflow-hidden h-full flex flex-col">
+      <CardContent className="pt-5 pb-4 px-5 flex-1">
         <div className="flex justify-between items-start mb-3">
           <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1 pr-2">
             {name}
