@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,8 @@ import {
   ChevronRight,
   User,
   Plus,
-  GripVertical
+  GripVertical,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -168,23 +169,26 @@ function DroppableSlot({
   });
 
   const [isHovered, setIsHovered] = useState(false);
+  const hasChildren = React.Children.count(children) > 0 || (Array.isArray(children) && children.some(c => c));
 
   return (
     <div 
       ref={setNodeRef}
       className={cn(
-        "border-r min-h-[24px] relative transition-colors",
-        isOver && "bg-primary/10 ring-1 ring-primary ring-inset",
-        !children && "hover:bg-muted/30"
+        "border-r h-6 relative transition-colors cursor-pointer",
+        isOver && "bg-primary/20 ring-2 ring-primary ring-inset",
+        !hasChildren && isHovered && "bg-primary/5"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => !children && onAddJob(boosterId, timeSlot, date)}
+      onClick={() => !hasChildren && onAddJob(boosterId, timeSlot, date)}
     >
       {children}
-      {!children && isHovered && (
-        <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
-          <Plus className="h-4 w-4 text-muted-foreground/50" />
+      {!hasChildren && isHovered && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+            <Plus className="h-3 w-3 text-primary" />
+          </div>
         </div>
       )}
     </div>
@@ -560,6 +564,7 @@ const AdminCalendar = () => {
 
             <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
               <SelectTrigger className="w-40 h-9">
+                <Sparkles className="h-3 w-3 mr-2" />
                 <SelectValue placeholder="Kompetencer" />
               </SelectTrigger>
               <SelectContent>
@@ -632,90 +637,90 @@ const AdminCalendar = () => {
           </div>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="flex-1 overflow-auto">
-          <div className="min-w-max">
-            {/* Sticky Header with Boosters */}
-            <div 
-              className="sticky top-0 z-20 bg-background border-b"
-              style={{ 
-                display: 'grid', 
-                gridTemplateColumns: `60px repeat(${filteredBoosters.length}, minmax(120px, 1fr))` 
-              }}
-            >
-              <div className="p-2 text-xs font-medium text-muted-foreground border-r flex items-center justify-center">
-                Uge {weekNumber}
+        {/* Calendar Grid - viewport locked with internal scroll */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Sticky Header with Boosters */}
+          <div className="flex-shrink-0 border-b bg-background z-20">
+            <div className="overflow-x-auto">
+              <div 
+                className="flex"
+                style={{ minWidth: `${60 + filteredBoosters.length * 100}px` }}
+              >
+                <div className="w-[60px] flex-shrink-0 p-2 text-xs font-medium text-muted-foreground border-r flex items-center justify-center">
+                  Uge {weekNumber}
+                </div>
+                {filteredBoosters.map(booster => (
+                  <div key={booster.id} className="w-[100px] flex-shrink-0 p-2 border-r flex flex-col items-center gap-1">
+                    <Avatar className="h-8 w-8 ring-2 ring-green-500 ring-offset-1">
+                      <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
+                      <AvatarFallback className="text-xs bg-primary/10">
+                        {booster.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium truncate max-w-full">
+                      {booster.name.split(' ')[0]} {booster.name.split(' ')[1]?.[0]}.
+                    </span>
+                  </div>
+                ))}
               </div>
-              {filteredBoosters.map(booster => (
-                <div key={booster.id} className="p-2 border-r flex flex-col items-center gap-1">
-                  <Avatar className="h-8 w-8 ring-2 ring-green-500 ring-offset-1">
-                    <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
-                    <AvatarFallback className="text-xs bg-primary/10">
-                      {booster.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium truncate max-w-full">
-                    {booster.name.split(' ')[0]} {booster.name.split(' ')[1]?.[0]}.
-                  </span>
+            </div>
+          </div>
+
+          {/* Time Slots Grid - scrollable both directions */}
+          <div className="flex-1 overflow-auto">
+            <div style={{ minWidth: `${60 + filteredBoosters.length * 100}px` }}>
+              {timeSlots.map((timeSlot, idx) => (
+                <div 
+                  key={timeSlot}
+                  className={cn(
+                    "flex border-b border-border/30",
+                    idx % 2 === 0 && "border-b-border/60"
+                  )}
+                >
+                  {/* Time Label */}
+                  <div className={cn(
+                    "w-[60px] flex-shrink-0 text-[10px] text-muted-foreground border-r flex items-start justify-end pr-2 pt-0.5 h-6",
+                    idx % 2 === 0 ? "bg-muted/20" : "bg-background"
+                  )}>
+                    {idx % 2 === 0 ? timeSlot : ''}
+                  </div>
+                  
+                  {/* Booster Slots */}
+                  {filteredBoosters.map(booster => {
+                    const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
+                    const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot) && bookingsStarting.length === 0;
+                    
+                    return (
+                      <div key={`${booster.id}-${timeSlot}`} className="w-[100px] flex-shrink-0">
+                        <DroppableSlot
+                          boosterId={booster.id}
+                          timeSlot={timeSlot}
+                          date={selectedDate}
+                          onAddJob={handleAddJob}
+                        >
+                          {bookingsStarting.map(avail => {
+                            const job = getJobForAvailability(avail.job_id);
+                            const isPrivate = job?.client_type !== 'virksomhed';
+                            
+                            return (
+                              <DraggableBookingCard
+                                key={avail.id}
+                                booking={avail}
+                                job={job}
+                                isPrivate={isPrivate}
+                              />
+                            );
+                          })}
+                          {isOccupied && (
+                            <div className="absolute inset-0 bg-muted/20" />
+                          )}
+                        </DroppableSlot>
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>
-
-            {/* Time Slots Grid */}
-            {timeSlots.map((timeSlot, idx) => (
-              <div 
-                key={timeSlot}
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: `60px repeat(${filteredBoosters.length}, minmax(120px, 1fr))` 
-                }}
-                className={cn(
-                  "border-b border-border/30",
-                  idx % 2 === 0 && "border-b-border/60"
-                )}
-              >
-                {/* Time Label */}
-                <div className={cn(
-                  "text-[10px] text-muted-foreground border-r flex items-start justify-end pr-2 pt-0.5",
-                  idx % 2 === 0 ? "bg-muted/20" : "bg-background"
-                )}>
-                  {idx % 2 === 0 ? timeSlot : ''}
-                </div>
-                
-                {/* Booster Slots */}
-                {filteredBoosters.map(booster => {
-                  const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
-                  const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot) && bookingsStarting.length === 0;
-                  
-                  return (
-                    <DroppableSlot
-                      key={`${booster.id}-${timeSlot}`}
-                      boosterId={booster.id}
-                      timeSlot={timeSlot}
-                      date={selectedDate}
-                      onAddJob={handleAddJob}
-                    >
-                      {bookingsStarting.map(avail => {
-                        const job = getJobForAvailability(avail.job_id);
-                        const isPrivate = job?.client_type !== 'virksomhed';
-                        
-                        return (
-                          <DraggableBookingCard
-                            key={avail.id}
-                            booking={avail}
-                            job={job}
-                            isPrivate={isPrivate}
-                          />
-                        );
-                      })}
-                      {isOccupied && (
-                        <div className="absolute inset-0 bg-muted/20" />
-                      )}
-                    </DroppableSlot>
-                  );
-                })}
-              </div>
-            ))}
           </div>
         </div>
 
