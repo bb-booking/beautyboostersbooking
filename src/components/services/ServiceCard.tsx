@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Plus, Minus, Sparkles, Scissors, Sun, Heart, GraduationCap, PartyPopper, Baby, Camera, Users, Palette } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -25,20 +26,6 @@ interface ServiceCardProps {
   onClick: () => void;
 }
 
-// Category colors and icons mapping
-const categoryConfig: Record<string, { color: string; bgColor: string; icon: React.ElementType }> = {
-  "Makeup & Hår": { color: "text-pink-700", bgColor: "bg-pink-50 border-pink-200", icon: Sparkles },
-  "Spraytan": { color: "text-amber-700", bgColor: "bg-amber-50 border-amber-200", icon: Sun },
-  "Konfirmation": { color: "text-purple-700", bgColor: "bg-purple-50 border-purple-200", icon: GraduationCap },
-  "Bryllup - Brudestyling": { color: "text-rose-700", bgColor: "bg-rose-50 border-rose-200", icon: Heart },
-  "Makeup Kurser": { color: "text-indigo-700", bgColor: "bg-indigo-50 border-indigo-200", icon: Palette },
-  "Event": { color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: PartyPopper },
-  "Børn": { color: "text-sky-700", bgColor: "bg-sky-50 border-sky-200", icon: Baby },
-  "Shoot/reklame": { color: "text-violet-700", bgColor: "bg-violet-50 border-violet-200", icon: Camera },
-  "Specialister til projekt": { color: "text-teal-700", bgColor: "bg-teal-50 border-teal-200", icon: Users },
-  "Makeup / styling til Event": { color: "text-fuchsia-700", bgColor: "bg-fuchsia-50 border-fuchsia-200", icon: PartyPopper },
-};
-
 const formatPrice = (price: number) => {
   return price.toLocaleString('da-DK') + ' kr';
 };
@@ -61,9 +48,6 @@ const ServiceCard = ({
   const [people, setPeople] = useState(1);
   const [boosters, setBoosters] = useState(1);
   const [extraHours, setExtraHours] = useState(0);
-
-  const config = categoryConfig[category] || { color: "text-gray-700", bgColor: "bg-gray-50 border-gray-200", icon: Sparkles };
-  const CategoryIcon = config.icon;
 
   const calculatePrice = () => {
     if (isInquiry) return 0;
@@ -158,18 +142,15 @@ const ServiceCard = ({
 
   return (
     <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-md overflow-hidden">
-      {/* Category Header */}
-      <div className={`px-4 py-2.5 ${config.bgColor} border-b flex items-center gap-2`}>
-        <CategoryIcon className={`h-4 w-4 ${config.color}`} />
-        <span className={`text-xs font-semibold uppercase tracking-wide ${config.color}`}>
-          {category}
-        </span>
-      </div>
-      
       <CardContent className="pt-5 pb-4 px-5">
-        <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-          {name}
-        </h3>
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1 pr-2">
+            {name}
+          </h3>
+          <Badge variant="secondary" className="shrink-0 text-xs">
+            {category}
+          </Badge>
+        </div>
         <p className="text-muted-foreground text-sm mb-5 line-clamp-2 leading-relaxed">{description}</p>
         
         {/* Selectors */}
