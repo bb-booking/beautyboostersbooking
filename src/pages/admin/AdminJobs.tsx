@@ -193,7 +193,7 @@ const AdminJobs = () => {
 
   // Calculate BeautyBoosters cut and booster earnings
   const calculateEarnings = (price: number, clientType: 'privat' | 'virksomhed') => {
-    const priceAfterTax = clientType === 'privat' ? price / 1.25 : price; // Remove 25% VAT for private customers
+    const priceAfterTax = clientType === 'privat' ? price * 0.8 : price; // Remove 20% VAT for private customers (25% VAT = 20% of gross)
     const beautyBoostersCut = priceAfterTax * 0.4; // 40% to BeautyBoosters
     const boosterEarnings = priceAfterTax * 0.6; // 60% to Booster
     
@@ -1211,7 +1211,7 @@ Eksempel på notifikation som booster vil modtage.`;
                             )}
                             <div className="text-xs text-muted-foreground">
                               {newJob.client_type === 'privat' 
-                                ? '*Pris inkl. moms (25% moms fratrækkes først)' 
+                                ? '*Pris inkl. moms (20% moms fratrækkes først)' 
                                 : '*Pris eks. moms (B2B)'}
                             </div>
                           </>
