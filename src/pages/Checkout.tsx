@@ -108,13 +108,26 @@ export default function Checkout() {
       if (user) {
         setIsLoggedIn(true);
         
-        // Auto-fill customer info from auth user
+        const userName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        const userEmail = user.email || '';
+        const userPhone = user.user_metadata?.phone || user.phone || '';
+        
+        // Auto-fill customer info from auth user (private customers)
         setCustomerInfo(prev => ({
           ...prev,
-          email: user.email || prev.email,
-          name: user.user_metadata?.full_name || user.user_metadata?.name || prev.name,
-          phone: user.user_metadata?.phone || user.phone || prev.phone
+          email: userEmail || prev.email,
+          name: userName || prev.name,
+          phone: userPhone || prev.phone
         }));
+        
+        // Auto-fill invoice info from auth user (business customers)
+        setInvoiceInfo(prev => ({
+          ...prev,
+          contactName: userName || prev.contactName,
+          contactEmail: userEmail || prev.contactEmail,
+          contactPhone: userPhone || prev.contactPhone
+        }));
+        
         setCustomerInfoLoaded(true);
         
         // Load saved address if not already set
