@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUUID(id: string): boolean {
+  return UUID_REGEX.test(id);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,18 +21,68 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // Verify JWT and get authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Ikke autoriseret' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth to verify JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Ugyldig session' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { bookingId, boosterId, reason } = await req.json();
 
-    console.log('Releasing job:', { bookingId, boosterId, reason });
-
+    // Input validation
     if (!bookingId || !boosterId) {
       return new Response(
-        JSON.stringify({ error: 'Missing bookingId or boosterId' }),
+        JSON.stringify({ error: 'Mangler bookingId eller boosterId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // UUID format validation
+    if (!isValidUUID(bookingId) || !isValidUUID(boosterId)) {
+      return new Response(
+        JSON.stringify({ error: 'Ugyldigt ID format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Sanitize reason (max 500 chars, strip dangerous chars)
+    const sanitizedReason = reason ? String(reason).slice(0, 500).replace(/[<>]/g, '') : null;
+
+    // Authorization: Check if user is the booster or an admin
+    const isAdmin = await checkIsAdmin(supabase, user.id);
+    const isBoosterOwner = user.id === boosterId;
+
+    if (!isAdmin && !isBoosterOwner) {
+      console.log('Authorization failed:', { userId: user.id, boosterId, isAdmin });
+      return new Response(
+        JSON.stringify({ error: 'Du har ikke tilladelse til at frigive dette job' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Releasing job:', { bookingId, boosterId, reason: sanitizedReason, releasedBy: user.id });
 
     // Get the booking details
     const { data: booking, error: bookingError } = await supabase
@@ -37,8 +94,16 @@ serve(async (req) => {
     if (bookingError || !booking) {
       console.error('Booking not found:', bookingError);
       return new Response(
-        JSON.stringify({ error: 'Booking not found' }),
+        JSON.stringify({ error: 'Booking ikke fundet' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify this booking actually belongs to this booster
+    if (booking.booster_id !== boosterId) {
+      return new Response(
+        JSON.stringify({ error: 'Denne booking tilhører ikke denne booster' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -64,7 +129,7 @@ serve(async (req) => {
     if (updateError) {
       console.error('Error updating booking:', updateError);
       return new Response(
-        JSON.stringify({ error: 'Failed to release booking' }),
+        JSON.stringify({ error: 'Kunne ikke frigive booking' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -139,7 +204,7 @@ serve(async (req) => {
           .insert({
             recipient_id: adminProfile.id,
             title: 'Job frigivet',
-            message: `${releasingBooster?.name || 'En booster'} har frigivet jobbet "${booking.service_name}" den ${booking.booking_date}. ${reason ? `Årsag: ${reason}` : ''} Jobbet er nu ledigt og afventer ny tildeling.`,
+            message: `${releasingBooster?.name || 'En booster'} har frigivet jobbet "${booking.service_name}" den ${booking.booking_date}. ${sanitizedReason ? `Årsag: ${sanitizedReason}` : ''} Jobbet er nu ledigt og afventer ny tildeling.`,
             type: 'job_released_admin'
           });
       }
@@ -164,7 +229,7 @@ serve(async (req) => {
           time_needed: booking.booking_time,
           duration_hours: booking.duration_hours || 2,
           hourly_rate: Math.round((booking.amount || 0) / (booking.duration_hours || 2)),
-          description: `Frigivet booking. Kunde: ${booking.customer_name}. ${reason ? `Frigivet af tidligere booster med årsag: ${reason}` : ''}`,
+          description: `Frigivet booking. Kunde: ${booking.customer_name}. ${sanitizedReason ? `Frigivet af tidligere booster med årsag: ${sanitizedReason}` : ''}`,
           status: 'open',
           client_name: booking.customer_name,
           client_email: booking.customer_email,
@@ -179,7 +244,7 @@ serve(async (req) => {
         .eq('id', existingJob.id);
     }
 
-    console.log('Job released successfully');
+    console.log('Job released successfully by:', user.id);
 
     return new Response(
       JSON.stringify({ 
@@ -193,8 +258,18 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in release-job function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Der opstod en fejl' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+
+async function checkIsAdmin(supabase: any, userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('role', 'admin')
+    .single();
+  return !!data;
+}

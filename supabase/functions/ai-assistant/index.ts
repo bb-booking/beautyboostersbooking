@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,14 +12,65 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userRole, currentPage } = await req.json();
+    const { messages, currentPage } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Build context-aware system prompt based on user role
+    // Determine user role server-side instead of trusting client
+    let userRole = 'customer'; // Default to customer (most restricted)
+    
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        // Verify JWT and get user
+        const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+          global: { headers: { Authorization: authHeader } }
+        });
+        
+        const { data: { user } } = await supabaseAuth.auth.getUser();
+        
+        if (user) {
+          // Use service role to check user's actual role from database
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          
+          // Check admin role first
+          const { data: adminRole } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .single();
+          
+          if (adminRole) {
+            userRole = 'admin';
+          } else {
+            // Check booster role
+            const { data: boosterRole } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', user.id)
+              .eq('role', 'booster')
+              .single();
+            
+            if (boosterRole) {
+              userRole = 'booster';
+            }
+            // Otherwise stays as 'customer'
+          }
+        }
+      } catch (authError) {
+        console.log('Auth check failed, defaulting to customer role:', authError);
+        // Continue with customer role on auth failure
+      }
+    }
+
+    // Build context-aware system prompt based on verified user role
     let systemPrompt = `Du er Betty, BeautyBoosters' AI-assistent.
 
 REGLER - FØLG STRENGT:
