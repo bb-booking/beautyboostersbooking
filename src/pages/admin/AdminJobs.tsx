@@ -671,10 +671,17 @@ const AdminJobs = () => {
     try {
       // Filter out already assigned boosters - only add new ones
       const alreadyAssignedIds = selectedJobForAssign.assigned_boosters?.map(a => a.booster_id) || [];
-      const newBoosters = boosters.filter(b => !alreadyAssignedIds.includes(b.id));
+      const alreadyAssignedCount = alreadyAssignedIds.length;
+      let newBoosters = boosters.filter(b => !alreadyAssignedIds.includes(b.id));
+      
+      // Limit to remaining slots (boosters_needed - already assigned)
+      const remainingSlots = Math.max(0, selectedJobForAssign.boosters_needed - alreadyAssignedCount);
+      if (newBoosters.length > remainingSlots) {
+        newBoosters = newBoosters.slice(0, remainingSlots);
+      }
       
       if (newBoosters.length === 0) {
-        toast.info('Ingen nye boosters at tildele');
+        toast.info(remainingSlots === 0 ? 'Alle pladser er allerede udfyldt' : 'Ingen nye boosters at tildele');
         setSelectedJobForAssign(null);
         return;
       }
@@ -1749,7 +1756,7 @@ Eksempel på notifikation som booster vil modtage.`;
                     <Edit className="h-4 w-4 mr-1" />
                     Rediger
                   </Button>
-                  {job.status === 'open' && (
+                  {job.status === 'open' && (job.assigned_boosters?.length || 0) < job.boosters_needed && (
                     <Button size="sm" onClick={() => setSelectedJobForAssign(job)}>
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Tildel
@@ -1959,6 +1966,7 @@ Eksempel på notifikation som booster vil modtage.`;
           time={selectedJobForAssign.time_needed}
           serviceCategory={selectedJobForAssign.service_type}
           desiredCount={selectedJobForAssign.boosters_needed - (selectedJobForAssign.assigned_boosters?.length || 0)}
+          maxAllowed={selectedJobForAssign.boosters_needed}
           onAutoAssign={handleAssignBoosters}
           onConfirm={handleAssignBoosters}
         />
