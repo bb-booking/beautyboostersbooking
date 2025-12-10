@@ -28,7 +28,7 @@ const defaultJob: JobNotification = {
   location: "Østerbro, København",
   time: "10:00",
   date: "I morgen",
-  earnings: "1.850 kr",
+  earnings: "1.110 kr", // 60% of 1.850 kr (booster cut)
   serviceType: "Makeup & Hår",
   distance: "2,3 km væk"
 };
@@ -115,8 +115,8 @@ export function PushNotificationMockup({
               <span className="text-lg">💄</span>
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">BeautyBoosters</p>
-              <p className="text-xs text-muted-foreground">Nyt job tilgængeligt</p>
+              <p className="font-semibold text-sm text-black">BeautyBoosters</p>
+              <p className="text-xs text-black/60">Nyt job tilgængeligt</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export function PushNotificationMockup({
               onClick={onClose}
               className="p-1 rounded-full hover:bg-muted transition-colors"
             >
-              <X className="w-4 h-4 text-muted-foreground" />
+              <X className="w-4 h-4 text-black/40" />
             </button>
           </div>
         </div>
@@ -134,29 +134,29 @@ export function PushNotificationMockup({
         <div className="px-4 py-3 space-y-3">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-xl font-bold text-foreground">{job.title}</h3>
+              <h3 className="text-xl font-bold text-black">{job.title}</h3>
               <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
                 {job.serviceType}
               </span>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-primary">{job.earnings}</p>
-              <p className="text-xs text-muted-foreground">estimeret</p>
+              <p className="text-xs text-black/60">din indtjening</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-black/70">
               <MapPin className="w-4 h-4 text-primary" />
               <span>{job.location}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-black/70">
               <Clock className="w-4 h-4 text-primary" />
               <span>{job.date} kl. {job.time}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-black/60">
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full">
               📍 {job.distance}
             </span>

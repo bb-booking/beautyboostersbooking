@@ -5,19 +5,26 @@ import { BoosterSidebar } from "./BoosterSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 
 export function BoosterLayout() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>();
+
+  // Enable chat notifications for boosters
+  useChatNotifications({ userId, userType: 'booster', enabled: authorized });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!session) {
         setAuthorized(false);
         setChecking(false);
+        setUserId(undefined);
         navigate("/booster/login");
       } else {
+        setUserId(session.user.id);
         setTimeout(async () => {
           const { data, error } = await supabase
             .from("user_roles")
@@ -34,8 +41,10 @@ export function BoosterLayout() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         setAuthorized(false);
+        setUserId(undefined);
         navigate("/booster/login");
       } else {
+        setUserId(session.user.id);
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")

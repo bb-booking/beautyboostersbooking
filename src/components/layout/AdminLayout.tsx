@@ -5,13 +5,18 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 
 export function AdminLayout() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>();
   const roleCheckCache = useRef<{ [userId: string]: boolean }>({});
   const checkingInProgress = useRef(false);
+
+  // Enable chat notifications for admins
+  useChatNotifications({ userId, userType: 'admin', enabled: authorized });
 
   const checkUserRole = async (userId: string): Promise<boolean> => {
     // Use cached result if available
@@ -57,10 +62,12 @@ export function AdminLayout() {
       if (!session) {
         setAuthorized(false);
         setChecking(false);
+        setUserId(undefined);
         navigate("/admin/login", { replace: true });
         return;
       }
 
+      setUserId(session.user.id);
       const isAdmin = await checkUserRole(session.user.id);
       
       if (isMounted) {
