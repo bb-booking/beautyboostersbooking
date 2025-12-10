@@ -510,7 +510,16 @@ export default function BoosterCalendar() {
                     )}
                     
                     <span className="font-medium text-foreground">Adresse:</span>
-                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-foreground underline hover:text-primary">{meta.address || '-'}</a>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meta.address || '')}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="text-foreground underline hover:text-primary text-left"
+                    >
+                      {meta.address || '-'}
+                    </button>
                     
                     <span className="font-medium text-foreground">Service:</span>
                     <span className="text-foreground">{meta.service} ({peopleCount} {peopleCount === 1 ? 'person' : 'personer'})</span>
