@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -20,7 +23,9 @@ import {
   Calendar,
   Briefcase,
   Bell,
-  Smartphone
+  Smartphone,
+  CalendarCheck,
+  HandHelping
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { PushNotificationMockup } from "@/components/booster/PushNotificationMockup";
@@ -39,6 +44,16 @@ interface Job {
   description: string | null;
   client_type: string;
   status: string;
+}
+
+interface UpcomingJob {
+  id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  notes: string | null;
+  job_id: string | null;
 }
 
 interface BookingRequest {
@@ -65,15 +80,21 @@ interface BookingRequest {
 export default function BoosterJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
+  const [upcomingJobs, setUpcomingJobs] = useState<UpcomingJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingRequests, setLoadingRequests] = useState(true);
+  const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("requests");
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [showPushDemo, setShowPushDemo] = useState(false);
+  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
+  const [selectedJobForRelease, setSelectedJobForRelease] = useState<UpcomingJob | null>(null);
+  const [releaseReason, setReleaseReason] = useState('');
 
   useEffect(() => {
     fetchAvailableJobs();
     fetchRequests();
+    fetchUpcomingJobs();
     
     // Set up realtime subscription for booking requests
     const channel = supabase
@@ -152,6 +173,74 @@ export default function BoosterJobs() {
       toast.error('Kunne ikke hente booking anmodninger');
     } finally {
       setLoadingRequests(false);
+    }
+  };
+
+  const fetchUpcomingJobs = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      const { data, error } = await supabase
+        .from('booster_availability')
+        .select('id, date, start_time, end_time, status, notes, job_id')
+        .eq('booster_id', user.id)
+        .eq('status', 'booked')
+        .gte('date', today)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+      setUpcomingJobs(data || []);
+    } catch (error) {
+      console.error('Error fetching upcoming jobs:', error);
+      toast.error('Kunne ikke hente kommende jobs');
+    } finally {
+      setLoadingUpcoming(false);
+    }
+  };
+
+  const handleReleaseJob = async () => {
+    if (!selectedJobForRelease) return;
+    
+    setProcessing(selectedJobForRelease.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Ikke logget ind');
+
+      const { data, error } = await supabase.functions.invoke('release-job', {
+        body: {
+          bookingId: selectedJobForRelease.job_id || selectedJobForRelease.id,
+          boosterId: user.id,
+          reason: releaseReason
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Job frigivet', {
+        description: 'Jobbet er nu tilgængeligt for andre boosters'
+      });
+      
+      setReleaseDialogOpen(false);
+      setSelectedJobForRelease(null);
+      setReleaseReason('');
+      fetchUpcomingJobs();
+    } catch (error: any) {
+      console.error('Error releasing job:', error);
+      toast.error(error.message || 'Kunne ikke frigive job');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const parseNotes = (notes: string | null): { service?: string; customer_name?: string; address?: string; client_type?: string; price?: number } => {
+    try {
+      return notes ? JSON.parse(notes) : {};
+    } catch {
+      return {};
     }
   };
 
@@ -261,7 +350,17 @@ export default function BoosterJobs() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="upcoming" className="flex items-center gap-2">
+            <CalendarCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Kommende</span>
+            <span className="sm:hidden">Kom.</span>
+            {upcomingJobs.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                {upcomingJobs.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="requests" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Anmodninger</span>
@@ -274,7 +373,7 @@ export default function BoosterJobs() {
           </TabsTrigger>
           <TabsTrigger value="available" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
-            <span className="hidden sm:inline">Ledige jobs</span>
+            <span className="hidden sm:inline">Ledige</span>
             <span className="sm:hidden">Ledige</span>
             {jobs.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
@@ -283,6 +382,112 @@ export default function BoosterJobs() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        {/* Upcoming Jobs Tab */}
+        <TabsContent value="upcoming" className="space-y-4">
+          {loadingUpcoming ? (
+            <div className="grid gap-4">
+              {[...Array(2)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-32 bg-muted rounded"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : upcomingJobs.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <CalendarCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground font-medium">Ingen kommende jobs</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Dine accepterede jobs vises her
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {upcomingJobs.map((job) => {
+                const meta = parseNotes(job.notes);
+                const isVirksomhed = meta.client_type === 'virksomhed';
+                
+                return (
+                  <Card key={job.id} className="overflow-hidden">
+                    <div className={`h-1.5 ${isVirksomhed ? 'bg-purple-400' : 'bg-pink-400'}`} />
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-lg sm:text-xl truncate">
+                            {meta.service || 'Booking'}
+                          </CardTitle>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">
+                                {format(new Date(job.date), 'EEE d. MMM', { locale: da })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4 flex-shrink-0" />
+                              <span>{job.start_time.slice(0, 5)} - {job.end_time.slice(0, 5)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                          <Badge variant={isVirksomhed ? 'default' : 'secondary'}>
+                            {isVirksomhed ? 'B2B' : 'Privat'}
+                          </Badge>
+                          {meta.price && (
+                            <span className="font-semibold text-primary">
+                              {meta.price.toLocaleString('da-DK')} kr
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="space-y-4">
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            {meta.customer_name && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="truncate">{meta.customer_name}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            {meta.address && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="truncate">{meta.address}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedJobForRelease(job);
+                              setReleaseDialogOpen(true);
+                            }}
+                            className="flex-1 text-destructive hover:text-destructive"
+                          >
+                            <HandHelping className="h-5 w-5 mr-2" />
+                            Frigiv job
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Booking Requests Tab */}
         <TabsContent value="requests" className="space-y-4">
@@ -509,6 +714,60 @@ export default function BoosterJobs() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Release Job Dialog */}
+      <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Frigiv job</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Er du sikker på at du vil frigive dette job? Det vil blive tilbudt til andre boosters.
+            </p>
+            {selectedJobForRelease && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">{parseNotes(selectedJobForRelease.notes).service || 'Booking'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(selectedJobForRelease.date), 'EEEE d. MMMM', { locale: da })} kl. {selectedJobForRelease.start_time.slice(0, 5)}
+                </p>
+              </div>
+            )}
+            <div>
+              <Label htmlFor="release-reason">Årsag til frigivelse</Label>
+              <Textarea
+                id="release-reason"
+                value={releaseReason}
+                onChange={(e) => setReleaseReason(e.target.value)}
+                placeholder="Beskriv hvorfor du frigiver jobbet..."
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setReleaseDialogOpen(false);
+                  setSelectedJobForRelease(null);
+                  setReleaseReason('');
+                }}
+                className="flex-1"
+              >
+                Annuller
+              </Button>
+              <Button 
+                onClick={handleReleaseJob}
+                disabled={processing === selectedJobForRelease?.id}
+                variant="destructive"
+                className="flex-1"
+              >
+                <HandHelping className="h-4 w-4 mr-2" />
+                Frigiv
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

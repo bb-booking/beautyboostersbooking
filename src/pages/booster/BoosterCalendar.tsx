@@ -17,7 +17,7 @@ import {
   Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, 
   Trash2, X, Ban, CalendarX, Users, Edit, Calendar, 
   ChevronLeft, ChevronRight, RefreshCw, Settings, MessageCircle,
-  Navigation, Copy, ExternalLink, Send, ImagePlus
+  Navigation, Copy, ExternalLink, Send, ImagePlus, HandHelping
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -74,6 +74,9 @@ export default function BoosterCalendar() {
   const [blockReason, setBlockReason] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [chatEvent, setChatEvent] = useState<BoosterEvent | null>(null);
+  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
+  const [releaseReason, setReleaseReason] = useState('');
+  const [releasing, setReleasing] = useState(false);
   
   // Swipe handling
   const touchStartX = useRef<number>(0);
@@ -206,6 +209,37 @@ export default function BoosterCalendar() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} kopieret`);
+  };
+
+  const handleReleaseJob = async () => {
+    if (!selectedEvent || !userId) return;
+    
+    setReleasing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('release-job', {
+        body: {
+          bookingId: selectedEvent.id,
+          boosterId: userId,
+          reason: releaseReason
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Job frigivet', {
+        description: 'Jobbet er nu tilgængeligt for andre boosters'
+      });
+      
+      setReleaseDialogOpen(false);
+      setSelectedEvent(null);
+      setReleaseReason('');
+      await fetchEvents(userId, date, view);
+    } catch (error: any) {
+      console.error('Error releasing job:', error);
+      toast.error(error.message || 'Kunne ikke frigive job');
+    } finally {
+      setReleasing(false);
+    }
   };
 
   return (
@@ -341,10 +375,10 @@ export default function BoosterCalendar() {
             }}
             onOpenGroupChat={() => {
               toast.info("Gruppechat oprettes...");
-              // TODO: Create group conversation
               setSelectedEvent(null);
               navigate('/booster/messages');
             }}
+            onReleaseJob={() => setReleaseDialogOpen(true)}
           />}
         </DialogContent>
       </Dialog>
@@ -357,6 +391,46 @@ export default function BoosterCalendar() {
             parseNotes={parseNotes}
             onClose={() => { setChatOpen(false); setChatEvent(null); }}
           />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Release Job Dialog */}
+      <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Frigiv job</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Er du sikker på at du vil frigive dette job? Det vil blive tilbudt til andre boosters.
+            </p>
+            {selectedEvent && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">{parseNotes(selectedEvent).service || 'Booking'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(selectedEvent.date), 'EEEE d. MMMM', { locale: da })} kl. {selectedEvent.start_time.slice(0, 5)}
+                </p>
+              </div>
+            )}
+            <div>
+              <Label>Årsag til frigivelse</Label>
+              <Textarea
+                value={releaseReason}
+                onChange={(e) => setReleaseReason(e.target.value)}
+                placeholder="Beskriv hvorfor du frigiver jobbet..."
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setReleaseDialogOpen(false); setReleaseReason(''); }} className="flex-1">
+                Annuller
+              </Button>
+              <Button onClick={handleReleaseJob} disabled={releasing} variant="destructive" className="flex-1">
+                <HandHelping className="h-4 w-4 mr-2" />
+                Frigiv
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -456,7 +530,7 @@ function DayView({
             className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
             onClick={() => onSelectEvent(event)}
           >
-            <div className={`h-1.5 ${isVirksomhed ? 'bg-blue-500' : 'bg-amber-500'}`} />
+            <div className={`h-1.5 ${isVirksomhed ? 'bg-purple-400' : 'bg-pink-400'}`} />
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -566,7 +640,7 @@ function WeekView({
                       className="w-full p-2 rounded-lg bg-muted/50 text-left hover:bg-muted transition-colors flex items-center gap-3"
                       onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
                     >
-                      <div className={`w-1 h-10 rounded-full ${meta.client_type === 'virksomhed' ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                      <div className={`w-1 h-10 rounded-full ${meta.client_type === 'virksomhed' ? 'bg-purple-400' : 'bg-pink-400'}`} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 text-sm">
                           <Clock className="h-3 w-3" />
@@ -702,7 +776,8 @@ function EventDetail({
   onCopy,
   onClose,
   onOpenChat,
-  onOpenGroupChat
+  onOpenGroupChat,
+  onReleaseJob
 }: {
   event: BoosterEvent;
   parseNotes: (e: BoosterEvent) => EventMeta;
@@ -711,6 +786,7 @@ function EventDetail({
   onClose: () => void;
   onOpenChat: () => void;
   onOpenGroupChat: () => void;
+  onReleaseJob: () => void;
 }) {
   const meta = parseNotes(event);
   const isVirksomhed = meta.client_type === 'virksomhed';
@@ -905,6 +981,14 @@ function EventDetail({
               Opret gruppechat
             </Button>
           )}
+          <Button 
+            variant="outline" 
+            className="w-full gap-2 text-destructive hover:text-destructive"
+            onClick={onReleaseJob}
+          >
+            <HandHelping className="h-4 w-4" />
+            Frigiv job
+          </Button>
         </div>
       </div>
     </>
