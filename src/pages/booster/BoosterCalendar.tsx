@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { addDays, format, isEqual, startOfDay, startOfWeek } from "date-fns";
 import { da } from "date-fns/locale";
-import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound, MessageCircle, ImagePlus, StickyNote } from "lucide-react";
+import { Plus, User, Building2, Image, MapPin, Phone, Mail, Clock, Trash2, X, Ban, CalendarX, Users, Edit, Share2, Calendar, Tag, CreditCard, UsersRound, MessageCircle, ImagePlus, StickyNote, RefreshCw, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { BookingChatDialog } from "@/components/booking/BookingChatDialog";
 import { ImageUploadDialog } from "@/components/booking/ImageUploadDialog";
 import { AddServiceDialog } from "@/components/booking/AddServiceDialog";
@@ -103,6 +104,7 @@ const getBlockedDates = (events: BoosterEvent[]): Set<string> => {
 };
 
 export default function BoosterCalendar() {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [events, setEvents] = useState<BoosterEvent[]>([]);
@@ -329,6 +331,15 @@ export default function BoosterCalendar() {
             <Button variant="outline" size="sm" onClick={() => setDate(addDays(date, view === "day" ? 1 : view === "week" ? 7 : 30))}>Næste</Button>
           </div>
           <Select value={view} onValueChange={(v) => setView(v as View)}><SelectTrigger className="w-full sm:w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="day">Dag</SelectItem><SelectItem value="week">Uge</SelectItem><SelectItem value="month">Måned</SelectItem></SelectContent></Select>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1"
+            onClick={() => navigate('/booster/settings')}
+          >
+            <RefreshCw className="h-4 w-4" /> 
+            Synkroniser kalender
+          </Button>
           <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
             <DialogTrigger asChild><Button variant="outline" size="sm" className="gap-1"><Ban className="h-4 w-4" /> Bloker tid</Button></DialogTrigger>
             <DialogContent className="max-w-sm">
