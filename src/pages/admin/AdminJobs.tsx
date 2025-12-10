@@ -147,7 +147,8 @@ const AdminJobs = () => {
     location: "",
     date_needed: undefined as Date | undefined,
     time_needed: "",
-    duration_hours: 0,
+    duration_hours: 3,
+    hourly_rate_per_booster: 0,
     client_name: "",
     client_type: "privat" as 'privat' | 'virksomhed',
     boosters_needed: 1,
@@ -155,6 +156,10 @@ const AdminJobs = () => {
     selectedCompetenceTags: [] as string[]
   });
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  
+  // Booster filtering
+  const [boosterSortBy, setBoosterSortBy] = useState<'rating' | 'name'>('rating');
+  const [boosterSkillFilter, setBoosterSkillFilter] = useState<string>('all');
   
   // Address autocomplete
   const [addressQuery, setAddressQuery] = useState("");
@@ -549,7 +554,8 @@ const AdminJobs = () => {
         location: "",
         date_needed: undefined,
         time_needed: "",
-        duration_hours: 0,
+        duration_hours: 3,
+        hourly_rate_per_booster: 0,
         client_name: "",
         client_type: "privat",
         boosters_needed: 1,
@@ -648,7 +654,8 @@ const AdminJobs = () => {
       location: job.location,
       date_needed: job.date_needed ? new Date(job.date_needed) : undefined,
       time_needed: job.time_needed || "",
-      duration_hours: job.duration_hours || 0,
+      duration_hours: job.duration_hours || 3,
+      hourly_rate_per_booster: job.hourly_rate || 0,
       client_name: job.client_name || "",
       client_type: job.client_type,
       boosters_needed: job.boosters_needed,
@@ -727,7 +734,8 @@ const AdminJobs = () => {
       location: "",
       date_needed: undefined,
       time_needed: "",
-      duration_hours: 0,
+      duration_hours: 3,
+      hourly_rate_per_booster: 0,
       client_name: "",
       client_type: "privat",
       boosters_needed: 1,
@@ -1151,36 +1159,60 @@ Eksempel på notifikation som booster vil modtage.`;
                 </div>
               </div>
 
-              {newJob.selectedServices.length > 0 && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <Label className="text-sm font-medium">Prisberegning</Label>
-                  <div className="mt-2 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Total pris:</span>
-                      <span className="font-medium">{calculateTotalPrice()} DKK</span>
+              {/* Price per booster and calculation */}
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <Label className="text-sm font-semibold">Prisberegning</Label>
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="hourly_rate" className="text-xs text-muted-foreground">Pris pr. booster *</Label>
+                      <div className="relative">
+                        <Input
+                          id="hourly_rate"
+                          type="number"
+                          min="0"
+                          value={newJob.hourly_rate_per_booster || ''}
+                          onChange={(e) => setNewJob(prev => ({ ...prev, hourly_rate_per_booster: parseInt(e.target.value) || 0 }))}
+                          placeholder="F.eks. 2999"
+                          className="pr-12"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">DKK</span>
+                      </div>
                     </div>
-                    {(() => {
-                      const totalPrice = calculateTotalPrice();
-                      const earnings = calculateEarnings(totalPrice, newJob.client_type);
-                      return (
-                        <>
-                          <div className="flex justify-between text-muted-foreground">
-                            <span>BeautyBoosters (40%):</span>
-                            <span>{Math.round(earnings.beautyBoostersCut)} DKK</span>
-                          </div>
-                          <div className="flex justify-between text-muted-foreground">
-                            <span>Booster indtjening:</span>
-                            <span>{Math.round(earnings.boosterEarnings)} DKK</span>
-                          </div>
-                          {newJob.client_type === 'privat' && (
-                            <div className="text-xs text-orange-600">*Inkl. 20% moms</div>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Total pris ({newJob.boosters_needed} booster{newJob.boosters_needed > 1 ? 's' : ''})</Label>
+                      <div className="h-10 flex items-center font-bold text-lg">
+                        {(newJob.hourly_rate_per_booster * newJob.boosters_needed).toLocaleString('da-DK')} DKK
+                      </div>
+                    </div>
                   </div>
+                  
+                  {newJob.hourly_rate_per_booster > 0 && (
+                    <div className="pt-3 border-t space-y-1 text-sm">
+                      {(() => {
+                        const totalPrice = newJob.hourly_rate_per_booster * newJob.boosters_needed;
+                        const earnings = calculateEarnings(totalPrice, newJob.client_type);
+                        const boosterEarningsPerPerson = Math.round(earnings.boosterEarnings / newJob.boosters_needed);
+                        return (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">BeautyBoosters (40%):</span>
+                              <span className="font-medium">{Math.round(earnings.beautyBoostersCut).toLocaleString('da-DK')} DKK</span>
+                            </div>
+                            <div className="flex justify-between text-green-700">
+                              <span>Booster indtjening pr. person:</span>
+                              <span className="font-bold">{boosterEarningsPerPerson.toLocaleString('da-DK')} DKK</span>
+                            </div>
+                            {newJob.client_type === 'privat' && (
+                              <div className="text-xs text-orange-600">*Pris inkl. moms (20% moms fratrækkes først)</div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
@@ -1227,13 +1259,14 @@ Eksempel på notifikation som booster vil modtage.`;
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="duration_hours">Varighed (auto-beregnet)</Label>
+                  <Label htmlFor="duration_hours">Varighed (timer) *</Label>
                   <Input
                     id="duration_hours"
                     type="number"
-                    value={calculateTotalDuration()}
-                    disabled
-                    className="bg-muted"
+                    min="1"
+                    value={newJob.duration_hours}
+                    onChange={(e) => setNewJob(prev => ({ ...prev, duration_hours: parseInt(e.target.value) || 1 }))}
+                    placeholder="3"
                   />
                 </div>
               </div>
@@ -1269,10 +1302,75 @@ Eksempel på notifikation som booster vil modtage.`;
 
               {!showBoosterSelectionStep ? (
                 <>
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <Label className="text-sm font-medium text-blue-900">Eksempel på booster notifikation:</Label>
-                    <div className="mt-2 text-sm text-blue-800 font-mono whitespace-pre-line">
-                      {exampleNotification}
+                  {/* Push notification style preview */}
+                  <div className="rounded-2xl border shadow-lg overflow-hidden">
+                    <div className="bg-card p-4">
+                      <Label className="text-sm font-medium">Eksempel på booster notifikation:</Label>
+                    </div>
+                    <div className="bg-card border-t p-4">
+                      {/* Progress bar */}
+                      <div className="h-1 bg-muted rounded-full overflow-hidden mb-4">
+                        <div className="h-full w-3/4 bg-primary" />
+                      </div>
+                      
+                      {/* Header */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="text-lg">💄</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">BeautyBoosters</p>
+                          <p className="text-xs text-muted-foreground">Nyt job tilgængeligt</p>
+                        </div>
+                      </div>
+                      
+                      {/* Job details */}
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold">{newJob.title || 'Job titel...'}</h3>
+                            <span className="inline-block mt-1 px-2 py-0.5 bg-muted text-muted-foreground text-xs font-medium rounded-full">
+                              {newJob.selectedServices.map(s => s.service_name).join(', ') || 'Vælg services'}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-green-600">
+                              {newJob.hourly_rate_per_booster > 0 
+                                ? `${Math.round(calculateEarnings(newJob.hourly_rate_per_booster, newJob.client_type).boosterEarnings).toLocaleString('da-DK')} kr`
+                                : '0 kr'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">din indtjening</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            <span className="truncate">{newJob.location || 'Lokation...'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            <span>{newJob.date_needed ? format(newJob.date_needed, 'd. MMM', { locale: da }) : 'Dato'} kl. {newJob.time_needed || '00:00'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="px-2 py-1 bg-muted rounded-full">⏱ {newJob.duration_hours} timer</span>
+                          {newJob.boosters_needed > 1 && (
+                            <span className="px-2 py-1 bg-muted rounded-full">👥 {newJob.boosters_needed} boosters søges</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Demo buttons */}
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <div className="h-12 rounded-xl border-2 flex items-center justify-center gap-2 text-muted-foreground">
+                          <X className="w-4 h-4" /> Afvis
+                        </div>
+                        <div className="h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center gap-2 font-semibold">
+                          <CheckCircle className="w-4 h-4" /> Acceptér
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1286,7 +1384,7 @@ Eksempel på notifikation som booster vil modtage.`;
                     </Button>
                     <Button 
                       onClick={selectedJobForEdit ? updateJob : proceedToBoosterSelection} 
-                      disabled={!newJob.title || !newJob.location || !newJob.date_needed || newJob.selectedServices.length === 0}
+                      disabled={!newJob.title || !newJob.location || !newJob.date_needed || newJob.hourly_rate_per_booster <= 0}
                     >
                       {selectedJobForEdit ? 'Gem ændringer' : 'Vælg boosters →'}
                     </Button>
@@ -1300,6 +1398,47 @@ Eksempel på notifikation som booster vil modtage.`;
                       <Badge variant="secondary">
                         {selectedBoostersForNotification.size} valgt
                       </Badge>
+                    </div>
+                    
+                    {/* Filters and sorting */}
+                    <div className="flex flex-wrap gap-3">
+                      <Select value={boosterSortBy} onValueChange={(v: 'rating' | 'name') => setBoosterSortBy(v)}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Sorter efter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rating">Bedst bedømte</SelectItem>
+                          <SelectItem value="name">Navn (A-Z)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select value={boosterSkillFilter} onValueChange={setBoosterSkillFilter}>
+                        <SelectTrigger className="w-44">
+                          <SelectValue placeholder="Filtrer kompetence" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle kompetencer</SelectItem>
+                          {[...new Set(boosters.flatMap(b => b.specialties))].map(skill => (
+                            <SelectItem key={skill} value={skill}>{skill}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Auto-assign: select top-rated boosters based on boosters_needed
+                          const eligible = getEligibleBoostersForJob();
+                          const sorted = [...eligible].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                          const topBoosters = sorted.slice(0, newJob.boosters_needed);
+                          setSelectedBoostersForNotification(new Set(topBoosters.map(b => b.id)));
+                          toast.success(`${topBoosters.length} bedst bedømte boosters valgt automatisk`);
+                        }}
+                        className="gap-2"
+                      >
+                        ✨ Tildel automatisk ({newJob.boosters_needed})
+                      </Button>
                     </div>
                     
                     {getEligibleBoostersForJob().length === 0 ? (
@@ -1316,9 +1455,15 @@ Eksempel på notifikation som booster vil modtage.`;
                           <span>Vælg alle ({getEligibleBoostersForJob().length})</span>
                         </label>
                         
-                        <ScrollArea className="h-96">
+                        <ScrollArea className="h-80">
                           <div className="space-y-2 pr-4">
-                            {getEligibleBoostersForJob().map((booster) => (
+                            {getEligibleBoostersForJob()
+                              .filter(b => boosterSkillFilter === 'all' || b.specialties.includes(boosterSkillFilter))
+                              .sort((a, b) => {
+                                if (boosterSortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+                                return a.name.localeCompare(b.name);
+                              })
+                              .map((booster) => (
                               <label
                                 key={booster.id}
                                 className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
@@ -1336,7 +1481,7 @@ Eksempel på notifikation som booster vil modtage.`;
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium">{booster.name}</span>
                                     {typeof booster.rating === 'number' && (
-                                      <span className="text-xs text-muted-foreground">{booster.rating.toFixed(1)}★</span>
+                                      <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">{booster.rating.toFixed(1)}★</span>
                                     )}
                                   </div>
                                   <div className="text-sm text-muted-foreground">{booster.location}</div>
