@@ -127,8 +127,8 @@ function DraggableBookingCard({
         "absolute left-1 right-1 top-0 rounded-md p-1 overflow-hidden z-10 transition-shadow",
         "border-l-4 group",
         isPrivate 
-          ? "bg-amber-50 border-l-amber-400 hover:shadow-md" 
-          : "bg-blue-50 border-l-blue-400 hover:shadow-md",
+          ? "bg-pink-50 border-l-pink-400 hover:shadow-md" 
+          : "bg-purple-50 border-l-purple-400 hover:shadow-md",
         isDragging && "opacity-50 shadow-lg cursor-grabbing"
       )}
     >
@@ -584,69 +584,68 @@ const AdminCalendar = () => {
       onDragEnd={handleDragEnd}
     >
       <div className="h-[calc(100vh-4rem)] flex flex-col">
-        {/* Compact Header - Single Row */}
-        <div className="flex items-center justify-between gap-2 py-2 px-3 border-b bg-background shrink-0 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={() => {
-                setNewJobBooster(filteredBoosters[0]?.id || "");
-                setNewJobTime("09:00");
-                setNewJobDate(selectedDate);
-                setJobDialogOpen(true);
-              }}
+        {/* Compact Header - All on one row */}
+        <div className="flex items-center gap-2 py-2 px-3 border-b bg-background shrink-0 overflow-x-auto">
+          <Button 
+            onClick={() => {
+              setNewJobBooster(filteredBoosters[0]?.id || "");
+              setNewJobTime("09:00");
+              setNewJobDate(selectedDate);
+              setJobDialogOpen(true);
+            }}
+            size="sm"
+            className="h-8 shrink-0"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Opret job
+          </Button>
+
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => navigateDate('prev')}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="h-8 px-2 shrink-0">
+                <CalendarIcon className="h-4 w-4 mr-1" />
+                {format(selectedDate, 'd. MMM yyyy', { locale: da })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => navigateDate('next')}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <div className="flex items-center border rounded-md overflow-hidden shrink-0">
+            <Button
+              variant={viewMode === 'day' ? 'default' : 'ghost'}
               size="sm"
-              className="h-8"
+              className="h-8 rounded-none px-3"
+              onClick={() => setViewMode('day')}
             >
-              <Plus className="h-4 w-4 mr-1" />
-              Opret job
+              Dag
             </Button>
-
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => navigateDate('prev')}>
-              <ChevronLeft className="h-4 w-4" />
+            <Button
+              variant={viewMode === 'week' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 rounded-none px-3"
+              onClick={() => setViewMode('week')}
+            >
+              Uge
             </Button>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="h-8 px-2">
-                  <CalendarIcon className="h-4 w-4 mr-1" />
-                  {format(selectedDate, 'd. MMM yyyy', { locale: da })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => navigateDate('next')}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-
-            <div className="flex items-center border rounded-md overflow-hidden">
-              <Button
-                variant={viewMode === 'day' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-8 rounded-none px-3"
-                onClick={() => setViewMode('day')}
-              >
-                Dag
-              </Button>
-              <Button
-                variant={viewMode === 'week' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-8 rounded-none px-3"
-                onClick={() => setViewMode('week')}
-              >
-                Uge
-              </Button>
-            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="relative w-40">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
               <Input
@@ -813,11 +812,11 @@ const AdminCalendar = () => {
         {/* Legend */}
         <div className="border-t bg-muted/30 py-1.5 px-3 flex items-center gap-4 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 bg-amber-50 border-l-2 border-l-amber-400 rounded-sm" />
+            <div className="w-3 h-3 bg-pink-50 border-l-2 border-l-pink-400 rounded-sm" />
             <span className="text-muted-foreground">Privat</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 bg-blue-50 border-l-2 border-l-blue-400 rounded-sm" />
+            <div className="w-3 h-3 bg-purple-50 border-l-2 border-l-purple-400 rounded-sm" />
             <span className="text-muted-foreground">B2B</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -836,8 +835,8 @@ const AdminCalendar = () => {
             <div className={cn(
               "w-24 rounded-md p-2 shadow-lg border-l-4",
               activeBooking.job?.client_type !== 'virksomhed'
-                ? "bg-amber-50 border-l-amber-400"
-                : "bg-blue-50 border-l-blue-400"
+                ? "bg-pink-50 border-l-pink-400"
+                : "bg-purple-50 border-l-purple-400"
             )}>
               <div className="text-[10px] font-medium">
                 {activeBooking.booking.start_time.slice(0, 5)} - {activeBooking.booking.end_time.slice(0, 5)}
@@ -981,7 +980,7 @@ const AdminCalendar = () => {
             <DialogTitle className="flex items-center gap-2">
               <div className={cn(
                 "w-3 h-6 rounded-sm",
-                selectedBooking?.job?.client_type !== 'virksomhed' ? "bg-amber-400" : "bg-blue-400"
+                selectedBooking?.job?.client_type !== 'virksomhed' ? "bg-pink-400" : "bg-purple-400"
               )} />
               {selectedBooking?.job?.title || 'Booking detaljer'}
             </DialogTitle>
