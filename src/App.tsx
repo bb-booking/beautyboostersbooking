@@ -39,6 +39,7 @@ import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminBoosterApplications from "./pages/admin/AdminBoosterApplications";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminJobChats from "./pages/admin/AdminJobChats";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminInvoicesPage from "./pages/admin/AdminInvoices";
@@ -135,6 +136,7 @@ const AppContent = () => {
             <Route path="boosters" element={<AdminBoosters />} />
             <Route path="booster-applications" element={<AdminBoosterApplications />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="job-chats" element={<AdminJobChats />} />
             <Route path="discount-codes" element={<AdminDiscountCodes />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

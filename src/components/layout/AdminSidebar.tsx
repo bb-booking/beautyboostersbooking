@@ -35,6 +35,7 @@ const adminItems = [
   { title: "Booster Ansøgninger", url: "/admin/booster-applications", icon: Users },
   { title: "Kalender", url: "/admin/calendar", icon: Calendar },
   { title: "Beskeder", url: "/admin/messages", icon: MessageSquare },
+  { title: "Job Chats", url: "/admin/job-chats", icon: Users },
   { title: "Fakturaer", url: "/admin/invoices", icon: FileText },
   { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
   { title: "Rabatkoder", url: "/admin/discount-codes", icon: Tag },
