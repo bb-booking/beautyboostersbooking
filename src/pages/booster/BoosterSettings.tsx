@@ -57,10 +57,13 @@ export default function BoosterSettings() {
     showRating: true,
   });
 
-  // Google Calendar integration state
+  // Calendar integration state
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState<string | null>(null);
+  const [appleCalendarConnected, setAppleCalendarConnected] = useState(false);
+  const [appleCalendarEmail, setAppleCalendarEmail] = useState<string | null>(null);
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
+  const [connectingCalendarType, setConnectingCalendarType] = useState<'google' | 'apple' | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   // Mock initial data
@@ -99,54 +102,60 @@ export default function BoosterSettings() {
     });
   };
 
-  const handleConnectGoogleCalendar = async () => {
+  const handleConnectCalendar = async (type: 'google' | 'apple') => {
     setIsConnectingCalendar(true);
+    setConnectingCalendarType(type);
     
     try {
-      // Check if Google OAuth is configured
-      const { data, error } = await supabase.functions.invoke('google-calendar-auth', {
+      const functionName = type === 'google' ? 'google-calendar-auth' : 'apple-calendar-auth';
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { action: 'get_auth_url' }
       });
       
       if (error) {
-        // If the edge function doesn't exist yet, show a helpful message
+        const calendarName = type === 'google' ? 'Google' : 'Apple';
         toast({
-          title: "Google Kalender integration",
-          description: "Google OAuth er ved at blive konfigureret. Prøv igen senere.",
+          title: `${calendarName} Kalender integration`,
+          description: `${calendarName} integration er ved at blive konfigureret. Prøv igen senere.`,
           variant: "destructive"
         });
         return;
       }
       
       if (data?.authUrl) {
-        // Open OAuth flow in a popup
-        window.open(data.authUrl, 'google-auth', 'width=500,height=600');
+        window.open(data.authUrl, `${type}-auth`, 'width=500,height=600');
       }
     } catch (err) {
       toast({
         title: "Fejl",
-        description: "Kunne ikke oprette forbindelse til Google. Prøv igen senere.",
+        description: "Kunne ikke oprette forbindelse. Prøv igen senere.",
         variant: "destructive"
       });
     } finally {
       setIsConnectingCalendar(false);
+      setConnectingCalendarType(null);
     }
   };
 
-  const handleDisconnectGoogleCalendar = async () => {
+  const handleDisconnectCalendar = async (type: 'google' | 'apple') => {
     try {
-      // Call edge function to revoke access
-      await supabase.functions.invoke('google-calendar-auth', {
+      const functionName = type === 'google' ? 'google-calendar-auth' : 'apple-calendar-auth';
+      await supabase.functions.invoke(functionName, {
         body: { action: 'disconnect' }
       });
       
-      setGoogleCalendarConnected(false);
-      setGoogleCalendarEmail(null);
-      setLastSyncTime(null);
+      if (type === 'google') {
+        setGoogleCalendarConnected(false);
+        setGoogleCalendarEmail(null);
+      } else {
+        setAppleCalendarConnected(false);
+        setAppleCalendarEmail(null);
+      }
       
+      const calendarName = type === 'google' ? 'Google' : 'Apple';
       toast({
         title: "Kalender afbrudt",
-        description: "Din Google Kalender er nu afbrudt fra Beauty Boosters",
+        description: `Din ${calendarName} Kalender er nu afbrudt fra Beauty Boosters`,
       });
     } catch (err) {
       toast({
@@ -396,83 +405,144 @@ export default function BoosterSettings() {
           </CardContent>
         </Card>
 
-        {/* Google Calendar Integration */}
+        {/* Calendar Integration */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Google Kalender Integration
+              Kalender Integration
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <p className="text-sm text-muted-foreground">
-              Forbind din private Google Kalender for automatisk at blokere tidspunkter hvor du er optaget. 
+              Forbind din private kalender for automatisk at blokere tidspunkter hvor du er optaget. 
               Dette forhindrer dobbeltbookinger og holder din kalender synkroniseret.
             </p>
-            
-            {googleCalendarConnected ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  <div className="flex-1">
-                    <p className="font-medium text-green-700 dark:text-green-400">Kalender forbundet</p>
-                    <p className="text-sm text-green-600 dark:text-green-500">{googleCalendarEmail}</p>
-                    {lastSyncTime && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Sidst synkroniseret: {lastSyncTime}
-                      </p>
-                    )}
+
+            {/* Google Calendar */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#4285F4]/10 flex items-center justify-center">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium">Google Kalender</h4>
+                  <p className="text-sm text-muted-foreground">Gmail, Google Workspace</p>
+                </div>
+                {googleCalendarConnected ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Forbundet
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDisconnectCalendar('google')}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Unlink className="h-4 w-4" />
+                    </Button>
                   </div>
+                ) : (
                   <Button 
-                    variant="ghost" 
+                    variant="outline"
                     size="sm"
-                    onClick={handleDisconnectGoogleCalendar}
-                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleConnectCalendar('google')}
+                    disabled={isConnectingCalendar && connectingCalendarType === 'google'}
                   >
-                    <Unlink className="h-4 w-4 mr-2" />
-                    Afbryd
+                    {isConnectingCalendar && connectingCalendarType === 'google' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Forbind'
+                    )}
                   </Button>
+                )}
+              </div>
+              {googleCalendarConnected && googleCalendarEmail && (
+                <p className="text-xs text-muted-foreground pl-13">
+                  Forbundet: {googleCalendarEmail}
+                </p>
+              )}
+            </div>
+
+            {/* Apple/iCloud Calendar */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-white" />
                 </div>
-                
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Sådan virker det:</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Private aftaler blokerer automatisk booking-tider</li>
-                    <li>Kunder kan stadig sende forespørgsler til blokerede tider</li>
-                    <li>Du kan manuelt acceptere eller afvise forespørgsler</li>
-                    <li>Synkronisering sker automatisk hver time</li>
-                  </ul>
+                <div className="flex-1">
+                  <h4 className="font-medium">Apple Kalender</h4>
+                  <p className="text-sm text-muted-foreground">iCloud, iPhone, Mac</p>
                 </div>
+                {appleCalendarConnected ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Forbundet
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDisconnectCalendar('apple')}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Unlink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConnectCalendar('apple')}
+                    disabled={isConnectingCalendar && connectingCalendarType === 'apple'}
+                  >
+                    {isConnectingCalendar && connectingCalendarType === 'apple' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Forbind'
+                    )}
+                  </Button>
+                )}
+              </div>
+              {appleCalendarConnected && appleCalendarEmail && (
+                <p className="text-xs text-muted-foreground pl-13">
+                  Forbundet: {appleCalendarEmail}
+                </p>
+              )}
+            </div>
+
+            {/* Info section */}
+            {(googleCalendarConnected || appleCalendarConnected) ? (
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-medium mb-2">Sådan virker det:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Private aftaler blokerer automatisk booking-tider</li>
+                  <li>Kunder kan stadig sende forespørgsler til blokerede tider</li>
+                  <li>Du kan manuelt acceptere eller afvise forespørgsler</li>
+                  <li>Synkronisering sker automatisk hver time</li>
+                </ul>
+                {lastSyncTime && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Sidst synkroniseret: {lastSyncTime}
+                  </p>
+                )}
               </div>
             ) : (
-              <div className="space-y-4">
-                <Button 
-                  onClick={handleConnectGoogleCalendar}
-                  disabled={isConnectingCalendar}
-                  className="w-full sm:w-auto"
-                >
-                  {isConnectingCalendar ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Forbinder...
-                    </>
-                  ) : (
-                    <>
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Forbind Google Kalender
-                    </>
-                  )}
-                </Button>
-                
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Fordele ved at forbinde:</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Undgå dobbeltbookinger automatisk</li>
-                    <li>Din private kalender forbliver privat</li>
-                    <li>Fleksibilitet til at acceptere hasteforespørgsler</li>
-                    <li>Synkroniserer i realtid</li>
-                  </ul>
-                </div>
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-medium mb-2">Fordele ved at forbinde:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Undgå dobbeltbookinger automatisk</li>
+                  <li>Din private kalender forbliver privat</li>
+                  <li>Fleksibilitet til at acceptere hasteforespørgsler</li>
+                  <li>Synkroniserer i realtid</li>
+                </ul>
               </div>
             )}
           </CardContent>
