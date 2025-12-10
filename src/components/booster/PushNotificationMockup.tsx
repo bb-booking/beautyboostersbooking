@@ -120,7 +120,7 @@ export function PushNotificationMockup({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-primary">{countdown}s</span>
+            <span className="text-xs font-medium text-black/60">{countdown}s</span>
             <button 
               onClick={onClose}
               className="p-1 rounded-full hover:bg-muted transition-colors"
@@ -135,23 +135,23 @@ export function PushNotificationMockup({
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-xl font-bold text-black">{job.title}</h3>
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-black/5 text-black/70 text-xs font-medium rounded-full">
                 {job.serviceType}
               </span>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary">{job.earnings}</p>
+              <p className="text-2xl font-bold text-black">{job.earnings}</p>
               <p className="text-xs text-black/60">din indtjening</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 text-sm text-black/70">
-              <MapPin className="w-4 h-4 text-primary" />
+              <MapPin className="w-4 h-4 text-black/50" />
               <span>{job.location}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-black/70">
-              <Clock className="w-4 h-4 text-primary" />
+              <Clock className="w-4 h-4 text-black/50" />
               <span>{job.date} kl. {job.time}</span>
             </div>
           </div>

@@ -60,20 +60,22 @@ export function AdminSidebar() {
       ? "bg-primary text-primary-foreground font-medium" 
       : "hover:bg-muted/50";
 
-  const [counts, setCounts] = useState({ messages: 0, inquiries: 0, jobs: 0 });
+  const [counts, setCounts] = useState({ messages: 0, inquiries: 0, jobs: 0, jobChats: 0 });
 
   useEffect(() => {
     const refresh = async () => {
       try {
-        const [msgRes, inqRes, jobRes] = await Promise.all([
+        const [msgRes, inqRes, jobRes, chatRes] = await Promise.all([
           supabase.from("conversations").select("id").gt("unread_admin_count", 0),
           supabase.from("inquiries").select("id").eq("status", "new"),
           supabase.from("jobs").select("id").eq("status", "open"),
+          supabase.from("job_communications").select("id").is("read_at", null),
         ]);
         setCounts({
           messages: msgRes.data?.length || 0,
           inquiries: inqRes.data?.length || 0,
           jobs: jobRes.data?.length || 0,
+          jobChats: chatRes.data?.length || 0,
         });
       } catch (e) {
         // noop
@@ -108,10 +110,20 @@ export function AdminSidebar() {
       )
       .subscribe();
 
+    const ch4 = supabase
+      .channel("job-chats-count")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "job_communications" },
+        () => refresh()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ch1);
       supabase.removeChannel(ch2);
       supabase.removeChannel(ch3);
+      supabase.removeChannel(ch4);
     };
   }, []);
 
@@ -128,8 +140,9 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminItems.map((item) => {
-              const badge =
+                const badge =
                   item.title === "Beskeder" ? counts.messages :
+                  item.title === "Job Chats" ? counts.jobChats :
                   item.title === "Jobs" ? (counts.jobs + counts.inquiries) : 0;
                 return (
                   <SidebarMenuItem key={item.title}>
