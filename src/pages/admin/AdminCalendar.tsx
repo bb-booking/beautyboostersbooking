@@ -246,6 +246,15 @@ const AdminCalendar = () => {
   const [newJobLocation, setNewJobLocation] = useState("");
   const [newJobClientType, setNewJobClientType] = useState<'privat' | 'virksomhed'>('privat');
   const [newJobDuration, setNewJobDuration] = useState("60");
+  const [newJobPrice, setNewJobPrice] = useState<string>("500");
+  const [existingCustomers, setExistingCustomers] = useState<{ name: string; email: string | null; phone: string | null; location: string | null }[]>([]);
+  const [customerSuggestions, setCustomerSuggestions] = useState<typeof existingCustomers>([]);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+
+  // Service options based on client type
+  const privateServices = ["Bryllup", "Makeup", "Hår", "Negle", "Spraytan", "Styling", "Bryn & Vipper"];
+  const businessServices = ["Film/TV", "Teater", "Event", "Reklame", "Fotoshoot", "Fashion", "Messe"];
 
   // View/Edit booking dialog
   const [viewBookingOpen, setViewBookingOpen] = useState(false);
@@ -265,6 +274,7 @@ const AdminCalendar = () => {
   useEffect(() => {
     fetchBoosters();
     fetchJobs();
+    fetchExistingCustomers();
   }, []);
 
   useEffect(() => {
@@ -336,6 +346,93 @@ const AdminCalendar = () => {
       setJobs(MOCK_JOBS);
     }
   };
+
+  const fetchExistingCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('client_name, client_email, client_phone, location')
+        .not('client_name', 'is', null);
+
+      if (error) throw error;
+
+      // Map to consistent interface and deduplicate by client_name
+      const mapped = (data || []).map(c => ({
+        name: c.client_name || '',
+        email: c.client_email,
+        phone: c.client_phone,
+        location: c.location
+      }));
+      
+      const uniqueCustomers = Array.from(
+        new Map(mapped.filter(c => c.name).map(c => [c.name, c])).values()
+      );
+
+      setExistingCustomers(uniqueCustomers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  const handleCustomerSearch = (searchValue: string) => {
+    setNewJobClient(searchValue);
+    if (searchValue.length >= 2) {
+      const filtered = existingCustomers.filter(c =>
+        c.name.toLowerCase().includes(searchValue.toLowerCase())
+      );
+      setCustomerSuggestions(filtered);
+      setShowCustomerSuggestions(true);
+    } else {
+      setCustomerSuggestions([]);
+      setShowCustomerSuggestions(false);
+    }
+  };
+
+  const selectCustomer = (customer: typeof existingCustomers[0]) => {
+    setNewJobClient(customer.name);
+    if (customer.location) setNewJobLocation(customer.location);
+    setShowCustomerSuggestions(false);
+    setCustomerSuggestions([]);
+    // Trigger title generation
+    generateJobTitle(newJobService, customer.name, newJobLocation || customer.location || '');
+  };
+
+  const generateJobTitle = async (service: string, clientName: string, location: string) => {
+    if (!service || !clientName) return;
+    
+    setIsGeneratingTitle(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-job-title', {
+        body: {
+          services: [{ service_name: service }],
+          location: location,
+          clientType: newJobClientType
+        }
+      });
+
+      if (!error && data?.title) {
+        setNewJobTitle(data.title);
+      } else {
+        // Fallback: simple title
+        setNewJobTitle(`${service} - ${clientName}`);
+      }
+    } catch (err) {
+      // Fallback on error
+      setNewJobTitle(`${service} - ${clientName}`);
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
+  // Auto-generate title when service or client changes
+  useEffect(() => {
+    if (newJobService && newJobClient && jobDialogOpen) {
+      const timer = setTimeout(() => {
+        generateJobTitle(newJobService, newJobClient, newJobLocation);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [newJobService, newJobClient, newJobLocation]);
 
   // Get all unique specialties
   const allSpecialties = useMemo(() => {
@@ -508,6 +605,9 @@ const AdminCalendar = () => {
     setNewJobLocation("");
     setNewJobClientType('privat');
     setNewJobDuration("60");
+    setNewJobPrice("500");
+    setCustomerSuggestions([]);
+    setShowCustomerSuggestions(false);
     setJobDialogOpen(true);
   };
 
@@ -536,7 +636,7 @@ const AdminCalendar = () => {
           client_type: newJobClientType,
           date_needed: format(newJobDate, 'yyyy-MM-dd'),
           time_needed: newJobTime,
-          hourly_rate: 500,
+          hourly_rate: parseInt(newJobPrice) || 500,
           status: 'assigned',
           assigned_booster_id: newJobBooster,
         })
@@ -850,7 +950,13 @@ const AdminCalendar = () => {
       </div>
 
       {/* Create Job Dialog */}
-      <Dialog open={jobDialogOpen} onOpenChange={setJobDialogOpen}>
+      <Dialog open={jobDialogOpen} onOpenChange={(open) => {
+        setJobDialogOpen(open);
+        if (!open) {
+          setShowCustomerSuggestions(false);
+          setCustomerSuggestions([]);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Opret job</DialogTitle>
@@ -874,7 +980,13 @@ const AdminCalendar = () => {
               
               <div className="space-y-2">
                 <Label>Kundetype</Label>
-                <Select value={newJobClientType} onValueChange={(v) => setNewJobClientType(v as 'privat' | 'virksomhed')}>
+                <Select 
+                  value={newJobClientType} 
+                  onValueChange={(v) => {
+                    setNewJobClientType(v as 'privat' | 'virksomhed');
+                    setNewJobService(""); // Reset service when type changes
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -887,44 +999,85 @@ const AdminCalendar = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Titel</Label>
+              <Label className="flex items-center gap-2">
+                Titel
+                {isGeneratingTitle && (
+                  <span className="text-xs text-muted-foreground animate-pulse">Genererer...</span>
+                )}
+              </Label>
               <Input
                 value={newJobTitle}
                 onChange={(e) => setNewJobTitle(e.target.value)}
-                placeholder="F.eks. Bryllup makeup"
+                placeholder="Auto-genereres ud fra kunde og service"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label>Kundenavn</Label>
               <Input
                 value={newJobClient}
-                onChange={(e) => setNewJobClient(e.target.value)}
-                placeholder="Kunde eller virksomhedsnavn"
+                onChange={(e) => handleCustomerSearch(e.target.value)}
+                onFocus={() => {
+                  if (customerSuggestions.length > 0) setShowCustomerSuggestions(true);
+                }}
+                placeholder="Søg eksisterende eller indtast ny"
               />
+              {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {customerSuggestions.map((customer, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
+                      onClick={() => selectCustomer(customer)}
+                    >
+                      <User className="h-3 w-3 text-muted-foreground" />
+                      <span>{customer.name}</span>
+                      {customer.location && (
+                        <span className="text-xs text-muted-foreground ml-auto truncate max-w-32">
+                          {customer.location}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showCustomerSuggestions && customerSuggestions.length === 0 && newJobClient.length >= 2 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg">
+                  <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <Plus className="h-3 w-3" />
+                    Opret ny kunde: "{newJobClient}"
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Service</Label>
-                <Input
-                  value={newJobService}
-                  onChange={(e) => setNewJobService(e.target.value)}
-                  placeholder="F.eks. Makeup"
-                />
+                <Select value={newJobService} onValueChange={setNewJobService}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vælg service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(newJobClientType === 'privat' ? privateServices : businessServices).map(service => (
+                      <SelectItem key={service} value={service}>{service}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
-                <Label>Lokation</Label>
+                <Label>Adresse</Label>
                 <Input
                   value={newJobLocation}
                   onChange={(e) => setNewJobLocation(e.target.value)}
-                  placeholder="F.eks. København"
+                  placeholder="F.eks. Vesterbrogade 1, 1620 København"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>Dato</Label>
                 <Input
@@ -958,6 +1111,16 @@ const AdminCalendar = () => {
                     <SelectItem value="240">4 timer</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pris (kr)</Label>
+                <Input
+                  type="number"
+                  value={newJobPrice}
+                  onChange={(e) => setNewJobPrice(e.target.value)}
+                  placeholder="500"
+                />
               </div>
             </div>
           </div>
