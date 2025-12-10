@@ -88,6 +88,7 @@ const AdminFinance = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [vatDeadlines, setVatDeadlines] = useState<VATDeadline[]>([]);
   const [salaryEntries, setSalaryEntries] = useState<SalaryEntry[]>([]);
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Days until end of month
   const daysUntilMonthEnd = differenceInDays(endOfMonth(new Date()), new Date());
@@ -359,8 +360,23 @@ const AdminFinance = () => {
         </Alert>
       )}
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        {/* Mobile: Dropdown */}
+        <div className="sm:hidden">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Vælg sektion" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="overview">Oversigt</SelectItem>
+              <SelectItem value="vat">Moms & Skat</SelectItem>
+              <SelectItem value="salary">Løn</SelectItem>
+              <SelectItem value="integrations">Integrationer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Desktop: Tabs */}
+        <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="overview">Oversigt</TabsTrigger>
           <TabsTrigger value="vat">Moms & Skat</TabsTrigger>
           <TabsTrigger value="salary">Løn</TabsTrigger>

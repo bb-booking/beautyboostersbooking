@@ -395,11 +395,11 @@ export default function AdminMessages() {
         <Card className="p-4 md:col-span-1">
           <div className="space-y-3 mb-3">
             <Tabs value={filter} onValueChange={(v: any) => setFilter(v)} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-auto">
-                <TabsTrigger value="all" className="text-sm">Alle</TabsTrigger>
-                <TabsTrigger value="customer" className="text-sm">Kunder</TabsTrigger>
-                <TabsTrigger value="booster" className="text-sm">Boosters</TabsTrigger>
-                <TabsTrigger value="group" className="text-sm">Grupper</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 h-auto text-xs">
+                <TabsTrigger value="all" className="text-xs px-1">Alle</TabsTrigger>
+                <TabsTrigger value="customer" className="text-xs px-1">Kunder</TabsTrigger>
+                <TabsTrigger value="booster" className="text-xs px-1">Boosters</TabsTrigger>
+                <TabsTrigger value="group" className="text-xs px-1">Grupper</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="flex items-center justify-between">
