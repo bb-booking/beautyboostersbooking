@@ -125,17 +125,111 @@ export default function BoosterMessages() {
     setNewMessage("");
   };
 
+  const selectedConv = conversations.find(c => c.id === selectedConversation);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Beskeder</h1>
-        <p className="text-muted-foreground">Chat med kunder og admin support</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Beskeder</h1>
+        <p className="text-sm text-muted-foreground">Chat med kunder og admin</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-        {/* Conversations List */}
+      {/* Mobile: Show either list or chat */}
+      <div className="lg:hidden">
+        {!selectedConversation ? (
+          <Card>
+            <CardHeader className="pb-3 px-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Søg samtaler..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {filteredConversations.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    onClick={() => setSelectedConversation(conversation.id)}
+                    className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="text-sm">{conversation.avatar}</AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{conversation.title}</p>
+                        {conversation.type === 'admin' && <Shield className="h-3 w-3 text-primary flex-shrink-0" />}
+                        {conversation.unreadCount > 0 && (
+                          <Badge variant="default" className="text-xs px-1.5 py-0 ml-auto">{conversation.unreadCount}</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{conversation.lastMessage}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="flex flex-col h-[calc(100vh-180px)]">
+            <CardHeader className="border-b py-3 px-3">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedConversation(null)} className="p-2 -ml-2">
+                  ←
+                </Button>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-xs">{selectedConv?.avatar}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">{selectedConv?.title}</p>
+                  <p className="text-xs text-muted-foreground">{selectedConv?.type === 'admin' ? 'Admin' : 'Kunde'}</p>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <ScrollArea className="flex-1 p-3">
+              <div className="space-y-3">
+                {messages.map((message) => (
+                  <div key={message.id} className={`flex ${message.senderType === 'booster' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] p-2.5 rounded-2xl ${message.senderType === 'booster' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>
+                      <p className="text-sm">{message.message}</p>
+                      <p className={`text-xs mt-1 ${message.senderType === 'booster' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                        {new Date(message.timestamp).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            
+            <div className="border-t p-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Skriv besked..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop: Side-by-side layout */}
+      <div className="hidden lg:grid lg:grid-cols-3 gap-6 h-[600px]">
         <Card className="lg:col-span-1">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg">Samtaler</CardTitle>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -148,45 +242,29 @@ export default function BoosterMessages() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-1">
+            <ScrollArea className="h-[450px]">
+              <div className="divide-y">
                 {filteredConversations.map((conversation) => (
                   <div
                     key={conversation.id}
                     onClick={() => setSelectedConversation(conversation.id)}
-                    className={`
-                      flex items-center gap-3 p-4 cursor-pointer hover:bg-accent transition-colors
-                      ${selectedConversation === conversation.id ? 'bg-accent' : ''}
-                    `}
+                    className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-accent transition-colors ${selectedConversation === conversation.id ? 'bg-accent' : ''}`}
                   >
                     <Avatar>
-                      <AvatarFallback>
-                        {conversation.avatar}
-                      </AvatarFallback>
+                      <AvatarFallback>{conversation.avatar}</AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-medium truncate">{conversation.title}</p>
-                        {conversation.type === 'admin' && (
-                          <Shield className="h-4 w-4 text-primary" />
-                        )}
+                        {conversation.type === 'admin' && <Shield className="h-4 w-4 text-primary" />}
                         {conversation.unreadCount > 0 && (
-                          <Badge variant="default" className="text-xs px-2 py-0">
-                            {conversation.unreadCount}
-                          </Badge>
+                          <Badge variant="default" className="text-xs px-2 py-0">{conversation.unreadCount}</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {conversation.lastMessage}
-                      </p>
+                      <p className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(conversation.lastMessageTime).toLocaleDateString('da-DK', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {new Date(conversation.lastMessageTime).toLocaleDateString('da-DK', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
@@ -196,81 +274,58 @@ export default function BoosterMessages() {
           </CardContent>
         </Card>
 
-        {/* Chat Window */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 flex flex-col">
           {selectedConversation ? (
             <>
-              <CardHeader className="border-b">
+              <CardHeader className="border-b py-4">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarFallback>
-                      {conversations.find(c => c.id === selectedConversation)?.avatar}
-                    </AvatarFallback>
+                    <AvatarFallback>{selectedConv?.avatar}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg">
-                      {conversations.find(c => c.id === selectedConversation)?.title}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {conversations.find(c => c.id === selectedConversation)?.type === 'admin' ? 'Admin Support' : 'Kunde'}
-                    </p>
+                    <CardTitle className="text-lg">{selectedConv?.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{selectedConv?.type === 'admin' ? 'Admin Support' : 'Kunde'}</p>
                   </div>
                 </div>
               </CardHeader>
               
-              <CardContent className="p-0">
-                <ScrollArea className="h-[400px] p-4">
-                  <div className="space-y-4">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.senderType === 'booster' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`
-                            max-w-[70%] p-3 rounded-lg
-                            ${message.senderType === 'booster'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-accent'
-                            }
-                          `}
-                        >
-                          <p className="text-sm">{message.message}</p>
-                          <p className="text-xs opacity-70 mt-1">
-                            {new Date(message.timestamp).toLocaleTimeString('da-DK', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div key={message.id} className={`flex ${message.senderType === 'booster' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] p-3 rounded-lg ${message.senderType === 'booster' ? 'bg-primary text-primary-foreground' : 'bg-accent'}`}>
+                        <p className="text-sm">{message.message}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {new Date(message.timestamp).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-                
-                <div className="border-t p-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Skriv din besked..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1"
-                    />
-                    <Button onClick={handleSendMessage} size="sm">
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
+              </ScrollArea>
+              
+              <div className="border-t p-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Skriv din besked..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </>
           ) : (
-            <CardContent className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center flex-1">
               <div className="text-center">
                 <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">Vælg en samtale for at begynde</p>
               </div>
-            </CardContent>
+            </div>
           )}
         </Card>
       </div>

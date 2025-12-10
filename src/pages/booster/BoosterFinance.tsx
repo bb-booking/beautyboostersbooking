@@ -430,21 +430,21 @@ export default function BoosterFinance() {
   const needsInvoiceGeneration = daysUntilMonthEnd <= 5;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Økonomi</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Økonomi</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">
             {boosterProfile.hasCVR 
-              ? `CVR: ${boosterProfile.cvrNumber} • ${boosterProfile.companyName}`
+              ? `CVR: ${boosterProfile.cvrNumber}`
               : 'B-indkomst'
             }
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-24 sm:w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -457,9 +457,9 @@ export default function BoosterFinance() {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline">
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                {format(selectedDate, "d. MMMM yyyy", { locale: da })}
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                <CalendarIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{format(selectedDate, "d. MMM", { locale: da })}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">

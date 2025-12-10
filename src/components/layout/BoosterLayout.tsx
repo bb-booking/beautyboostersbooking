@@ -51,14 +51,14 @@ export function BoosterLayout() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full overflow-x-hidden">
         <BoosterSidebar />
         
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-lg font-semibold">Beauty Boosters</h1>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 sm:h-14 flex items-center justify-between border-b bg-background px-2 sm:px-4 sticky top-0 z-10">
+            <div className="flex items-center min-w-0">
+              <SidebarTrigger className="mr-2 sm:mr-4 flex-shrink-0" />
+              <h1 className="text-sm sm:text-lg font-semibold truncate">Beauty Boosters</h1>
             </div>
             <Button
               variant="ghost"
@@ -67,13 +67,14 @@ export function BoosterLayout() {
                 await supabase.auth.signOut();
                 navigate("/booster/login");
               }}
+              className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Log ud
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Log ud</span>
             </Button>
           </header>
           
-          <main className="flex-1 p-6 break-words">
+          <main className="flex-1 p-3 sm:p-6 overflow-x-hidden">
             {checking ? <div className="text-sm text-muted-foreground">Checker login…</div> : authorized ? <Outlet /> : <div className="text-sm text-muted-foreground">Ingen adgang</div>}
           </main>
         </div>

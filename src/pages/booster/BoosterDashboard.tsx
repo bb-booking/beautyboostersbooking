@@ -341,46 +341,48 @@ const BoosterDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Mit Dashboard</h2>
-        <p className="text-muted-foreground">
-          Velkommen tilbage til Beauty Boosters
+    <div className="space-y-4 sm:space-y-6 px-1 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <h2 className="text-xl sm:text-2xl font-bold">Mit Dashboard</h2>
+        <p className="text-sm text-muted-foreground hidden sm:block">
+          Velkommen tilbage
         </p>
       </div>
 
       {/* STATUS UPDATES - Financial deadlines & notifications */}
       {statusUpdates.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="pb-2 px-3 sm:px-6">
             <div className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-primary" />
-              <CardTitle>Statusopdateringer</CardTitle>
+              <CalendarClock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <CardTitle className="text-base sm:text-lg">Statusopdateringer</CardTitle>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-3 sm:px-6">
+            <div className="space-y-2 sm:space-y-3">
               {statusUpdates.map((update) => (
                 <div 
                   key={update.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 sm:p-3 rounded-lg border ${
                     update.urgent 
                       ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' 
                       : 'bg-muted/30'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    {update.type === 'invoice' && <FileText className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
-                    {update.type === 'vat' && <PiggyBank className={`h-5 w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
-                    {update.type === 'payout' && <DollarSign className="h-5 w-5 text-green-600" />}
-                    {update.type === 'review' && <Star className="h-5 w-5 text-yellow-500" />}
-                    <div>
-                      <p className="font-medium text-sm">{update.title}</p>
-                      <p className="text-xs text-muted-foreground">{update.description}</p>
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="flex-shrink-0 mt-0.5 sm:mt-0">
+                      {update.type === 'invoice' && <FileText className={`h-4 w-4 sm:h-5 sm:w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
+                      {update.type === 'vat' && <PiggyBank className={`h-4 w-4 sm:h-5 sm:w-5 ${update.urgent ? 'text-orange-600' : 'text-muted-foreground'}`} />}
+                      {update.type === 'payout' && <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />}
+                      {update.type === 'review' && <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-sm">{update.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{update.description}</p>
                     </div>
                   </div>
                   {update.action && (
-                    <Button size="sm" variant={update.urgent ? "default" : "outline"} onClick={() => navigate(update.actionPath!)}>
+                    <Button size="sm" variant={update.urgent ? "default" : "outline"} onClick={() => navigate(update.actionPath!)} className="w-full sm:w-auto text-xs sm:text-sm flex-shrink-0">
                       {update.action}
                     </Button>
                   )}
@@ -394,48 +396,53 @@ const BoosterDashboard = () => {
       {/* ACTION REQUIRED SECTION - Booking Requests */}
       {pendingRequests.length > 0 && (
         <Card className="border-orange-300 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-              <CardTitle>Booking anmodninger</CardTitle>
-              <Badge className="bg-orange-600">{pendingRequests.length} afventer</Badge>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6">
+            <div className="flex items-center gap-2 flex-wrap">
+              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+              <CardTitle className="text-base sm:text-lg">Booking anmodninger</CardTitle>
+              <Badge className="bg-orange-600 text-xs">{pendingRequests.length}</Badge>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/booster/requests")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/booster/jobs")} className="text-xs sm:text-sm px-2">
               Se alle
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="space-y-3">
               {pendingRequests.map((request) => (
                 <div 
                   key={request.id}
-                  className="flex items-center justify-between p-4 bg-background rounded-lg border"
+                  className="p-3 sm:p-4 bg-background rounded-lg border"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{request.serviceName}</span>
-                      <Badge variant="secondary">{request.amount} kr</Badge>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-medium text-sm sm:text-base">{request.serviceName}</span>
+                        <Badge variant="secondary" className="text-xs">{request.amount} kr</Badge>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
+                        <span className="truncate">{request.customerName}</span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          {new Date(request.date).toLocaleDateString('da-DK')} kl. {request.time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{request.location}</span>
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{request.customerName}</span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(request.date).toLocaleDateString('da-DK')} kl. {request.time}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {request.location}
-                      </span>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none text-xs sm:text-sm">
+                        <Check className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Acceptér</span>
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs sm:text-sm">
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => navigate("/booster/messages")} className="text-xs sm:text-sm">
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      <Check className="h-4 w-4 mr-1" />
-                      Acceptér
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
               ))}

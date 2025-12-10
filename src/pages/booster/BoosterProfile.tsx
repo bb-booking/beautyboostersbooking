@@ -73,10 +73,10 @@ export default function BoosterProfile() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Om mig</h1>
-        <p className="text-muted-foreground">Fortæl kunder om dig og dine kvalifikationer</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Om mig</h1>
+        <p className="text-sm text-muted-foreground">Fortæl kunder om dig</p>
       </div>
 
       <div className="grid gap-6">
@@ -108,7 +108,7 @@ export default function BoosterProfile() {
             <CardTitle>Uddannelse & Certificeringer</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {educationOptions.map((education) => (
                 <div 
                   key={education}
@@ -155,7 +155,7 @@ export default function BoosterProfile() {
           <CardContent className="space-y-4">
             <div>
               <Label>Områder du dækker</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                 {danishCities.map((city) => (
                   <div 
                     key={city}
