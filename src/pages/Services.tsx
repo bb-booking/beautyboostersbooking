@@ -98,7 +98,7 @@ const Services = () => {
           duration: 1,
           category: 'Makeup & Hår',
           clientType: 'privat' as const,
-          image: '/images/services/makeup-styling.png',
+          image: '/images/services/haarstyling.png',
           groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
