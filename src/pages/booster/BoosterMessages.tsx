@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, MessageSquare, ArrowLeft, Shield, Users, Headphones, Send } from "lucide-react";
+import { Search, MessageSquare, ArrowLeft, Shield, Users, Headphones, Send, Image as ImageIcon } from "lucide-react";
 import JobChat from "@/components/job/JobChat";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,6 +19,8 @@ interface JobWithMessages {
   status: string;
   message_count: number;
   unread_count: number;
+  last_message?: string;
+  has_images?: boolean;
 }
 
 interface Conversation {
@@ -28,6 +30,7 @@ interface Conversation {
   participants: string[];
   last_message_at: string | null;
   unread_user_count: number;
+  last_message?: string;
 }
 
 interface Message {
@@ -36,7 +39,118 @@ interface Message {
   sender: string;
   created_at: string;
   booster_id: string | null;
+  image_url?: string | null;
 }
+
+// Mock data for demo
+const MOCK_JOBS: JobWithMessages[] = [
+  {
+    id: 'mock-job-1',
+    title: 'Bryllup makeup - Sarah Jensen',
+    client_name: 'Sarah Jensen',
+    date_needed: new Date().toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 4,
+    unread_count: 2,
+    last_message: 'Her er nogle billeder til inspiration! 💕',
+    has_images: true
+  },
+  {
+    id: 'mock-job-2',
+    title: 'Temafest makeup - Laura Nielsen',
+    client_name: 'Laura Nielsen',
+    date_needed: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 3,
+    unread_count: 1,
+    last_message: 'Temaet er 70er disco! Kan du lave glitter look?',
+    has_images: true
+  },
+  {
+    id: 'mock-job-3',
+    title: 'Event makeup - Copenhagen Events',
+    client_name: 'Copenhagen Events ApS',
+    date_needed: new Date().toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 2,
+    unread_count: 0,
+    last_message: 'Perfekt, vi ses kl. 14:00!'
+  }
+];
+
+const MOCK_ADMIN_CONVERSATIONS: Conversation[] = [
+  {
+    id: 'mock-admin-1',
+    type: 'booster',
+    group_name: 'Admin Support',
+    participants: [],
+    last_message_at: new Date(Date.now() - 3600000).toISOString(),
+    unread_user_count: 1,
+    last_message: 'Hej! Husk at opdatere din kalender for næste uge 📅'
+  }
+];
+
+const MOCK_TEAM_CONVERSATIONS: Conversation[] = [
+  {
+    id: 'mock-team-1',
+    type: 'group',
+    group_name: 'DR Studios - TV-produktion (Lør)',
+    participants: [],
+    last_message_at: new Date(Date.now() - 7200000).toISOString(),
+    unread_user_count: 3,
+    last_message: 'Fay: Jeg tager alt SFX udstyr med!'
+  },
+  {
+    id: 'mock-team-2',
+    type: 'group',
+    group_name: 'Novo Nordisk Event (Ons)',
+    participants: [],
+    last_message_at: new Date(Date.now() - 86400000).toISOString(),
+    unread_user_count: 0,
+    last_message: 'Nanna: Super, jeg booker en stor Uber til os alle 🚗'
+  }
+];
+
+const MOCK_JOB_MESSAGES: Record<string, Message[]> = {
+  'mock-job-1': [
+    { id: 'm1', message: 'Hej! Jeg glæder mig så meget til brylluppet! 💒', sender: 'customer', created_at: new Date(Date.now() - 86400000).toISOString(), booster_id: null },
+    { id: 'm2', message: 'Hej Sarah! Det glæder jeg mig også til. Har du nogle ønsker til makeup stilen?', sender: 'booster', created_at: new Date(Date.now() - 82800000).toISOString(), booster_id: 'current-user' },
+    { id: 'm3', message: 'Her er nogle billeder til inspiration! 💕', sender: 'customer', created_at: new Date(Date.now() - 3600000).toISOString(), booster_id: null, image_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300' },
+    { id: 'm4', message: null, sender: 'customer', created_at: new Date(Date.now() - 3500000).toISOString(), booster_id: null, image_url: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=300' },
+  ],
+  'mock-job-2': [
+    { id: 'm5', message: 'Hej! Vi holder temafest og jeg vil gerne have et fedt 70er look 🕺', sender: 'customer', created_at: new Date(Date.now() - 172800000).toISOString(), booster_id: null },
+    { id: 'm6', message: 'Temaet er 70er disco! Kan du lave glitter look?', sender: 'customer', created_at: new Date(Date.now() - 7200000).toISOString(), booster_id: null },
+    { id: 'm7', message: null, sender: 'customer', created_at: new Date(Date.now() - 7100000).toISOString(), booster_id: null, image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300' },
+  ],
+  'mock-job-3': [
+    { id: 'm8', message: 'Vi ser frem til eventen! Mødetid kl. 14:00 ved hovedindgangen.', sender: 'customer', created_at: new Date(Date.now() - 259200000).toISOString(), booster_id: null },
+    { id: 'm9', message: 'Perfekt, vi ses kl. 14:00!', sender: 'booster', created_at: new Date(Date.now() - 172800000).toISOString(), booster_id: 'current-user' },
+  ]
+};
+
+const MOCK_ADMIN_MESSAGES: Message[] = [
+  { id: 'a1', message: 'Hej! Velkommen til Beauty Boosters teamet! 🎉', sender: 'admin', created_at: new Date(Date.now() - 604800000).toISOString(), booster_id: null },
+  { id: 'a2', message: 'Tak! Jeg glæder mig til at komme i gang.', sender: 'booster', created_at: new Date(Date.now() - 600000000).toISOString(), booster_id: 'current-user' },
+  { id: 'a3', message: 'Du har fået tildelt dit første job! 🙌 Tjek din kalender.', sender: 'admin', created_at: new Date(Date.now() - 259200000).toISOString(), booster_id: null },
+  { id: 'a4', message: 'Hej! Husk at opdatere din kalender for næste uge 📅', sender: 'admin', created_at: new Date(Date.now() - 3600000).toISOString(), booster_id: null },
+];
+
+const MOCK_TEAM_MESSAGES: Record<string, Message[]> = {
+  'mock-team-1': [
+    { id: 't1', message: 'Hej team! Glæder mig til DR jobbet på lørdag 🎬', sender: 'booster', created_at: new Date(Date.now() - 86400000).toISOString(), booster_id: 'other-booster-1' },
+    { id: 't2', message: 'Same! Hvem kører? 🚗', sender: 'booster', created_at: new Date(Date.now() - 82800000).toISOString(), booster_id: 'other-booster-2' },
+    { id: 't3', message: 'Jeg kan køre - har plads til 3 i bilen', sender: 'booster', created_at: new Date(Date.now() - 79200000).toISOString(), booster_id: 'current-user' },
+    { id: 't4', message: 'Perfekt! Vi mødes ved DR Byen kl. 07:30 🙌', sender: 'booster', created_at: new Date(Date.now() - 72000000).toISOString(), booster_id: 'other-booster-1' },
+    { id: 't5', message: 'Fay: Jeg tager alt SFX udstyr med!', sender: 'booster', created_at: new Date(Date.now() - 7200000).toISOString(), booster_id: 'other-booster-2' },
+  ],
+  'mock-team-2': [
+    { id: 't6', message: 'Hej alle! Novo jobbet bliver stort - 12 personer! 💄', sender: 'booster', created_at: new Date(Date.now() - 172800000).toISOString(), booster_id: 'other-booster-3' },
+    { id: 't7', message: 'Wow! Skal vi koordinere farver/looks?', sender: 'booster', created_at: new Date(Date.now() - 169200000).toISOString(), booster_id: 'current-user' },
+    { id: 't8', message: 'God idé! Jeg foreslår naturlige toner - det er corporate event', sender: 'booster', created_at: new Date(Date.now() - 165600000).toISOString(), booster_id: 'other-booster-4' },
+    { id: 't9', message: 'Nanna: Super, jeg booker en stor Uber til os alle 🚗', sender: 'booster', created_at: new Date(Date.now() - 86400000).toISOString(), booster_id: 'other-booster-3' },
+  ]
+};
 
 export default function BoosterMessages() {
   const { toast } = useToast();
@@ -103,17 +217,23 @@ export default function BoosterMessages() {
       );
 
       const jobsWithMessages = jobsWithCounts.filter(j => j.message_count > 0);
-      setJobs(jobsWithMessages);
+      
+      // Add mock data if no real jobs with messages
+      if (jobsWithMessages.length === 0) {
+        setJobs(MOCK_JOBS);
+      } else {
+        setJobs(jobsWithMessages);
+      }
     } catch (error) {
       console.error('Error fetching jobs:', error);
+      // Fallback to mock data on error
+      setJobs(MOCK_JOBS);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchConversations = async () => {
-    if (!currentUserId) return;
-    
     try {
       setLoading(true);
       const targetType = activeTab === "admin" ? "booster" : "group";
@@ -131,22 +251,49 @@ export default function BoosterMessages() {
       const userConversations = (data || [])
         .filter(conv => {
           const participants = (conv.participants as string[]) || [];
-          return participants.includes(currentUserId);
+          return currentUserId ? participants.includes(currentUserId) : false;
         })
         .map(conv => ({
           ...conv,
           participants: (conv.participants as string[]) || []
         }));
 
-      setConversations(userConversations);
+      // Add mock data if no real conversations
+      if (userConversations.length === 0) {
+        if (activeTab === "admin") {
+          setConversations(MOCK_ADMIN_CONVERSATIONS);
+        } else if (activeTab === "team") {
+          setConversations(MOCK_TEAM_CONVERSATIONS);
+        } else {
+          setConversations([]);
+        }
+      } else {
+        setConversations(userConversations);
+      }
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      // Fallback to mock data
+      if (activeTab === "admin") {
+        setConversations(MOCK_ADMIN_CONVERSATIONS);
+      } else if (activeTab === "team") {
+        setConversations(MOCK_TEAM_CONVERSATIONS);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const fetchMessages = async (conversationId: string) => {
+    // Check if it's a mock conversation
+    if (conversationId.startsWith('mock-admin')) {
+      setMessages(MOCK_ADMIN_MESSAGES);
+      return;
+    }
+    if (conversationId.startsWith('mock-team')) {
+      setMessages(MOCK_TEAM_MESSAGES[conversationId] || []);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('conversation_messages')
@@ -252,7 +399,12 @@ export default function BoosterMessages() {
                     <Badge variant="default" className="text-xs px-2 py-0">{conv.unread_user_count}</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                {conv.last_message && (
+                  <p className="text-xs text-muted-foreground truncate mb-0.5">
+                    {conv.last_message}
+                  </p>
+                )}
+                <p className="text-[10px] text-muted-foreground">
                   {conv.last_message_at 
                     ? new Date(conv.last_message_at).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
                     : 'Ingen beskeder endnu'}
@@ -273,30 +425,54 @@ export default function BoosterMessages() {
             <p className="text-sm">Ingen beskeder endnu</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.booster_id === currentUserId ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((msg) => {
+            const isCurrentUser = msg.booster_id === currentUserId || msg.booster_id === 'current-user';
+            const isOtherBooster = msg.sender === 'booster' && !isCurrentUser;
+            
+            return (
               <div
-                className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                  msg.booster_id === currentUserId
-                    ? 'bg-primary text-primary-foreground'
-                    : msg.sender === 'admin'
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'bg-muted'
-                }`}
+                key={msg.id}
+                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
               >
-                {msg.sender === 'admin' && (
-                  <p className="text-xs font-medium mb-1 opacity-70">Admin</p>
-                )}
-                <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                <p className="text-xs opacity-60 mt-1">
-                  {new Date(msg.created_at).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                <div
+                  className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                    isCurrentUser
+                      ? 'bg-primary text-primary-foreground'
+                      : msg.sender === 'admin'
+                      ? 'bg-blue-100 text-blue-900'
+                      : isOtherBooster
+                      ? 'bg-green-100 text-green-900'
+                      : 'bg-muted'
+                  }`}
+                >
+                  {msg.sender === 'admin' && (
+                    <p className="text-xs font-medium mb-1 opacity-70 flex items-center gap-1">
+                      <Shield className="h-3 w-3" /> Admin
+                    </p>
+                  )}
+                  {isOtherBooster && (
+                    <p className="text-xs font-medium mb-1 opacity-70">
+                      {msg.message?.split(':')[0] || 'Booster'}
+                    </p>
+                  )}
+                  {msg.image_url && (
+                    <img 
+                      src={msg.image_url} 
+                      alt="Inspiration" 
+                      className="rounded-lg max-w-full mb-2 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => window.open(msg.image_url || '', '_blank')}
+                    />
+                  )}
+                  {msg.message && (
+                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                  )}
+                  <p className="text-xs opacity-60 mt-1">
+                    {new Date(msg.created_at).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
       
@@ -389,8 +565,16 @@ export default function BoosterMessages() {
                                 {job.unread_count > 0 && (
                                   <Badge variant="default" className="text-xs px-1.5 py-0">{job.unread_count}</Badge>
                                 )}
+                                {job.has_images && (
+                                  <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                )}
                               </div>
-                              <p className="text-xs text-muted-foreground truncate">
+                              {job.last_message && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {job.last_message}
+                                </p>
+                              )}
+                              <p className="text-[10px] text-muted-foreground">
                                 {job.client_name || 'Kunde'} • {new Date(job.date_needed).toLocaleDateString('da-DK')}
                               </p>
                             </div>
@@ -458,10 +642,17 @@ export default function BoosterMessages() {
                               {job.unread_count > 0 && (
                                 <Badge variant="default" className="text-xs px-2 py-0">{job.unread_count}</Badge>
                               )}
+                              {job.has_images && (
+                                <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                              )}
                             </div>
-                            <p className="text-sm text-muted-foreground truncate">{job.client_name || 'Kunde'}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(job.date_needed).toLocaleDateString('da-DK')}
+                            {job.last_message && (
+                              <p className="text-xs text-muted-foreground truncate mb-0.5">
+                                {job.last_message}
+                              </p>
+                            )}
+                            <p className="text-[10px] text-muted-foreground">
+                              {job.client_name || 'Kunde'} • {new Date(job.date_needed).toLocaleDateString('da-DK')}
                             </p>
                           </div>
                         </div>
