@@ -222,7 +222,8 @@ const Services = () => {
           price: 2499,
           duration: 1.5,
           category: 'Makeup Kurser',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/makeup-session.png'
         },
         {
           id: '15',
@@ -231,7 +232,8 @@ const Services = () => {
           price: 4499,
           duration: 3,
           category: 'Makeup Kurser',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/beauty-bar.png'
         },
         // Event
         {
