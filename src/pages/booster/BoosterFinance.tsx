@@ -327,9 +327,10 @@ export default function BoosterFinance() {
     setVatDeadlines(calculateVATDeadlines(boosterProfile.vatPeriod));
     setMonthlyInvoices(mockMonthlyInvoices);
     
-    // Calculate VAT savings (25% of gross for CVR)
+    // Calculate VAT savings (20% of gross for CVR = 25% of net)
+    // VAT is 25% of net (netto), which equals 20% of gross (brutto) since brutto = netto * 1.25
     const currentMonthGross = mockEarnings.find(e => e.period === 'Denne måned')?.gross || 0;
-    setVatSavingsAmount(currentMonthGross * 0.25);
+    setVatSavingsAmount(currentMonthGross * 0.20);
     
     // Pending invoice amount
     setPendingInvoiceAmount(mockMonthlyInvoices.find(i => i.status === 'draft')?.amount || 0);
@@ -526,7 +527,7 @@ export default function BoosterFinance() {
                     </Badge>
                   </div>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-400">{vatSavingsAmount.toLocaleString('da-DK')} kr</p>
-                  <p className="text-xs text-muted-foreground">25% af brutto ({currentEarnings?.gross?.toLocaleString('da-DK')} kr)</p>
+                  <p className="text-xs text-muted-foreground">20% af brutto ({currentEarnings?.gross?.toLocaleString('da-DK')} kr)</p>
                 </div>
               </div>
               <div className="text-right">
