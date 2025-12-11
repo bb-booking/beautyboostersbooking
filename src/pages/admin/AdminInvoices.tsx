@@ -29,8 +29,8 @@ import {
   Send,
   Building2,
   Calendar,
-  DollarSign,
-  Clock
+  Clock,
+  Bell
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -53,7 +53,7 @@ interface PendingInvoice {
   created_at: string;
 }
 
-// Mock data for demo
+// Mock data for demo - realistic Danish pricing (ca. 1500 kr/time for makeup artist)
 const mockInvoices: PendingInvoice[] = [
   {
     id: 'mock-1',
@@ -65,7 +65,7 @@ const mockInvoices: PendingInvoice[] = [
     date_needed: '2025-12-15',
     time_needed: '07:00',
     duration_hours: 8,
-    hourly_rate: 850,
+    hourly_rate: 1500,
     location: 'DR Byen, København',
     status: 'completed',
     invoice_sent: false,
@@ -81,7 +81,7 @@ const mockInvoices: PendingInvoice[] = [
     date_needed: '2025-12-13',
     time_needed: '16:00',
     duration_hours: 4,
-    hourly_rate: 750,
+    hourly_rate: 1500,
     location: 'Bella Center, København',
     status: 'completed',
     invoice_sent: false,
@@ -97,7 +97,7 @@ const mockInvoices: PendingInvoice[] = [
     date_needed: '2025-12-10',
     time_needed: '09:00',
     duration_hours: 6,
-    hourly_rate: 900,
+    hourly_rate: 1500,
     location: 'Studio Copenhagen, Vesterbro',
     status: 'completed',
     invoice_sent: false,
@@ -111,11 +111,28 @@ const AdminInvoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<PendingInvoice | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
   
   // Editable invoice fields
   const [editAmount, setEditAmount] = useState<number>(0);
   const [editHours, setEditHours] = useState<number>(0);
   const [editNotes, setEditNotes] = useState("");
+
+  const handleSendReminders = async () => {
+    setSendingReminders(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invoice-reminder');
+      
+      if (error) throw error;
+      
+      toast.success(`Sendt ${data?.reminders_sent || 0} påmindelser`);
+    } catch (error) {
+      console.error('Error sending reminders:', error);
+      toast.error('Kunne ikke sende påmindelser');
+    } finally {
+      setSendingReminders(false);
+    }
+  };
 
   useEffect(() => {
     fetchPendingInvoices();
@@ -252,16 +269,26 @@ const AdminInvoices = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold">Ventende fakturaer</h2>
           <p className="text-muted-foreground">
             Gennemgå og godkend fakturaer for virksomhedsbookinger
           </p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
-          {pendingInvoices.length} ventende
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleSendReminders}
+            disabled={sendingReminders}
+          >
+            <Bell className="h-4 w-4 mr-2" />
+            {sendingReminders ? 'Sender...' : 'Send påmindelser'}
+          </Button>
+          <Badge variant="secondary" className="text-lg px-4 py-2">
+            {pendingInvoices.length} ventende
+          </Badge>
+        </div>
       </div>
 
       {pendingInvoices.length === 0 ? (
@@ -366,10 +393,7 @@ const AdminInvoices = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          {formatCurrency((invoice.hourly_rate || 0) * (invoice.duration_hours || 1))}
-                        </div>
+                        {formatCurrency((invoice.hourly_rate || 0) * (invoice.duration_hours || 1))}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
