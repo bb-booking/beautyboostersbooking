@@ -444,6 +444,75 @@ const AdminFinance = () => {
             </Card>
           </div>
 
+          {/* Financial Health Cards - VAT & Invoices */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* VAT Owed Card */}
+            <Card className="border-primary/50 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Forventet skyldig moms</CardTitle>
+                <PiggyBank className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">{formatCurrency(stats.vatOwed)}</div>
+                <div className="mt-2 space-y-1">
+                  {vatDeadlines.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <CalendarClock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        Frist: {format(vatDeadlines[0].dueDate, "d. MMM yyyy", { locale: da })}
+                      </span>
+                      <Badge variant="outline" className="text-xs py-0 px-1.5">
+                        {vatDeadlines[0].period.split(' ')[0]}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Unpaid Invoices Card */}
+            <Card className="border-orange-400/50 bg-orange-50/50 dark:bg-orange-950/20">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Ubetalte fakturaer</CardTitle>
+                <FileText className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">{formatCurrency(127500)}</div>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <AlertTriangle className="h-3 w-3 text-orange-500" />
+                    <span className="text-muted-foreground">3 fakturaer afventer betaling</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>• DR: 45.000 kr (forfald om 5 dage)</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Profit Card */}
+            <Card className="border-green-400/50 bg-green-50/50 dark:bg-green-950/20">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Dækningsbidrag (40%)</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(Math.round((stats.totalRevenue / 1.25) * 0.4))}</div>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">40% af omsætning eks. moms</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Wallet className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      Skat reserve: {formatCurrency(stats.taxReserve)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid gap-6 md:grid-cols-2">
             {/* Revenue Chart */}
             <Card>
