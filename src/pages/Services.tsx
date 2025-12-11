@@ -255,7 +255,8 @@ const Services = () => {
           price: 4499,
           duration: 3,
           category: 'Børn',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/ansigtsmaling-boern.png'
         }
       ];
 
