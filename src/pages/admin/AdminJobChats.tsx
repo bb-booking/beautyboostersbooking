@@ -18,7 +18,60 @@ interface JobWithChat {
   message_count: number;
   last_message_at: string | null;
   assigned_boosters: string[];
+  chat_type?: 'customer' | 'booster-group';
 }
+
+// Mock jobs for demo - aligned with JobChat mock messages
+const MOCK_JOBS_WITH_CHATS: JobWithChat[] = [
+  {
+    id: 'mock-job-1',
+    title: 'Bryllup - Sarah & Thomas',
+    client_name: 'Sarah Jensen',
+    client_email: 'sarah@example.dk',
+    date_needed: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 4,
+    last_message_at: new Date(Date.now() - 3500000).toISOString(),
+    assigned_boosters: ['Maria L.', 'Louise B.'],
+    chat_type: 'customer'
+  },
+  {
+    id: 'mock-job-2',
+    title: 'Temafest 70er - Disco Night',
+    client_name: 'Mette Andersen',
+    client_email: 'mette@example.dk',
+    date_needed: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 3,
+    last_message_at: new Date(Date.now() - 7100000).toISOString(),
+    assigned_boosters: ['Katrine J.'],
+    chat_type: 'customer'
+  },
+  {
+    id: 'mock-job-3',
+    title: 'Corporate Event - Nordea',
+    client_name: 'Nordea A/S',
+    client_email: 'events@nordea.dk',
+    date_needed: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 2,
+    last_message_at: new Date(Date.now() - 172800000).toISOString(),
+    assigned_boosters: ['Maria L.', 'Katrine J.', 'Louise B.'],
+    chat_type: 'customer'
+  },
+  {
+    id: 'mock-job-4',
+    title: 'Team Chat - Bryllup Sarah',
+    client_name: null,
+    client_email: null,
+    date_needed: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'confirmed',
+    message_count: 5,
+    last_message_at: new Date(Date.now() - 1800000).toISOString(),
+    assigned_boosters: ['Maria L.', 'Louise B.'],
+    chat_type: 'booster-group'
+  }
+];
 
 export default function AdminJobChats() {
   const [jobs, setJobs] = useState<JobWithChat[]>([]);
@@ -65,16 +118,22 @@ export default function AdminJobChats() {
             ...job,
             message_count: messages?.length || 0,
             last_message_at: messages?.[0]?.created_at || null,
-            assigned_boosters: (boosters || []).map(b => b.name)
+            assigned_boosters: (boosters || []).map(b => b.name),
+            chat_type: 'customer' as const
           };
         })
       );
 
-      // Filter to only jobs with messages
-      const jobsWithMessages = jobsWithChatInfo.filter(j => j.message_count > 0);
-      setJobs(jobsWithMessages);
+      // Filter to only jobs with messages, then combine with mock data
+      const realJobsWithMessages = jobsWithChatInfo.filter(j => j.message_count > 0);
+      
+      // Combine mock jobs with real jobs (mock jobs first for demo)
+      const allJobs = [...MOCK_JOBS_WITH_CHATS, ...realJobsWithMessages];
+      setJobs(allJobs);
     } catch (error) {
       console.error('Error fetching jobs:', error);
+      // On error, still show mock data
+      setJobs(MOCK_JOBS_WITH_CHATS);
     } finally {
       setLoading(false);
     }
@@ -83,7 +142,8 @@ export default function AdminJobChats() {
   const filteredJobs = jobs.filter(job =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.client_email?.toLowerCase().includes(searchTerm.toLowerCase())
+    job.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.assigned_boosters.some(b => b.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -125,12 +185,21 @@ export default function AdminJobChats() {
                         onClick={() => setSelectedJobId(job.id)}
                         className="flex items-start gap-3 p-3 cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors"
                       >
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <MessageSquare className="h-5 w-5 text-primary" />
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                          job.chat_type === 'booster-group' ? 'bg-green-100' : 'bg-primary/10'
+                        }`}>
+                          {job.chat_type === 'booster-group' ? (
+                            <Users className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <MessageSquare className="h-5 w-5 text-primary" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium text-sm truncate">{job.title}</p>
+                            {job.chat_type === 'booster-group' && (
+                              <Badge variant="outline" className="text-xs px-1.5 bg-green-50 text-green-700 border-green-200">Team</Badge>
+                            )}
                             <Badge variant="secondary" className="text-xs px-1.5">{job.message_count}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
@@ -158,13 +227,22 @@ export default function AdminJobChats() {
               <ArrowLeft className="h-4 w-4" /> Tilbage
             </Button>
             <div className="text-sm">
-              <p className="font-medium">{selectedJob?.title}</p>
-              <p className="text-muted-foreground">{selectedJob?.client_name || selectedJob?.client_email}</p>
-              {selectedJob?.assigned_boosters && selectedJob.assigned_boosters.length > 0 && (
+              <div className="flex items-center gap-2">
+                <p className="font-medium">{selectedJob?.title}</p>
+                {selectedJob?.chat_type === 'booster-group' && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Team Chat</Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground">
+                {selectedJob?.chat_type === 'booster-group' 
+                  ? `Boosters: ${selectedJob?.assigned_boosters?.join(', ')}`
+                  : selectedJob?.client_name || selectedJob?.client_email}
+              </p>
+              {selectedJob?.chat_type !== 'booster-group' && selectedJob?.assigned_boosters && selectedJob.assigned_boosters.length > 0 && (
                 <p className="text-muted-foreground">Boosters: {selectedJob.assigned_boosters.join(', ')}</p>
               )}
             </div>
-            <JobChat jobId={selectedJobId} userType="admin" readOnly />
+            <JobChat jobId={selectedJobId} userType="admin" userName="Admin" />
           </div>
         )}
       </div>
@@ -200,12 +278,21 @@ export default function AdminJobChats() {
                         selectedJobId === job.id ? 'bg-accent' : ''
                       }`}
                     >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <MessageSquare className="h-5 w-5 text-primary" />
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                        job.chat_type === 'booster-group' ? 'bg-green-100' : 'bg-primary/10'
+                      }`}>
+                        {job.chat_type === 'booster-group' ? (
+                          <Users className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <MessageSquare className="h-5 w-5 text-primary" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium truncate">{job.title}</p>
+                          {job.chat_type === 'booster-group' && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Team</Badge>
+                          )}
                           <Badge variant="secondary" className="text-xs">{job.message_count}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
@@ -232,13 +319,22 @@ export default function AdminJobChats() {
           {selectedJobId ? (
             <div className="space-y-3">
               <div className="text-sm">
-                <p className="font-medium">{selectedJob?.title}</p>
-                <p className="text-muted-foreground">{selectedJob?.client_name || selectedJob?.client_email}</p>
-                {selectedJob?.assigned_boosters && selectedJob.assigned_boosters.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{selectedJob?.title}</p>
+                  {selectedJob?.chat_type === 'booster-group' && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Team Chat</Badge>
+                  )}
+                </div>
+                <p className="text-muted-foreground">
+                  {selectedJob?.chat_type === 'booster-group' 
+                    ? `Boosters: ${selectedJob?.assigned_boosters?.join(', ')}`
+                    : selectedJob?.client_name || selectedJob?.client_email}
+                </p>
+                {selectedJob?.chat_type !== 'booster-group' && selectedJob?.assigned_boosters && selectedJob.assigned_boosters.length > 0 && (
                   <p className="text-muted-foreground">Boosters: {selectedJob.assigned_boosters.join(', ')}</p>
                 )}
               </div>
-              <JobChat jobId={selectedJobId} userType="admin" readOnly />
+              <JobChat jobId={selectedJobId} userType="admin" userName="Admin" />
             </div>
           ) : (
             <Card className="h-[500px] flex items-center justify-center">
