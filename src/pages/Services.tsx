@@ -121,6 +121,7 @@ const Services = () => {
           duration: 0.5,
           category: 'Spraytan',
           clientType: 'privat' as const,
+          image: '/images/services/spraytan.png',
           groupPricing: { 1: 499, 2: 799, 3: 1099, 4: 1399 }
         },
         // Konfirmation
