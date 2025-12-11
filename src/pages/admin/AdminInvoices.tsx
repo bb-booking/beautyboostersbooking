@@ -396,7 +396,7 @@ const AdminInvoices = () => {
 
       {/* Edit & Send Invoice Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -405,7 +405,7 @@ const AdminInvoices = () => {
           </DialogHeader>
 
           {selectedInvoice && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Customer Info */}
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
