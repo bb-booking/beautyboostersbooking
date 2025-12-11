@@ -39,6 +39,13 @@ const MOCK_JOB_MESSAGES: Record<string, ChatMessage[]> = {
   'mock-job-3': [
     { id: 'm8', sender_type: 'customer', message_text: 'Vi ser frem til eventen! Mødetid kl. 14:00 ved hovedindgangen.', created_at: new Date(Date.now() - 259200000).toISOString() },
     { id: 'm9', sender_type: 'booster', message_text: 'Perfekt, vi ses kl. 14:00!', created_at: new Date(Date.now() - 172800000).toISOString() },
+  ],
+  'mock-job-4': [
+    { id: 'm10', sender_type: 'booster', message_text: 'Hej Maria! Er du klar til brylluppet på lørdag? 💄', created_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'm11', sender_type: 'booster', message_text: 'Ja! Jeg tager makeup kit med, kan du tage hårstyling udstyr? 💇‍♀️', created_at: new Date(Date.now() - 82800000).toISOString() },
+    { id: 'm12', sender_type: 'booster', message_text: 'Perfekt! Kunden har sendt inspirationsbilleder i den anden chat', created_at: new Date(Date.now() - 79200000).toISOString() },
+    { id: 'm13', sender_type: 'booster', message_text: 'Super! Jeg har set dem - det bliver et flot naturligt look 🌸', created_at: new Date(Date.now() - 7200000).toISOString() },
+    { id: 'm14', sender_type: 'booster', message_text: 'Mødes vi ved lokationen kl. 08:30?', created_at: new Date(Date.now() - 3600000).toISOString() },
   ]
 };
 
@@ -117,6 +124,21 @@ const JobChat = ({ jobId, userType, userName = 'Admin', readOnly = false }: JobC
 
   const sendMessage = async (imageUrl?: string) => {
     if (!newMessage.trim() && !imageUrl) return;
+
+    // Handle mock jobs locally
+    if (jobId.startsWith('mock-')) {
+      const newMsg: ChatMessage = {
+        id: `mock-${Date.now()}`,
+        sender_type: userType,
+        message_text: newMessage || undefined,
+        image_url: imageUrl || undefined,
+        created_at: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, newMsg]);
+      setNewMessage("");
+      toast.success('Besked sendt (demo)');
+      return;
+    }
 
     try {
       const { error } = await supabase
