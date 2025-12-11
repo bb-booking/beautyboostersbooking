@@ -75,20 +75,25 @@ interface Job {
   service_type?: string;
 }
 
-// Mock bookings data
-const MOCK_BOOKINGS: Omit<BoosterAvailability, 'id'>[] = [
-  { booster_id: 'mock-1', date: new Date().toISOString().split('T')[0], start_time: '09:00', end_time: '11:00', status: 'busy', job_id: 'job-1', notes: '' },
-  { booster_id: 'mock-2', date: new Date().toISOString().split('T')[0], start_time: '10:30', end_time: '12:30', status: 'busy', job_id: 'job-2', notes: '' },
-  { booster_id: 'mock-3', date: new Date().toISOString().split('T')[0], start_time: '14:00', end_time: '16:00', status: 'busy', job_id: 'job-3', notes: '' },
-  { booster_id: 'mock-4', date: new Date().toISOString().split('T')[0], start_time: '08:30', end_time: '10:00', status: 'busy', job_id: 'job-4', notes: '' },
+// Mock jobs with full addresses
+const MOCK_JOBS: Job[] = [
+  { id: 'job-1', title: 'Bryllup makeup', client_name: 'Maria Jensen', client_email: 'maria@email.dk', client_phone: '+45 12 34 56 78', location: 'Vesterbrogade 42, 1620 København V', date_needed: new Date().toISOString().split('T')[0], time_needed: '09:00', client_type: 'privat', service_type: 'Bryllup' },
+  { id: 'job-2', title: 'Firmaevent', client_name: 'Novo Nordisk', client_email: 'events@novo.dk', client_phone: '+45 87 65 43 21', location: 'Novo Allé 1, 2880 Bagsværd', date_needed: new Date().toISOString().split('T')[0], time_needed: '10:30', client_type: 'virksomhed', service_type: 'Event' },
+  { id: 'job-3', title: 'Hår styling', client_name: 'Louise Nielsen', client_email: 'louise@gmail.com', client_phone: '+45 23 45 67 89', location: 'Strøget 15, 8000 Aarhus C', date_needed: new Date().toISOString().split('T')[0], time_needed: '14:00', client_type: 'privat', service_type: 'Hår' },
+  { id: 'job-4', title: 'TV-produktion', client_name: 'DR', client_email: 'production@dr.dk', client_phone: '+45 35 20 30 40', location: 'Emil Holms Kanal 20, 0999 København C', date_needed: new Date().toISOString().split('T')[0], time_needed: '08:30', client_type: 'virksomhed', service_type: 'Film/TV' },
 ];
 
-const MOCK_JOBS: Job[] = [
-  { id: 'job-1', title: 'Bryllup makeup', client_name: 'Maria Jensen', client_email: 'maria@email.dk', client_phone: '+45 12 34 56 78', location: 'København', date_needed: new Date().toISOString().split('T')[0], time_needed: '09:00', client_type: 'privat', service_type: 'Bryllup' },
-  { id: 'job-2', title: 'Firmaevent', client_name: 'Novo Nordisk', client_email: 'events@novo.dk', client_phone: '+45 87 65 43 21', location: 'København', date_needed: new Date().toISOString().split('T')[0], time_needed: '10:30', client_type: 'virksomhed', service_type: 'Event' },
-  { id: 'job-3', title: 'Hår styling', client_name: 'Louise Nielsen', client_email: 'louise@gmail.com', client_phone: '+45 23 45 67 89', location: 'Aarhus', date_needed: new Date().toISOString().split('T')[0], time_needed: '14:00', client_type: 'privat', service_type: 'Hår' },
-  { id: 'job-4', title: 'TV-produktion', client_name: 'DR', client_email: 'production@dr.dk', client_phone: '+45 35 20 30 40', location: 'København', date_needed: new Date().toISOString().split('T')[0], time_needed: '08:30', client_type: 'virksomhed', service_type: 'Film/TV' },
-];
+// Function to get mock bookings with actual booster IDs
+const getMockBookings = (boosters: BoosterProfile[]): Omit<BoosterAvailability, 'id'>[] => {
+  if (boosters.length === 0) return [];
+  const today = new Date().toISOString().split('T')[0];
+  return [
+    { booster_id: boosters[0]?.id || '', date: today, start_time: '09:00', end_time: '11:00', status: 'busy' as const, job_id: 'job-1', notes: '' },
+    { booster_id: boosters[1]?.id || boosters[0]?.id || '', date: today, start_time: '10:30', end_time: '12:30', status: 'busy' as const, job_id: 'job-2', notes: '' },
+    { booster_id: boosters[2]?.id || boosters[0]?.id || '', date: today, start_time: '14:00', end_time: '16:00', status: 'busy' as const, job_id: 'job-3', notes: '' },
+    { booster_id: boosters[3]?.id || boosters[0]?.id || '', date: today, start_time: '08:30', end_time: '10:00', status: 'busy' as const, job_id: 'job-4', notes: '' },
+  ].filter(b => b.booster_id);
+};
 
 function timeToMinutes(time: string) {
   const [hours, minutes] = time.split(':').map(Number);
@@ -118,6 +123,9 @@ function DraggableBookingCard({
   } : undefined;
 
   const duration = (timeToMinutes(booking.end_time) - timeToMinutes(booking.start_time)) / 30;
+  
+  // Get short address (first part before comma)
+  const shortAddress = job?.location?.split(',')[0] || '';
 
   return (
     <div
@@ -156,15 +164,17 @@ function DraggableBookingCard({
           </span>
         </div>
         {duration >= 2 && (
-          <div className="text-[9px] text-muted-foreground truncate">
-            {job?.service_type || 'Service'}
-          </div>
-        )}
-        {duration >= 3 && job?.location && (
-          <div className="flex items-center gap-0.5">
-            <MapPin className="h-2 w-2 text-muted-foreground shrink-0" />
-            <span className="text-[8px] text-muted-foreground truncate">{job.location}</span>
-          </div>
+          <>
+            <div className="text-[9px] text-muted-foreground truncate">
+              {job?.service_type || 'Service'}
+            </div>
+            {shortAddress && (
+              <div className="flex items-center gap-0.5">
+                <MapPin className="h-2 w-2 text-muted-foreground shrink-0" />
+                <span className="text-[8px] text-muted-foreground truncate">{shortAddress}</span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -258,7 +268,7 @@ const AdminCalendar = () => {
 
   // View/Edit booking dialog
   const [viewBookingOpen, setViewBookingOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<{ booking: BoosterAvailability; job: Job | null; boosterName: string } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<{ booking: BoosterAvailability; job: Job | null; boosterName: string; boosterId: string } | null>(null);
 
   // Drag state
   const [activeBooking, setActiveBooking] = useState<{ booking: BoosterAvailability; job: Job | null } | null>(null);
@@ -450,22 +460,20 @@ const AdminCalendar = () => {
     });
   }, [boosters, searchTerm, locationFilter, specialtyFilter]);
 
-  // Add mock bookings to first few filtered boosters
+  // Add mock bookings using actual booster IDs
   const availabilityWithMocks = useMemo(() => {
-    const mockAvail: BoosterAvailability[] = [];
-    const today = format(selectedDate, 'yyyy-MM-dd');
+    const today = new Date().toISOString().split('T')[0];
     
-    filteredBoosters.slice(0, 4).forEach((booster, idx) => {
-      const mock = MOCK_BOOKINGS[idx];
-      if (mock && mock.date === new Date().toISOString().split('T')[0] && isSameDay(selectedDate, new Date())) {
-        mockAvail.push({
-          ...mock,
-          id: `mock-avail-${idx}`,
-          booster_id: booster.id,
-          date: today,
-        });
-      }
-    });
+    // Only add mocks if viewing today and no real availability exists
+    if (!isSameDay(selectedDate, new Date()) || availability.length > 0) {
+      return availability;
+    }
+    
+    const mockBookings = getMockBookings(filteredBoosters);
+    const mockAvail: BoosterAvailability[] = mockBookings.map((mock, idx) => ({
+      ...mock,
+      id: `mock-avail-${idx}`,
+    }));
     
     return [...availability, ...mockAvail];
   }, [availability, filteredBoosters, selectedDate]);
@@ -611,9 +619,33 @@ const AdminCalendar = () => {
     setJobDialogOpen(true);
   };
 
-  const handleBookingClick = (booking: BoosterAvailability, job: Job | null, boosterName: string) => {
-    setSelectedBooking({ booking, job, boosterName });
+  const handleBookingClick = (booking: BoosterAvailability, job: Job | null, boosterName: string, boosterId: string) => {
+    setSelectedBooking({ booking, job, boosterName, boosterId });
     setViewBookingOpen(true);
+  };
+
+  const handleEditBooking = () => {
+    if (!selectedBooking) return;
+    
+    // Pre-fill the job dialog with existing booking data
+    const { booking, job, boosterId } = selectedBooking;
+    setNewJobBooster(boosterId);
+    setNewJobTime(booking.start_time.slice(0, 5));
+    setNewJobDate(new Date(booking.date));
+    setNewJobTitle(job?.title || '');
+    setNewJobClient(job?.client_name || '');
+    setNewJobService(job?.service_type || '');
+    setNewJobLocation(job?.location || '');
+    setNewJobClientType((job?.client_type as 'privat' | 'virksomhed') || 'privat');
+    
+    // Calculate duration
+    const startMinutes = timeToMinutes(booking.start_time);
+    const endMinutes = timeToMinutes(booking.end_time);
+    setNewJobDuration(String(endMinutes - startMinutes));
+    setNewJobPrice("500");
+    
+    setViewBookingOpen(false);
+    setJobDialogOpen(true);
   };
 
   const handleCreateJob = async () => {
@@ -784,130 +816,247 @@ const AdminCalendar = () => {
           </div>
         </div>
 
-        {/* Calendar Grid - Viewport Locked */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-          {/* Booster Header with scroll arrows */}
-          <div className="flex items-center border-b bg-muted/30 shrink-0">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-14 w-8 rounded-none border-r shrink-0"
-              onClick={scrollLeft}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="w-12 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-14">
-              Uge {weekNumber}
+        {/* Calendar Grid - Day or Week View */}
+        {viewMode === 'day' ? (
+          // DAY VIEW
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {/* Booster Header with scroll arrows */}
+            <div className="flex items-center border-b bg-muted/30 shrink-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-14 w-8 rounded-none border-r shrink-0"
+                onClick={scrollLeft}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="w-12 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-14">
+                Uge {weekNumber}
+              </div>
+              
+              <div 
+                ref={scrollContainerRef}
+                className="flex-1 overflow-x-auto scrollbar-hide"
+                onScroll={(e) => setScrollPosition(e.currentTarget.scrollLeft)}
+              >
+                <div className="flex">
+                  {filteredBoosters.map(booster => (
+                    <div key={booster.id} className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5">
+                      <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
+                        <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
+                        <AvatarFallback className="text-[10px] bg-primary/10">
+                          {booster.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-[10px] font-medium truncate max-w-full text-center">
+                        {booster.name.split(' ')[0]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-14 w-8 rounded-none border-l shrink-0"
+                onClick={scrollRight}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            
-            <div 
-              ref={scrollContainerRef}
-              className="flex-1 overflow-x-auto scrollbar-hide"
-              onScroll={(e) => setScrollPosition(e.currentTarget.scrollLeft)}
-            >
-              <div className="flex">
-                {filteredBoosters.map(booster => (
-                  <div key={booster.id} className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5">
-                    <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
-                      <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
-                      <AvatarFallback className="text-[10px] bg-primary/10">
-                        {booster.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-[10px] font-medium truncate max-w-full text-center">
-                      {booster.name.split(' ')[0]}
-                    </span>
+
+            {/* Time Grid - scrollable vertically, synced horizontally */}
+            <div className="flex-1 flex overflow-hidden min-h-0">
+              <div className="w-8 shrink-0" />
+              
+              <div className="w-12 shrink-0 overflow-y-auto scrollbar-hide border-r">
+                {timeSlots.map((timeSlot, idx) => (
+                  <div 
+                    key={timeSlot}
+                    className={cn(
+                      "h-7 flex items-start justify-end pr-1 text-[10px] text-muted-foreground",
+                      idx % 2 === 0 ? "bg-muted/20" : ""
+                    )}
+                  >
+                    {idx % 2 === 0 ? timeSlot : ''}
                   </div>
                 ))}
               </div>
-            </div>
 
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-14 w-8 rounded-none border-l shrink-0"
-              onClick={scrollRight}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Time Grid - scrollable vertically, synced horizontally */}
-          <div className="flex-1 flex overflow-hidden min-h-0">
-            {/* Left scroll arrow spacer */}
-            <div className="w-8 shrink-0" />
-            
-            {/* Time labels column */}
-            <div className="w-12 shrink-0 overflow-y-auto scrollbar-hide border-r">
-              {timeSlots.map((timeSlot, idx) => (
-                <div 
-                  key={timeSlot}
-                  className={cn(
-                    "h-7 flex items-start justify-end pr-1 text-[10px] text-muted-foreground",
-                    idx % 2 === 0 ? "bg-muted/20" : ""
-                  )}
-                >
-                  {idx % 2 === 0 ? timeSlot : ''}
+              <div 
+                className="flex-1 overflow-auto"
+                onScroll={(e) => {
+                  if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                  }
+                }}
+              >
+                <div className="flex" style={{ minWidth: `${filteredBoosters.length * 96}px` }}>
+                  {filteredBoosters.map(booster => (
+                    <div key={booster.id} className="w-24 shrink-0">
+                      {timeSlots.map((timeSlot, idx) => {
+                        const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
+                        const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
+                        const hasBookingStarting = bookingsStarting.length > 0;
+                        
+                        return (
+                          <DroppableSlot
+                            key={`${booster.id}-${timeSlot}`}
+                            boosterId={booster.id}
+                            timeSlot={timeSlot}
+                            date={selectedDate}
+                            onAddJob={handleAddJob}
+                            hasBooking={isOccupied}
+                          >
+                            {bookingsStarting.map(avail => {
+                              const job = getJobForAvailability(avail.job_id);
+                              const isPrivate = job?.client_type !== 'virksomhed';
+                              
+                              return (
+                                <DraggableBookingCard
+                                  key={avail.id}
+                                  booking={avail}
+                                  job={job}
+                                  isPrivate={isPrivate}
+                                  onClick={() => handleBookingClick(avail, job, booster.name, booster.id)}
+                                />
+                              );
+                            })}
+                            {isOccupied && !hasBookingStarting && (
+                              <div className="absolute inset-0 bg-muted/30" />
+                            )}
+                          </DroppableSlot>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="w-8 shrink-0" />
+            </div>
+          </div>
+        ) : (
+          // WEEK VIEW - Boosters in rows, days in columns
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {/* Week Days Header */}
+            <div className="flex items-center border-b bg-muted/30 shrink-0">
+              <div className="w-32 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-12 px-2">
+                Uge {weekNumber}
+              </div>
+              {(() => {
+                const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+                return Array.from({ length: 7 }).map((_, i) => {
+                  const day = addDays(weekStart, i);
+                  const isToday = isSameDay(day, new Date());
+                  return (
+                    <div 
+                      key={i} 
+                      className={cn(
+                        "flex-1 text-center py-2 border-r text-xs",
+                        isToday && "bg-primary/10"
+                      )}
+                    >
+                      <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
+                      <div className={cn(
+                        "text-muted-foreground",
+                        isToday && "text-primary font-bold"
+                      )}>
+                        {format(day, 'd. MMM', { locale: da })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
 
-            {/* Booster slots grid */}
-            <div 
-              className="flex-1 overflow-auto"
-              onScroll={(e) => {
-                if (scrollContainerRef.current) {
-                  scrollContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                }
-              }}
-            >
-              <div className="flex" style={{ minWidth: `${filteredBoosters.length * 96}px` }}>
-                {filteredBoosters.map(booster => (
-                  <div key={booster.id} className="w-24 shrink-0">
-                    {timeSlots.map((timeSlot, idx) => {
-                      const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
-                      const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
-                      const hasBookingStarting = bookingsStarting.length > 0;
+            {/* Boosters Grid */}
+            <div className="flex-1 overflow-auto">
+              {filteredBoosters.map(booster => {
+                const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+                
+                return (
+                  <div key={booster.id} className="flex border-b">
+                    {/* Booster info column */}
+                    <div className="w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-muted/10">
+                      <Avatar className="h-6 w-6 ring-2 ring-green-500 ring-offset-1">
+                        <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
+                        <AvatarFallback className="text-[8px] bg-primary/10">
+                          {booster.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium truncate">{booster.name.split(' ')[0]}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{booster.location}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Days columns */}
+                    {Array.from({ length: 7 }).map((_, dayIdx) => {
+                      const day = addDays(weekStart, dayIdx);
+                      const isToday = isSameDay(day, new Date());
+                      const dayAvailability = getBoosterAvailabilityForDate(booster.id, day);
+                      const bookings = dayAvailability.filter(a => a.status === 'busy' || a.job_id);
                       
                       return (
-                        <DroppableSlot
-                          key={`${booster.id}-${timeSlot}`}
-                          boosterId={booster.id}
-                          timeSlot={timeSlot}
-                          date={selectedDate}
-                          onAddJob={handleAddJob}
-                          hasBooking={isOccupied}
+                        <div 
+                          key={dayIdx}
+                          className={cn(
+                            "flex-1 min-h-16 p-1 border-r relative",
+                            isToday && "bg-primary/5"
+                          )}
+                          onClick={() => {
+                            if (bookings.length === 0) {
+                              handleAddJob(booster.id, '09:00', day);
+                            }
+                          }}
                         >
-                          {bookingsStarting.map(avail => {
+                          {bookings.length === 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
+                              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                                <Plus className="h-3 w-3 text-primary" />
+                              </div>
+                            </div>
+                          )}
+                          {bookings.slice(0, 3).map((avail, idx) => {
                             const job = getJobForAvailability(avail.job_id);
                             const isPrivate = job?.client_type !== 'virksomhed';
                             
                             return (
-                              <DraggableBookingCard
+                              <div 
                                 key={avail.id}
-                                booking={avail}
-                                job={job}
-                                isPrivate={isPrivate}
-                                onClick={() => handleBookingClick(avail, job, booster.name)}
-                              />
+                                className={cn(
+                                  "text-[9px] p-1 rounded mb-1 cursor-pointer border-l-2",
+                                  isPrivate 
+                                    ? "bg-pink-50 border-l-pink-400 hover:bg-pink-100" 
+                                    : "bg-purple-50 border-l-purple-400 hover:bg-purple-100"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBookingClick(avail, job, booster.name, booster.id);
+                                }}
+                              >
+                                <div className="font-medium">{avail.start_time.slice(0, 5)}</div>
+                                <div className="truncate">{job?.client_name || 'Kunde'}</div>
+                              </div>
                             );
                           })}
-                          {isOccupied && !hasBookingStarting && (
-                            <div className="absolute inset-0 bg-muted/30" />
+                          {bookings.length > 3 && (
+                            <div className="text-[9px] text-muted-foreground text-center">
+                              +{bookings.length - 3} mere
+                            </div>
                           )}
-                        </DroppableSlot>
+                        </div>
                       );
                     })}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-
-            {/* Right scroll arrow spacer */}
-            <div className="w-8 shrink-0" />
           </div>
-        </div>
+        )}
 
         {/* Legend */}
         <div className="border-t bg-muted/30 py-1.5 px-3 flex items-center gap-4 text-xs shrink-0">
@@ -1211,7 +1360,7 @@ const AdminCalendar = () => {
               <Trash2 className="h-4 w-4 mr-1" />
               Slet
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleEditBooking}>
               <Edit className="h-4 w-4 mr-1" />
               Rediger
             </Button>
