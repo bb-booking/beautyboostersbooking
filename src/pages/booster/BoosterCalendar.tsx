@@ -531,14 +531,14 @@ function DayView({
   return (
     <div className="flex-1 flex flex-col">
       {/* Time Grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex">
+      <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex bg-card rounded-lg border overflow-hidden">
           {/* Time Labels Column */}
-          <div className="w-14 shrink-0 border-r">
+          <div className="w-14 shrink-0 border-r bg-muted/20">
             {TIME_SLOTS.map((timeSlot, idx) => (
               <div 
                 key={timeSlot}
-                className={`h-14 flex items-start justify-end pr-2 text-xs text-muted-foreground ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}
+                className={`h-12 flex items-start justify-end pr-2 text-xs text-muted-foreground pt-0.5 ${idx % 2 === 0 ? '' : 'bg-muted/10'}`}
               >
                 {idx % 2 === 0 ? timeSlot : ''}
               </div>
@@ -554,11 +554,11 @@ function DayView({
               return (
                 <div 
                   key={timeSlot}
-                  className={`h-14 relative border-b border-border/30 ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}
+                  className={`h-12 relative border-b border-border/20 ${idx % 2 === 0 ? '' : 'bg-muted/5'}`}
                 >
                   {/* Occupied slot overlay */}
                   {occupied && eventsStarting.length === 0 && (
-                    <div className="absolute inset-0 bg-muted/20" />
+                    <div className="absolute inset-0 bg-muted/10" />
                   )}
 
                   {/* Events starting at this slot */}
@@ -568,32 +568,34 @@ function DayView({
                     const startMinutes = timeToMinutes(event.start_time.slice(0, 5));
                     const endMinutes = timeToMinutes(event.end_time.slice(0, 5));
                     const durationSlots = (endMinutes - startMinutes) / 30;
-                    const height = Math.max(durationSlots * 56 - 4, 52); // 56px per slot (h-14)
+                    const height = Math.max(durationSlots * 48 - 4, 44); // 48px per slot (h-12)
 
                     return (
                       <div
                         key={event.id}
-                        className={`absolute left-1 right-1 top-0 rounded-lg overflow-hidden cursor-pointer 
-                          transition-shadow hover:shadow-lg active:scale-[0.98] z-10 border-l-4
+                        className={`absolute left-2 right-2 top-0.5 rounded-lg overflow-hidden cursor-pointer 
+                          transition-shadow hover:shadow-lg active:scale-[0.99] z-10 border-l-4 shadow-sm
                           ${isVirksomhed ? 'bg-purple-50 border-l-purple-400' : 'bg-pink-50 border-l-pink-400'}`}
                         style={{ height: `${height}px` }}
                         onClick={() => onSelectEvent(event)}
                       >
-                        <div className="p-2 h-full flex flex-col">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-0.5">
+                        <div className="p-2.5 h-full flex flex-col">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                             <Clock className="h-3 w-3" />
                             <span>{event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}</span>
                           </div>
-                          <div className="flex items-center gap-1 flex-1 min-w-0">
-                            <User className="h-3 w-3 text-foreground/70 shrink-0" />
-                            <span className="font-medium truncate text-sm">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <User className="h-3.5 w-3.5 text-foreground/70 shrink-0" />
+                            <span className="font-medium truncate">
                               {meta.customer_name || 'Kunde'}
                             </span>
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {meta.service || 'Booking'}
-                          </div>
-                          {durationSlots >= 2 && meta.address && (
+                          {durationSlots >= 2 && (
+                            <div className="text-xs text-muted-foreground truncate mt-1">
+                              {meta.service || 'Booking'}
+                            </div>
+                          )}
+                          {durationSlots >= 3 && meta.address && (
                             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                               <MapPin className="h-3 w-3 shrink-0" />
                               <span className="truncate">{meta.address.split(',')[0]}</span>
@@ -621,7 +623,7 @@ function DayView({
   );
 }
 
-// Week View Component - Mini Calendar with Events
+// Week View Component - Horizontal Time Grid
 function WeekView({
   days,
   events,
@@ -640,82 +642,143 @@ function WeekView({
       .filter((e) => e.date === format(d, "yyyy-MM-dd"))
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
+  // Time slots for week view (only hourly for compact display)
+  const WEEK_TIME_SLOTS = Array.from({ length: 15 }, (_, i) => {
+    const hour = i + 7;
+    return `${hour.toString().padStart(2, '0')}:00`;
+  });
+
+  const getEventsAtHour = (d: Date, hour: string) => {
+    const dayEvents = getDayEvents(d).filter(e => e.status === 'booked');
+    const hourMinutes = timeToMinutes(hour);
+    return dayEvents.filter(event => {
+      const startMinutes = timeToMinutes(event.start_time.slice(0, 5));
+      return startMinutes >= hourMinutes && startMinutes < hourMinutes + 60;
+    });
+  };
+
+  const isHourOccupied = (d: Date, hour: string) => {
+    const dayEvents = getDayEvents(d).filter(e => e.status === 'booked');
+    const hourMinutes = timeToMinutes(hour);
+    return dayEvents.some(event => {
+      const startMinutes = timeToMinutes(event.start_time.slice(0, 5));
+      const endMinutes = timeToMinutes(event.end_time.slice(0, 5));
+      return hourMinutes > startMinutes && hourMinutes < endMinutes;
+    });
+  };
+
   return (
-    <div className="p-4 space-y-2">
-      {days.map((day) => {
-        const dayEvents = getDayEvents(day);
-        const bookedEvents = dayEvents.filter(e => e.status === 'booked');
-        const isDayBlocked = dayEvents.some(e => e.status === 'blocked' && e.start_time === '07:00:00');
-        const today = isToday(day);
-        
-        return (
-          <Card 
-            key={format(day, 'yyyy-MM-dd')}
-            className={`overflow-hidden ${today ? 'ring-2 ring-primary' : ''}`}
-          >
-            {/* Day Header */}
-            <button 
-              className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Days Header */}
+      <div className="flex border-b bg-muted/20 shrink-0">
+        <div className="w-12 shrink-0 border-r" />
+        {days.map((day) => {
+          const today = isToday(day);
+          return (
+            <button
+              key={format(day, 'yyyy-MM-dd')}
+              className={`flex-1 py-2 text-center border-r hover:bg-muted/30 transition-colors ${today ? 'bg-primary/10' : ''}`}
               onClick={() => onSelectDay(day)}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                  today ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                }`}>
-                  {format(day, 'd')}
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">{format(day, 'EEEE', { locale: da })}</p>
-                  <p className="text-sm text-muted-foreground">{format(day, 'd. MMMM', { locale: da })}</p>
-                </div>
+              <div className="text-[10px] text-muted-foreground uppercase">
+                {format(day, 'EEE', { locale: da })}
               </div>
-              <div className="flex items-center gap-2">
-                {isDayBlocked ? (
-                  <Badge variant="destructive">Blokeret</Badge>
-                ) : bookedEvents.length > 0 ? (
-                  <Badge>{bookedEvents.length} booking{bookedEvents.length > 1 ? 's' : ''}</Badge>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Ledig</span>
-                )}
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <div className={`text-sm font-semibold ${today ? 'text-primary' : ''}`}>
+                {format(day, 'd')}
               </div>
             </button>
+          );
+        })}
+      </div>
+
+      {/* Time Grid */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex">
+          {/* Time Labels Column */}
+          <div className="w-12 shrink-0 border-r bg-muted/10">
+            {WEEK_TIME_SLOTS.map((timeSlot) => (
+              <div 
+                key={timeSlot}
+                className="h-14 flex items-start justify-end pr-1.5 text-[10px] text-muted-foreground pt-0.5"
+              >
+                {timeSlot}
+              </div>
+            ))}
+          </div>
+
+          {/* Days Columns */}
+          {days.map((day) => {
+            const today = isToday(day);
             
-            {/* Events Preview */}
-            {bookedEvents.length > 0 && (
-              <div className="px-3 pb-3 space-y-2">
-                {bookedEvents.slice(0, 2).map((event) => {
-                  const meta = parseNotes(event);
+            return (
+              <div 
+                key={format(day, 'yyyy-MM-dd')} 
+                className={`flex-1 min-w-0 border-r ${today ? 'bg-primary/5' : ''}`}
+              >
+                {WEEK_TIME_SLOTS.map((timeSlot, idx) => {
+                  const eventsAtHour = getEventsAtHour(day, timeSlot);
+                  const occupied = isHourOccupied(day, timeSlot);
+
                   return (
-                    <button
-                      key={event.id}
-                      className="w-full p-2 rounded-lg bg-muted/50 text-left hover:bg-muted transition-colors flex items-center gap-3"
-                      onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
+                    <div 
+                      key={timeSlot}
+                      className={`h-14 relative border-b border-border/20 ${idx % 2 === 0 ? '' : 'bg-muted/5'}`}
+                      onClick={() => onSelectDay(day)}
                     >
-                      <div className={`w-1 h-10 rounded-full ${meta.client_type === 'virksomhed' ? 'bg-purple-400' : 'bg-pink-400'}`} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="h-3 w-3" />
-                          <span>{event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}</span>
+                      {/* Occupied slot overlay */}
+                      {occupied && eventsAtHour.length === 0 && (
+                        <div className="absolute inset-0 bg-muted/15" />
+                      )}
+
+                      {/* Events */}
+                      {eventsAtHour.slice(0, 1).map((event) => {
+                        const meta = parseNotes(event);
+                        const isVirksomhed = meta.client_type === 'virksomhed';
+                        const startMinutes = timeToMinutes(event.start_time.slice(0, 5));
+                        const endMinutes = timeToMinutes(event.end_time.slice(0, 5));
+                        const durationHours = (endMinutes - startMinutes) / 60;
+                        const height = Math.max(durationHours * 56 - 2, 52);
+
+                        return (
+                          <div
+                            key={event.id}
+                            className={`absolute left-0.5 right-0.5 top-0.5 rounded overflow-hidden cursor-pointer 
+                              transition-shadow hover:shadow-md z-10 border-l-2
+                              ${isVirksomhed ? 'bg-purple-50 border-l-purple-400' : 'bg-pink-50 border-l-pink-400'}`}
+                            style={{ height: `${height}px` }}
+                            onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
+                          >
+                            <div className="p-1 h-full">
+                              <div className="text-[9px] text-muted-foreground">
+                                {event.start_time.slice(0, 5)}
+                              </div>
+                              <div className="text-[10px] font-medium truncate">
+                                {meta.customer_name?.split(' ')[0] || 'Kunde'}
+                              </div>
+                              {durationHours >= 2 && (
+                                <div className="text-[9px] text-muted-foreground truncate">
+                                  {meta.service?.split(' ')[0] || ''}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* More events indicator */}
+                      {eventsAtHour.length > 1 && (
+                        <div className="absolute bottom-0.5 right-0.5 text-[8px] bg-muted px-1 rounded">
+                          +{eventsAtHour.length - 1}
                         </div>
-                        <p className="font-medium truncate">{meta.service || 'Booking'}</p>
-                      </div>
-                    </button>
+                      )}
+                    </div>
                   );
                 })}
-                {bookedEvents.length > 2 && (
-                  <button 
-                    className="text-sm text-primary hover:underline pl-4"
-                    onClick={() => onSelectDay(day)}
-                  >
-                    +{bookedEvents.length - 2} flere bookinger
-                  </button>
-                )}
               </div>
-            )}
-          </Card>
-        );
-      })}
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
