@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, addDays, startOfWeek, endOfWeek, isSameDay } from "date-fns";
+import { format, addDays, startOfWeek, endOfWeek, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
 import { da } from "date-fns/locale";
 import { 
   Calendar as CalendarIcon,
@@ -24,7 +24,8 @@ import {
   Mail,
   Clock,
   Edit,
-  Trash2
+  Trash2,
+  ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -240,6 +241,10 @@ const AdminCalendar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [specialtyFilter, setSpecialtyFilter] = useState<string>("all");
+
+  // Individual booster view
+  const [selectedBooster, setSelectedBooster] = useState<BoosterProfile | null>(null);
+  const [boosterViewMode, setBoosterViewMode] = useState<'day' | 'week' | 'month'>('day');
 
   // Scroll refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -460,12 +465,10 @@ const AdminCalendar = () => {
     });
   }, [boosters, searchTerm, locationFilter, specialtyFilter]);
 
-  // Add mock bookings using actual booster IDs
+  // Add mock bookings using actual booster IDs - always show on today
   const availabilityWithMocks = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Only add mocks if viewing today and no real availability exists
-    if (!isSameDay(selectedDate, new Date()) || availability.length > 0) {
+    // Always add mocks if viewing today (for demo purposes)
+    if (!isSameDay(selectedDate, new Date())) {
       return availability;
     }
     
@@ -475,7 +478,11 @@ const AdminCalendar = () => {
       id: `mock-avail-${idx}`,
     }));
     
-    return [...availability, ...mockAvail];
+    // Combine real and mock, avoiding duplicates by job_id
+    const existingJobIds = new Set(availability.map(a => a.job_id).filter(Boolean));
+    const filteredMocks = mockAvail.filter(m => !existingJobIds.has(m.job_id));
+    
+    return [...availability, ...filteredMocks];
   }, [availability, filteredBoosters, selectedDate]);
 
   const getBoosterAvailabilityForDate = (boosterId: string, date: Date) => {
@@ -700,10 +707,302 @@ const AdminCalendar = () => {
     }
   };
 
+  // Get booster's bookings for individual view
+  const getBoosterMonthBookings = (boosterId: string, date: Date) => {
+    const start = startOfMonth(date);
+    const end = endOfMonth(date);
+    const days = eachDayOfInterval({ start, end });
+    
+    return days.map(day => ({
+      date: day,
+      bookings: availabilityWithMocks.filter(a => 
+        a.booster_id === boosterId && isSameDay(new Date(a.date), day)
+      )
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Individual Booster Calendar View
+  if (selectedBooster) {
+    const boosterAvailability = availabilityWithMocks.filter(a => a.booster_id === selectedBooster.id);
+    const monthData = getBoosterMonthBookings(selectedBooster.id, selectedDate);
+    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+    return (
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
+        {/* Individual Booster Header */}
+        <div className="flex items-center gap-3 py-3 px-4 border-b bg-background shrink-0">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedBooster(null)}
+            className="h-8"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Tilbage
+          </Button>
+          
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 ring-2 ring-green-500 ring-offset-2">
+              <AvatarImage src={getBoosterImage(selectedBooster) || undefined} alt={selectedBooster.name} />
+              <AvatarFallback className="bg-primary/10">
+                {selectedBooster.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="font-semibold">{selectedBooster.name}</h2>
+              <p className="text-xs text-muted-foreground">{selectedBooster.location}</p>
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => navigateDate('prev')}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-8 px-2">
+                  <CalendarIcon className="h-4 w-4 mr-1" />
+                  {format(selectedDate, 'd. MMM yyyy', { locale: da })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => navigateDate('next')}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+
+            <Select value={boosterViewMode} onValueChange={(v) => setBoosterViewMode(v as 'day' | 'week' | 'month')}>
+              <SelectTrigger className="w-28 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Dag</SelectItem>
+                <SelectItem value="week">Uge</SelectItem>
+                <SelectItem value="month">Måned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Individual Booster Calendar Content */}
+        <div className="flex-1 overflow-auto p-4">
+          {boosterViewMode === 'day' && (
+            <div className="max-w-2xl mx-auto">
+              <h3 className="text-lg font-medium mb-4">
+                {format(selectedDate, 'EEEE d. MMMM yyyy', { locale: da })}
+              </h3>
+              <div className="space-y-2">
+                {timeSlots.map((timeSlot, idx) => {
+                  const bookingsStarting = getBookingsStartingAtTime(selectedBooster.id, selectedDate, timeSlot);
+                  const isOccupied = isSlotOccupied(selectedBooster.id, selectedDate, timeSlot);
+                  
+                  return (
+                    <div 
+                      key={timeSlot}
+                      className={cn(
+                        "flex gap-3 py-1 border-b border-border/30",
+                        idx % 2 === 0 && "bg-muted/10"
+                      )}
+                    >
+                      <div className="w-16 text-sm text-muted-foreground shrink-0">
+                        {idx % 2 === 0 ? timeSlot : ''}
+                      </div>
+                      <div className="flex-1 relative min-h-[28px]">
+                        {bookingsStarting.map(avail => {
+                          const job = getJobForAvailability(avail.job_id);
+                          const isPrivate = job?.client_type !== 'virksomhed';
+                          const duration = (timeToMinutes(avail.end_time) - timeToMinutes(avail.start_time)) / 30;
+                          
+                          return (
+                            <div 
+                              key={avail.id}
+                              style={{ height: `${Math.max(duration * 32 - 4, 28)}px` }}
+                              className={cn(
+                                "absolute left-0 right-0 rounded-md p-2 cursor-pointer border-l-4",
+                                isPrivate 
+                                  ? "bg-pink-50 border-l-pink-400 hover:bg-pink-100" 
+                                  : "bg-purple-50 border-l-purple-400 hover:bg-purple-100"
+                              )}
+                              onClick={() => handleBookingClick(avail, job, selectedBooster.name, selectedBooster.id)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium">
+                                  {avail.start_time.slice(0, 5)} - {avail.end_time.slice(0, 5)}
+                                </span>
+                                <Badge variant={isPrivate ? 'secondary' : 'default'} className="text-[10px] h-5">
+                                  {isPrivate ? 'Privat' : 'B2B'}
+                                </Badge>
+                              </div>
+                              <div className="text-sm font-medium mt-1">{job?.client_name || 'Kunde'}</div>
+                              {duration >= 2 && (
+                                <>
+                                  <div className="text-xs text-muted-foreground">{job?.service_type}</div>
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {job?.location}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {boosterViewMode === 'week' && (
+            <div>
+              <h3 className="text-lg font-medium mb-4">
+                Uge {weekNumber} - {format(weekStart, 'd. MMM', { locale: da })} - {format(addDays(weekStart, 6), 'd. MMM yyyy', { locale: da })}
+              </h3>
+              <div className="grid grid-cols-7 gap-2">
+                {weekDays.map((day, dayIdx) => {
+                  const dayBookings = boosterAvailability.filter(a => 
+                    isSameDay(new Date(a.date), day) && (a.status === 'busy' || a.job_id)
+                  );
+                  const isToday = isSameDay(day, new Date());
+                  
+                  return (
+                    <div 
+                      key={dayIdx}
+                      className={cn(
+                        "border rounded-lg p-2 min-h-[200px]",
+                        isToday && "ring-2 ring-primary"
+                      )}
+                    >
+                      <div className={cn(
+                        "text-center mb-2 pb-2 border-b",
+                        isToday && "text-primary font-bold"
+                      )}>
+                        <div className="text-xs text-muted-foreground">
+                          {format(day, 'EEEE', { locale: da })}
+                        </div>
+                        <div className="text-lg font-semibold">
+                          {format(day, 'd', { locale: da })}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {dayBookings.map(avail => {
+                          const job = getJobForAvailability(avail.job_id);
+                          const isPrivate = job?.client_type !== 'virksomhed';
+                          
+                          return (
+                            <div 
+                              key={avail.id}
+                              className={cn(
+                                "text-xs p-1.5 rounded border-l-2 cursor-pointer",
+                                isPrivate 
+                                  ? "bg-pink-50 border-l-pink-400 hover:bg-pink-100" 
+                                  : "bg-purple-50 border-l-purple-400 hover:bg-purple-100"
+                              )}
+                              onClick={() => handleBookingClick(avail, job, selectedBooster.name, selectedBooster.id)}
+                            >
+                              <div className="font-medium">{avail.start_time.slice(0, 5)}</div>
+                              <div className="truncate">{job?.client_name || 'Kunde'}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {boosterViewMode === 'month' && (
+            <div>
+              <h3 className="text-lg font-medium mb-4">
+                {format(selectedDate, 'MMMM yyyy', { locale: da })}
+              </h3>
+              <div className="grid grid-cols-7 gap-1">
+                {/* Week day headers */}
+                {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'].map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Empty cells for days before month starts */}
+                {Array.from({ length: (getDay(startOfMonth(selectedDate)) + 6) % 7 }, (_, i) => (
+                  <div key={`empty-${i}`} className="h-24 bg-muted/20 rounded" />
+                ))}
+                
+                {/* Month days */}
+                {monthData.map(({ date: day, bookings }) => {
+                  const dayBookings = bookings.filter(a => a.status === 'busy' || a.job_id);
+                  const isToday = isSameDay(day, new Date());
+                  
+                  return (
+                    <div 
+                      key={day.toISOString()}
+                      className={cn(
+                        "h-24 border rounded p-1 overflow-hidden",
+                        isToday && "ring-2 ring-primary"
+                      )}
+                    >
+                      <div className={cn(
+                        "text-xs font-medium mb-1",
+                        isToday && "text-primary"
+                      )}>
+                        {format(day, 'd')}
+                      </div>
+                      <div className="space-y-0.5">
+                        {dayBookings.slice(0, 3).map(avail => {
+                          const job = getJobForAvailability(avail.job_id);
+                          const isPrivate = job?.client_type !== 'virksomhed';
+                          
+                          return (
+                            <div 
+                              key={avail.id}
+                              className={cn(
+                                "text-[9px] px-1 py-0.5 rounded truncate cursor-pointer",
+                                isPrivate 
+                                  ? "bg-pink-100 text-pink-800" 
+                                  : "bg-purple-100 text-purple-800"
+                              )}
+                              onClick={() => handleBookingClick(avail, job, selectedBooster.name, selectedBooster.id)}
+                            >
+                              {avail.start_time.slice(0, 5)} {job?.client_name || 'Kunde'}
+                            </div>
+                          );
+                        })}
+                        {dayBookings.length > 3 && (
+                          <div className="text-[9px] text-muted-foreground text-center">
+                            +{dayBookings.length - 3} mere
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -842,7 +1141,14 @@ const AdminCalendar = () => {
               >
                 <div className="flex">
                   {filteredBoosters.map(booster => (
-                    <div key={booster.id} className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5">
+                    <div 
+                      key={booster.id} 
+                      className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        setSelectedBooster(booster);
+                        setBoosterViewMode('day');
+                      }}
+                    >
                       <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
                         <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
                         <AvatarFallback className="text-[10px] bg-primary/10">
@@ -980,7 +1286,13 @@ const AdminCalendar = () => {
                 return (
                   <div key={booster.id} className="flex border-b">
                     {/* Booster info column */}
-                    <div className="w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-muted/10">
+                    <div 
+                      className="w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-muted/10 cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => {
+                        setSelectedBooster(booster);
+                        setBoosterViewMode('week');
+                      }}
+                    >
                       <Avatar className="h-6 w-6 ring-2 ring-green-500 ring-offset-1">
                         <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
                         <AvatarFallback className="text-[8px] bg-primary/10">
