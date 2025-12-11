@@ -275,74 +275,123 @@ const AdminInvoices = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ventende virksomhedsfakturaer</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Virksomhed</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Dato</TableHead>
-                  <TableHead>Timer</TableHead>
-                  <TableHead>Beløb (eks. moms)</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Handlinger</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{invoice.client_name}</div>
-                          <div className="text-sm text-muted-foreground">{invoice.client_email}</div>
-                        </div>
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {pendingInvoices.map((invoice) => (
+              <Card key={invoice.id}>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <div>
+                        <div className="font-medium">{invoice.client_name}</div>
+                        <div className="text-sm text-muted-foreground">{invoice.client_email}</div>
                       </div>
-                    </TableCell>
-                    <TableCell>{invoice.title}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {formatDate(invoice.date_needed)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        {invoice.duration_hours || 1} timer
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        {formatCurrency((invoice.hourly_rate || 0) * (invoice.duration_hours || 1))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        Afventer godkendelse
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => openEditDialog(invoice)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Gennemgå
-                      </Button>
-                    </TableCell>
+                    </div>
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 shrink-0 text-xs">
+                      Afventer
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-sm">{invoice.title}</div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {formatDate(invoice.date_needed)}
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      {invoice.duration_hours || 1} timer
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="font-medium">
+                      {formatCurrency((invoice.hourly_rate || 0) * (invoice.duration_hours || 1))}
+                      <span className="text-xs text-muted-foreground ml-1">eks. moms</span>
+                    </div>
+                    <Button size="sm" onClick={() => openEditDialog(invoice)}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      Gennemgå
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <Card className="hidden md:block">
+            <CardHeader>
+              <CardTitle>Ventende virksomhedsfakturaer</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Virksomhed</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Dato</TableHead>
+                    <TableHead>Timer</TableHead>
+                    <TableHead>Beløb (eks. moms)</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Handlinger</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {pendingInvoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{invoice.client_name}</div>
+                            <div className="text-sm text-muted-foreground">{invoice.client_email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{invoice.title}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {formatDate(invoice.date_needed)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          {invoice.duration_hours || 1} timer
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          {formatCurrency((invoice.hourly_rate || 0) * (invoice.duration_hours || 1))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                          Afventer godkendelse
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => openEditDialog(invoice)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Gennemgå
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Edit & Send Invoice Dialog */}
