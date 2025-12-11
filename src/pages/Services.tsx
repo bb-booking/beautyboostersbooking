@@ -133,6 +133,7 @@ const Services = () => {
           duration: 1.5,
           category: 'Konfirmation',
           clientType: 'privat' as const,
+          image: '/images/services/konfirmation.png',
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
         // Bryllup - Brudestyling (alle services fra billedet)
