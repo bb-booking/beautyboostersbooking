@@ -136,14 +136,14 @@ const Services = () => {
           image: '/images/services/konfirmation.png',
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
-        // Bryllup - Brudestyling (alle services fra billedet)
+        // Bryllup (alle services fra billedet)
         {
           id: '6',
           name: 'Brudestyling - Makeup Styling',
           description: 'Professionel makeup styling til bruden',
           price: 2999,
           duration: 2,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           image: '/images/services/brudestyling.png'
         },
@@ -153,7 +153,7 @@ const Services = () => {
           description: 'Professionel hårstyling til bruden',
           price: 2999,
           duration: 2,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           image: '/images/services/brudestyling.png'
         },
@@ -163,7 +163,7 @@ const Services = () => {
           description: 'Komplet hår og makeup styling til bruden uden prøvestyling',
           price: 4999,
           duration: 3,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           image: '/images/services/brudestyling.png'
         },
@@ -173,7 +173,7 @@ const Services = () => {
           description: 'Komplet hår og makeup styling til bruden med prøvestyling',
           price: 6499,
           duration: 4.5,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           image: '/images/services/brudestyling.png'
         },
@@ -183,7 +183,7 @@ const Services = () => {
           description: 'Premium brudestyling med makeup artist til rådighed i op til 8 timer',
           price: 8999,
           duration: 8,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           image: '/images/services/brudestyling.png'
         },
@@ -193,7 +193,7 @@ const Services = () => {
           description: 'Makeup og hårstyling til brudepige',
           price: 2999,
           duration: 1.5,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
@@ -203,7 +203,7 @@ const Services = () => {
           description: 'Makeup og hårstyling til 2 brudepiger',
           price: 4999,
           duration: 2.5,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const,
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
@@ -213,7 +213,7 @@ const Services = () => {
           description: 'Brudestyling plus styling til én ekstra person (mor, brudepige eller gæst)',
           price: 7499,
           duration: 4,
-          category: 'Bryllup - Brudestyling',
+          category: 'Bryllup',
           clientType: 'privat' as const
         },
         // Makeup Kurser
@@ -354,7 +354,7 @@ const Services = () => {
         { value: "Makeup & Hår", label: "Makeup & Hår" },
         { value: "Spraytan", label: "Spraytan" },
         { value: "Konfirmation", label: "Konfirmation" },
-        { value: "Bryllup - Brudestyling", label: "Bryllup - Brudestyling" },
+        { value: "Bryllup", label: "Bryllup" },
         { value: "Makeup Kurser", label: "Makeup Kurser" },
         { value: "Event", label: "Event" },
         { value: "Børn", label: "Børn" }
