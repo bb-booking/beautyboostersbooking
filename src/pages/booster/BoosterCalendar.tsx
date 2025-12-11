@@ -771,7 +771,7 @@ function WeekView({
                               style={{ height: `${height}px` }}
                               onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
                             >
-                              <div className="p-1 h-full">
+                              <div className="p-1.5 h-full flex flex-col">
                                 <div className="flex items-center justify-between">
                                   <div className="text-[9px] text-muted-foreground">
                                     {event.start_time.slice(0, 5)}
@@ -780,18 +780,16 @@ function WeekView({
                                     <Users className="h-2.5 w-2.5 text-primary" />
                                   )}
                                 </div>
-                                <div className="text-[10px] font-medium truncate">
-                                  {isVirksomhed ? (meta.company_name?.split(' ')[0] || meta.customer_name?.split(' ')[0]) : meta.customer_name?.split(' ')[0] || 'Kunde'}
+                                <div className="text-[10px] font-semibold truncate text-foreground">
+                                  {isVirksomhed ? (meta.company_name || meta.customer_name) : meta.customer_name || 'Kunde'}
                                 </div>
-                                {durationHours >= 1.5 && (
-                                  <div className="text-[9px] text-muted-foreground truncate">
-                                    {meta.service?.split(' ')[0] || ''}
-                                  </div>
-                                )}
-                                {durationHours >= 2.5 && meta.address && (
-                                  <div className="text-[8px] text-muted-foreground truncate flex items-center gap-0.5">
+                                <div className="text-[9px] text-muted-foreground truncate">
+                                  {meta.service || 'Booking'}
+                                </div>
+                                {durationHours >= 2 && meta.address && (
+                                  <div className="text-[8px] text-muted-foreground truncate flex items-center gap-0.5 mt-auto">
                                     <MapPin className="h-2 w-2 shrink-0" />
-                                    {meta.address.split(',')[0].slice(0, 12)}
+                                    {meta.address.split(',')[0]}
                                   </div>
                                 )}
                               </div>
