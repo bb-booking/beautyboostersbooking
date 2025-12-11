@@ -77,6 +77,161 @@ interface BookingRequest {
   };
 }
 
+// Mock data for demonstration
+const mockUpcomingJobs: UpcomingJob[] = [
+  {
+    id: 'mock-upcoming-1',
+    date: format(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    start_time: '10:00:00',
+    end_time: '14:00:00',
+    status: 'booked',
+    notes: JSON.stringify({ 
+      service: 'Bryllupsmakeup', 
+      customer_name: 'Louise Hansen', 
+      address: 'Østerbrogade 45, 2100 København Ø',
+      client_type: 'privat',
+      price: 2400
+    }),
+    job_id: 'job-1'
+  },
+  {
+    id: 'mock-upcoming-2',
+    date: format(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    start_time: '08:00:00',
+    end_time: '16:00:00',
+    status: 'booked',
+    notes: JSON.stringify({ 
+      service: 'Film/TV Produktion', 
+      customer_name: 'TV2 Danmark', 
+      address: 'Teglholmsgade 26, 2450 København SV',
+      client_type: 'virksomhed',
+      price: 4800
+    }),
+    job_id: 'job-2'
+  },
+  {
+    id: 'mock-upcoming-3',
+    date: format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    start_time: '14:00:00',
+    end_time: '17:00:00',
+    status: 'booked',
+    notes: JSON.stringify({ 
+      service: 'Makeup Styling', 
+      customer_name: 'Emma Petersen', 
+      address: 'Nørrebrogade 112, 2200 København N',
+      client_type: 'privat',
+      price: 1800
+    }),
+    job_id: 'job-3'
+  }
+];
+
+const mockRequests: BookingRequest[] = [
+  {
+    id: 'mock-req-1',
+    booking_id: 'booking-1',
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    status: 'pending',
+    bookings: {
+      id: 'booking-1',
+      booking_date: format(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+      booking_time: '11:00',
+      duration_hours: 2,
+      service_name: 'Hår Styling',
+      customer_name: 'Sofie Larsen',
+      customer_email: 'sofie@email.dk',
+      customer_phone: '+45 12 34 56 78',
+      location: 'Vesterbrogade 89, 1620 København V',
+      special_requests: 'Ønsker naturligt look til firmafest',
+      amount: 1200
+    }
+  },
+  {
+    id: 'mock-req-2',
+    booking_id: 'booking-2',
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    expires_at: new Date(Date.now() + 22 * 60 * 60 * 1000).toISOString(),
+    status: 'pending',
+    bookings: {
+      id: 'booking-2',
+      booking_date: format(new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+      booking_time: '09:00',
+      duration_hours: 6,
+      service_name: 'Event Makeup',
+      customer_name: 'Nordic Fashion Week',
+      customer_email: 'booking@nordicfashion.dk',
+      customer_phone: '+45 33 44 55 66',
+      location: 'Bella Center, Center Boulevard 5, 2300 København S',
+      special_requests: '8 modeller til modeshow',
+      amount: 7200
+    }
+  }
+];
+
+const mockAvailableJobs: Job[] = [
+  {
+    id: 'mock-job-1',
+    title: 'Anna Jensen - Bryllup',
+    service_type: 'Bryllup',
+    location: 'Frederiksberg Slot, 2000 Frederiksberg',
+    date_needed: format(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    time_needed: '08:00',
+    hourly_rate: 600,
+    duration_hours: 5,
+    boosters_needed: 2,
+    required_skills: ['Bryllupsmakeup', 'Hår styling'],
+    description: 'Bryllup med 2 brudepiger. Ønsker naturligt og elegant look.',
+    client_type: 'privat',
+    status: 'open'
+  },
+  {
+    id: 'mock-job-2',
+    title: 'DR - Teaterproduktion',
+    service_type: 'Teater',
+    location: 'DR Byen, Emil Holms Kanal 20, 0999 København C',
+    date_needed: format(new Date(Date.now() + 8 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    time_needed: '07:00',
+    hourly_rate: 650,
+    duration_hours: 10,
+    boosters_needed: 3,
+    required_skills: ['SFX', 'Teater makeup'],
+    description: 'Historisk drama - periodespecifik makeup for 15 skuespillere',
+    client_type: 'virksomhed',
+    status: 'open'
+  },
+  {
+    id: 'mock-job-3',
+    title: 'Maria Nielsen - Fotoshoot',
+    service_type: 'Reklame/Fotoshoot',
+    location: 'Studiestræde 14, 1455 København K',
+    date_needed: format(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    time_needed: '10:00',
+    hourly_rate: 550,
+    duration_hours: 4,
+    boosters_needed: 1,
+    required_skills: ['Makeup Styling'],
+    description: 'Professionelt portræt til LinkedIn og hjemmeside',
+    client_type: 'privat',
+    status: 'open'
+  },
+  {
+    id: 'mock-job-4',
+    title: 'Zalando - Kampagne',
+    service_type: 'Reklame/Fotoshoot',
+    location: 'Islands Brygge 43, 2300 København S',
+    date_needed: format(new Date(Date.now() + 12 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    time_needed: '08:00',
+    hourly_rate: 700,
+    duration_hours: 8,
+    boosters_needed: 4,
+    required_skills: ['Fashion makeup', 'Hår styling'],
+    description: 'Forårskampagne med 12 modeller - naturligt skandinavisk look',
+    client_type: 'virksomhed',
+    status: 'open'
+  }
+];
+
 export default function BoosterJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
@@ -126,10 +281,12 @@ export default function BoosterJobs() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setJobs(data || []);
+      // Use mock data if no real data
+      setJobs(data && data.length > 0 ? data : mockAvailableJobs);
     } catch (error) {
       console.error('Error fetching jobs:', error);
-      toast.error("Kunne ikke hente ledige jobs");
+      // Fall back to mock data on error
+      setJobs(mockAvailableJobs);
     } finally {
       setLoadingJobs(false);
     }
@@ -138,7 +295,12 @@ export default function BoosterJobs() {
   const fetchRequests = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // Use mock data if not logged in
+        setRequests(mockRequests);
+        setLoadingRequests(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('booster_booking_requests')
@@ -167,10 +329,12 @@ export default function BoosterJobs() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      // Use mock data if no real data
+      setRequests(data && data.length > 0 ? data : mockRequests);
     } catch (error) {
       console.error('Error fetching booking requests:', error);
-      toast.error('Kunne ikke hente booking anmodninger');
+      // Fall back to mock data on error
+      setRequests(mockRequests);
     } finally {
       setLoadingRequests(false);
     }
@@ -179,7 +343,12 @@ export default function BoosterJobs() {
   const fetchUpcomingJobs = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // Use mock data if not logged in
+        setUpcomingJobs(mockUpcomingJobs);
+        setLoadingUpcoming(false);
+        return;
+      }
 
       const today = format(new Date(), 'yyyy-MM-dd');
       
@@ -193,10 +362,12 @@ export default function BoosterJobs() {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      setUpcomingJobs(data || []);
+      // Use mock data if no real data
+      setUpcomingJobs(data && data.length > 0 ? data : mockUpcomingJobs);
     } catch (error) {
       console.error('Error fetching upcoming jobs:', error);
-      toast.error('Kunne ikke hente kommende jobs');
+      // Fall back to mock data on error
+      setUpcomingJobs(mockUpcomingJobs);
     } finally {
       setLoadingUpcoming(false);
     }
