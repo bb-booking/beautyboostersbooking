@@ -17,6 +17,7 @@ interface ServiceCardProps {
   isInquiry?: boolean;
   hasExtraHours?: boolean;
   extraHourPrice?: number;
+  image?: string;
   groupPricing?: {
     1: number;
     2: number;
@@ -41,6 +42,7 @@ const ServiceCard = ({
   isInquiry,
   hasExtraHours,
   extraHourPrice,
+  image,
   groupPricing,
   onClick 
 }: ServiceCardProps) => {
@@ -142,15 +144,34 @@ const ServiceCard = ({
 
   return (
     <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-md overflow-hidden h-full flex flex-col">
-      <CardContent className="pt-5 pb-4 px-5 flex-1">
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1 pr-2">
-            {name}
-          </h3>
-          <Badge variant="secondary" className="shrink-0 text-xs">
+      {image && (
+        <div className="relative w-full aspect-[4/3] overflow-hidden">
+          <img 
+            src={image} 
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <Badge variant="secondary" className="absolute top-3 left-3 text-xs">
             {category}
           </Badge>
         </div>
+      )}
+      <CardContent className="pt-5 pb-4 px-5 flex-1">
+        {!image && (
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1 pr-2">
+              {name}
+            </h3>
+            <Badge variant="secondary" className="shrink-0 text-xs">
+              {category}
+            </Badge>
+          </div>
+        )}
+        {image && (
+          <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors mb-3">
+            {name}
+          </h3>
+        )}
         <p className="text-muted-foreground text-sm mb-5 line-clamp-2 leading-relaxed">{description}</p>
         
         {/* Selectors */}
