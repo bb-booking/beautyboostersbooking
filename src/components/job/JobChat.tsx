@@ -23,6 +23,25 @@ interface ChatMessage {
   read_at?: string;
 }
 
+// Mock messages for demo
+const MOCK_JOB_MESSAGES: Record<string, ChatMessage[]> = {
+  'mock-job-1': [
+    { id: 'm1', sender_type: 'customer', message_text: 'Hej! Jeg glæder mig så meget til brylluppet! 💒', created_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'm2', sender_type: 'booster', message_text: 'Hej Sarah! Det glæder jeg mig også til. Har du nogle ønsker til makeup stilen?', created_at: new Date(Date.now() - 82800000).toISOString() },
+    { id: 'm3', sender_type: 'customer', message_text: 'Her er nogle billeder til inspiration! 💕', created_at: new Date(Date.now() - 3600000).toISOString(), image_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400' },
+    { id: 'm4', sender_type: 'customer', image_url: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400', created_at: new Date(Date.now() - 3500000).toISOString() },
+  ],
+  'mock-job-2': [
+    { id: 'm5', sender_type: 'customer', message_text: 'Hej! Vi holder temafest og jeg vil gerne have et fedt 70er look 🕺', created_at: new Date(Date.now() - 172800000).toISOString() },
+    { id: 'm6', sender_type: 'customer', message_text: 'Temaet er 70er disco! Kan du lave glitter look?', created_at: new Date(Date.now() - 7200000).toISOString() },
+    { id: 'm7', sender_type: 'customer', image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', created_at: new Date(Date.now() - 7100000).toISOString() },
+  ],
+  'mock-job-3': [
+    { id: 'm8', sender_type: 'customer', message_text: 'Vi ser frem til eventen! Mødetid kl. 14:00 ved hovedindgangen.', created_at: new Date(Date.now() - 259200000).toISOString() },
+    { id: 'm9', sender_type: 'booster', message_text: 'Perfekt, vi ses kl. 14:00!', created_at: new Date(Date.now() - 172800000).toISOString() },
+  ]
+};
+
 const JobChat = ({ jobId, userType, userName = 'Admin', readOnly = false }: JobChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -34,6 +53,10 @@ const JobChat = ({ jobId, userType, userName = 'Admin', readOnly = false }: JobC
 
   useEffect(() => {
     fetchMessages();
+    
+    // Skip real-time subscription for mock jobs
+    if (jobId.startsWith('mock-')) return;
+    
     const channel = supabase
       .channel(`job-chat-${jobId}`)
       .on(
@@ -61,6 +84,13 @@ const JobChat = ({ jobId, userType, userName = 'Admin', readOnly = false }: JobC
   }, [messages]);
 
   const fetchMessages = async () => {
+    // Handle mock jobs
+    if (jobId.startsWith('mock-')) {
+      setMessages(MOCK_JOB_MESSAGES[jobId] || []);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('job_communications')
