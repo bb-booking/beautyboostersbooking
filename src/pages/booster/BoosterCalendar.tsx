@@ -467,7 +467,20 @@ export default function BoosterCalendar() {
   );
 }
 
-// Day View Component - Agenda Style
+// Helper function to convert time to minutes
+const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// Generate time slots from 07:00 to 21:00 in 30-min intervals
+const TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
+  const hour = Math.floor(i / 2) + 7;
+  const mins = i % 2 === 0 ? '00' : '30';
+  return `${hour.toString().padStart(2, '0')}:${mins}`;
+});
+
+// Day View Component - iPhone-style Time Grid
 function DayView({ 
   date, 
   events, 
@@ -485,6 +498,21 @@ function DayView({
   const blockedEvents = events.filter(e => e.status === 'blocked');
   const isDayBlocked = blockedEvents.some(e => e.start_time === '07:00:00' && e.end_time === '21:00:00');
 
+  // Check if a time slot is occupied by an event (but not the starting slot)
+  const isSlotOccupied = (timeSlot: string) => {
+    const slotMinutes = timeToMinutes(timeSlot);
+    return bookedEvents.some(event => {
+      const startMinutes = timeToMinutes(event.start_time.slice(0, 5));
+      const endMinutes = timeToMinutes(event.end_time.slice(0, 5));
+      return slotMinutes > startMinutes && slotMinutes < endMinutes;
+    });
+  };
+
+  // Get events that start at a specific time slot
+  const getEventsStartingAt = (timeSlot: string) => {
+    return bookedEvents.filter(event => event.start_time.slice(0, 5) === timeSlot);
+  };
+
   if (isDayBlocked) {
     const blockMeta = parseNotes(blockedEvents[0]);
     return (
@@ -500,71 +528,95 @@ function DayView({
     );
   }
 
-  if (bookedEvents.length === 0) {
-    return (
-      <div className="p-4 flex flex-col items-center justify-center h-full min-h-[300px]">
-        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-          <Calendar className="h-8 w-8 text-muted-foreground" />
+  return (
+    <div className="flex-1 flex flex-col">
+      {/* Time Grid */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex">
+          {/* Time Labels Column */}
+          <div className="w-14 shrink-0 border-r">
+            {TIME_SLOTS.map((timeSlot, idx) => (
+              <div 
+                key={timeSlot}
+                className={`h-14 flex items-start justify-end pr-2 text-xs text-muted-foreground ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}
+              >
+                {idx % 2 === 0 ? timeSlot : ''}
+              </div>
+            ))}
+          </div>
+
+          {/* Events Column */}
+          <div className="flex-1 relative">
+            {TIME_SLOTS.map((timeSlot, idx) => {
+              const eventsStarting = getEventsStartingAt(timeSlot);
+              const occupied = isSlotOccupied(timeSlot);
+
+              return (
+                <div 
+                  key={timeSlot}
+                  className={`h-14 relative border-b border-border/30 ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}
+                >
+                  {/* Occupied slot overlay */}
+                  {occupied && eventsStarting.length === 0 && (
+                    <div className="absolute inset-0 bg-muted/20" />
+                  )}
+
+                  {/* Events starting at this slot */}
+                  {eventsStarting.map((event) => {
+                    const meta = parseNotes(event);
+                    const isVirksomhed = meta.client_type === 'virksomhed';
+                    const startMinutes = timeToMinutes(event.start_time.slice(0, 5));
+                    const endMinutes = timeToMinutes(event.end_time.slice(0, 5));
+                    const durationSlots = (endMinutes - startMinutes) / 30;
+                    const height = Math.max(durationSlots * 56 - 4, 52); // 56px per slot (h-14)
+
+                    return (
+                      <div
+                        key={event.id}
+                        className={`absolute left-1 right-1 top-0 rounded-lg overflow-hidden cursor-pointer 
+                          transition-shadow hover:shadow-lg active:scale-[0.98] z-10 border-l-4
+                          ${isVirksomhed ? 'bg-purple-50 border-l-purple-400' : 'bg-pink-50 border-l-pink-400'}`}
+                        style={{ height: `${height}px` }}
+                        onClick={() => onSelectEvent(event)}
+                      >
+                        <div className="p-2 h-full flex flex-col">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-0.5">
+                            <Clock className="h-3 w-3" />
+                            <span>{event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}</span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-1 min-w-0">
+                            <User className="h-3 w-3 text-foreground/70 shrink-0" />
+                            <span className="font-medium truncate text-sm">
+                              {meta.customer_name || 'Kunde'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {meta.service || 'Booking'}
+                          </div>
+                          {durationSlots >= 2 && meta.address && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{meta.address.split(',')[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <h3 className="font-semibold text-lg mb-1">Ingen bookinger</h3>
-        <p className="text-muted-foreground text-center mb-4">
-          Du har ingen bookinger denne dag
-        </p>
-        <Button variant="outline" onClick={onBlockDay}>
+      </div>
+
+      {/* Block day button */}
+      <div className="p-3 border-t bg-background">
+        <Button variant="outline" onClick={onBlockDay} className="w-full" size="sm">
           <Ban className="h-4 w-4 mr-2" />
           Bloker dag
         </Button>
       </div>
-    );
-  }
-
-  return (
-    <div className="p-4 space-y-3">
-      {bookedEvents.map((event) => {
-        const meta = parseNotes(event);
-        const isVirksomhed = meta.client_type === 'virksomhed';
-        
-        return (
-          <Card 
-            key={event.id}
-            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-            onClick={() => onSelectEvent(event)}
-          >
-            <div className={`h-1.5 ${isVirksomhed ? 'bg-purple-400' : 'bg-pink-400'}`} />
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold">{event.start_time.slice(0, 5)}</span>
-                    <span className="text-muted-foreground">-</span>
-                    <span className="text-muted-foreground">{event.end_time.slice(0, 5)}</span>
-                  </div>
-                  <h3 className="font-medium text-lg truncate">{meta.service || 'Booking'}</h3>
-                  <p className="text-muted-foreground truncate">{meta.customer_name}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <Badge variant={isVirksomhed ? "default" : "secondary"} className="mb-1">
-                    {isVirksomhed ? 'B2B' : 'Privat'}
-                  </Badge>
-                  <p className="font-semibold text-primary">
-                    {(meta.price || 0).toLocaleString('da-DK')} kr
-                  </p>
-                </div>
-              </div>
-              
-              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{meta.address || 'Ingen adresse'}</span>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-      
-      <Button variant="outline" onClick={onBlockDay} className="w-full mt-4">
-        <Ban className="h-4 w-4 mr-2" />
-        Bloker resten af dagen
-      </Button>
     </div>
   );
 }
