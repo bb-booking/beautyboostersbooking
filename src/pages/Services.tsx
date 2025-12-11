@@ -21,6 +21,7 @@ interface Service {
   isInquiry?: boolean;
   hasExtraHours?: boolean;
   extraHourPrice?: number;
+  image?: string;
   groupPricing?: {
     1: number;
     2: number;
@@ -86,6 +87,7 @@ const Services = () => {
           duration: 1,
           category: 'Makeup & Hår',
           clientType: 'privat' as const,
+          image: '/images/services/makeup-styling.png',
           groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
@@ -96,6 +98,7 @@ const Services = () => {
           duration: 1,
           category: 'Makeup & Hår',
           clientType: 'privat' as const,
+          image: '/images/services/makeup-styling.png',
           groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
         },
         {
@@ -106,6 +109,7 @@ const Services = () => {
           duration: 1.5,
           category: 'Makeup & Hår',
           clientType: 'privat' as const,
+          image: '/images/services/makeup-styling.png',
           groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
         },
         // Spraytan
@@ -138,7 +142,8 @@ const Services = () => {
           price: 2999,
           duration: 2,
           category: 'Bryllup - Brudestyling',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/brudestyling.png'
         },
         {
           id: '7',
@@ -147,7 +152,8 @@ const Services = () => {
           price: 2999,
           duration: 2,
           category: 'Bryllup - Brudestyling',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/brudestyling.png'
         },
         {
           id: '8',
@@ -156,7 +162,8 @@ const Services = () => {
           price: 4999,
           duration: 3,
           category: 'Bryllup - Brudestyling',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/brudestyling.png'
         },
         {
           id: '9',
@@ -165,7 +172,8 @@ const Services = () => {
           price: 6499,
           duration: 4.5,
           category: 'Bryllup - Brudestyling',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/brudestyling.png'
         },
         {
           id: '10',
@@ -174,7 +182,8 @@ const Services = () => {
           price: 8999,
           duration: 8,
           category: 'Bryllup - Brudestyling',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/brudestyling.png'
         },
         {
           id: '11',
