@@ -570,6 +570,8 @@ function DayView({
                     const durationSlots = (endMinutes - startMinutes) / 30;
                     const height = Math.max(durationSlots * 48 - 4, 44); // 48px per slot (h-12)
 
+                    const isTeamTask = meta.team_boosters && meta.team_boosters.length > 0;
+
                     return (
                       <div
                         key={event.id}
@@ -580,22 +582,41 @@ function DayView({
                         onClick={() => onSelectEvent(event)}
                       >
                         <div className="p-2.5 h-full flex flex-col">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}</span>
+                          {/* Time + Team Icon */}
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>{event.start_time.slice(0, 5)} - {event.end_time.slice(0, 5)}</span>
+                            </div>
+                            {isTeamTask && (
+                              <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                                <Users className="h-3 w-3" />
+                                <span className="text-[10px] font-medium">{(meta.team_boosters?.length || 0) + 1}</span>
+                              </div>
+                            )}
                           </div>
+                          
+                          {/* Customer Name / Company */}
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <User className="h-3.5 w-3.5 text-foreground/70 shrink-0" />
-                            <span className="font-medium truncate">
-                              {meta.customer_name || 'Kunde'}
+                            {isVirksomhed ? (
+                              <Building2 className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                            ) : (
+                              <User className="h-3.5 w-3.5 text-foreground/70 shrink-0" />
+                            )}
+                            <span className="font-semibold truncate text-foreground">
+                              {isVirksomhed ? (meta.company_name || meta.customer_name) : meta.customer_name || 'Kunde'}
                             </span>
                           </div>
-                          {durationSlots >= 2 && (
-                            <div className="text-xs text-muted-foreground truncate mt-1">
-                              {meta.service || 'Booking'}
+                          
+                          {/* Service Type */}
+                          {durationSlots >= 1.5 && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <span className="truncate font-medium">{meta.service || 'Booking'}</span>
                             </div>
                           )}
-                          {durationSlots >= 3 && meta.address && (
+                          
+                          {/* Address */}
+                          {durationSlots >= 2.5 && meta.address && (
                             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                               <MapPin className="h-3 w-3 shrink-0" />
                               <span className="truncate">{meta.address.split(',')[0]}</span>
@@ -739,38 +760,51 @@ function WeekView({
                         const durationHours = (endMinutes - startMinutes) / 60;
                         const height = Math.max(durationHours * 56 - 2, 52);
 
-                        return (
-                          <div
-                            key={event.id}
-                            className={`absolute left-0.5 right-0.5 top-0.5 rounded overflow-hidden cursor-pointer 
-                              transition-shadow hover:shadow-md z-10 border-l-2
-                              ${isVirksomhed ? 'bg-purple-50 border-l-purple-400' : 'bg-pink-50 border-l-pink-400'}`}
-                            style={{ height: `${height}px` }}
-                            onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
-                          >
-                            <div className="p-1 h-full">
-                              <div className="text-[9px] text-muted-foreground">
-                                {event.start_time.slice(0, 5)}
-                              </div>
-                              <div className="text-[10px] font-medium truncate">
-                                {meta.customer_name?.split(' ')[0] || 'Kunde'}
-                              </div>
-                              {durationHours >= 2 && (
-                                <div className="text-[9px] text-muted-foreground truncate">
-                                  {meta.service?.split(' ')[0] || ''}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          const isTeamTask = meta.team_boosters && meta.team_boosters.length > 0;
 
-                      {/* More events indicator */}
-                      {eventsAtHour.length > 1 && (
-                        <div className="absolute bottom-0.5 right-0.5 text-[8px] bg-muted px-1 rounded">
-                          +{eventsAtHour.length - 1}
-                        </div>
-                      )}
+                          return (
+                            <div
+                              key={event.id}
+                              className={`absolute left-0.5 right-0.5 top-0.5 rounded overflow-hidden cursor-pointer 
+                                transition-shadow hover:shadow-md z-10 border-l-2
+                                ${isVirksomhed ? 'bg-purple-50 border-l-purple-400' : 'bg-pink-50 border-l-pink-400'}`}
+                              style={{ height: `${height}px` }}
+                              onClick={(e) => { e.stopPropagation(); onSelectEvent(event); }}
+                            >
+                              <div className="p-1 h-full">
+                                <div className="flex items-center justify-between">
+                                  <div className="text-[9px] text-muted-foreground">
+                                    {event.start_time.slice(0, 5)}
+                                  </div>
+                                  {isTeamTask && (
+                                    <Users className="h-2.5 w-2.5 text-primary" />
+                                  )}
+                                </div>
+                                <div className="text-[10px] font-medium truncate">
+                                  {isVirksomhed ? (meta.company_name?.split(' ')[0] || meta.customer_name?.split(' ')[0]) : meta.customer_name?.split(' ')[0] || 'Kunde'}
+                                </div>
+                                {durationHours >= 1.5 && (
+                                  <div className="text-[9px] text-muted-foreground truncate">
+                                    {meta.service?.split(' ')[0] || ''}
+                                  </div>
+                                )}
+                                {durationHours >= 2.5 && meta.address && (
+                                  <div className="text-[8px] text-muted-foreground truncate flex items-center gap-0.5">
+                                    <MapPin className="h-2 w-2 shrink-0" />
+                                    {meta.address.split(',')[0].slice(0, 12)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* More events indicator */}
+                        {eventsAtHour.length > 1 && (
+                          <div className="absolute bottom-0.5 right-0.5 text-[8px] bg-muted px-1 rounded">
+                            +{eventsAtHour.length - 1}
+                          </div>
+                        )}
                     </div>
                   );
                 })}
