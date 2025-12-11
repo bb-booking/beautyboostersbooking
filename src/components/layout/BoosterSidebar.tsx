@@ -29,14 +29,14 @@ import { supabase } from "@/integrations/supabase/client"
 
 const menuItems = [
   {
-    title: "Kalender",
-    url: "/booster",
-    icon: Calendar,
-  },
-  {
     title: "Dashboard",
     url: "/booster/dashboard",
     icon: Home,
+  },
+  {
+    title: "Kalender",
+    url: "/booster",
+    icon: Calendar,
   },
   {
     title: "Jobs",
