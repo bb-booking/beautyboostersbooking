@@ -241,7 +241,8 @@ const Services = () => {
           price: 4499,
           duration: 3,
           category: 'Event',
-          clientType: 'privat' as const
+          clientType: 'privat' as const,
+          image: '/images/services/event-touchup.png'
         },
         // Børn
         {
