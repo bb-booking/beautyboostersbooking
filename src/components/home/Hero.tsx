@@ -214,66 +214,62 @@ const Hero = () => {
           PROFESSIONELLE ARTISTER DIREKTE TIL DØREN
         </p>
 
-        {/* Address Search - shown when not logged in */}
-        {!isLoggedIn && (
-          <div className="mt-8 md:mt-10 animate-fade-in max-w-md mx-auto" style={{ animationDelay: '0.3s' }}>
-            <form onSubmit={handleSearchSubmit} className="relative">
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Indtast din adresse..."
-                  value={addressInput}
-                  onChange={(e) => handleAddressInputChange(e.target.value)}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  className="h-14 pl-12 pr-14 text-base rounded-full border-2 border-foreground/20 bg-background/95 shadow-lg focus:border-primary"
-                />
-                <Button 
-                  type="submit"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full"
-                >
-                  <Search className="h-5 w-5" />
-                </Button>
+        {/* Address Search - always visible */}
+        <div className="mt-8 md:mt-10 animate-fade-in max-w-md mx-auto" style={{ animationDelay: '0.3s' }}>
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Indtast din adresse..."
+                value={addressInput}
+                onChange={(e) => handleAddressInputChange(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="h-14 pl-12 pr-14 text-base rounded-full border-2 border-foreground/20 bg-background/95 shadow-lg focus:border-primary"
+              />
+              <Button 
+                type="submit"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 w-full mt-2 bg-background border-2 border-border rounded-2xl shadow-xl max-h-48 overflow-y-auto">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-muted transition-colors border-b last:border-b-0 first:rounded-t-2xl last:rounded-b-2xl"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSuggestion(suggestion)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      {suggestion.tekst}
+                    </span>
+                  </button>
+                ))}
               </div>
-              
-              {/* Suggestions dropdown */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-2 bg-background border-2 border-border rounded-2xl shadow-xl max-h-48 overflow-y-auto">
-                  {suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className="w-full px-4 py-3 text-left text-sm hover:bg-muted transition-colors border-b last:border-b-0 first:rounded-t-2xl last:rounded-b-2xl"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectSuggestion(suggestion)}
-                    >
-                      <span className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        {suggestion.tekst}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </form>
-          </div>
-        )}
+            )}
+          </form>
+        </div>
 
-        {/* CTA Button - shown for logged in users or those with address */}
-        {(isLoggedIn || hasAddress) && (
-          <div className="mt-10 md:mt-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <Button 
-              onClick={handleBookNow}
-              size="lg"
-              className="h-14 px-10 text-lg font-semibold rounded-full transition-all duration-300 hover:scale-105"
-            >
-              Book nu
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-        )}
+        {/* CTA Button - always visible */}
+        <div className="mt-6 md:mt-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <Button 
+            onClick={handleBookNow}
+            size="lg"
+            className="h-14 px-10 text-lg font-semibold rounded-full transition-all duration-300 hover:scale-105"
+          >
+            Book nu
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
 
       </div>
 
