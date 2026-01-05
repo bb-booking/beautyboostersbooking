@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { Shield } from "lucide-react";
 
 export default function BoosterLogin() {
   const { toast } = useToast();
@@ -13,6 +15,7 @@ export default function BoosterLogin() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -89,7 +92,28 @@ export default function BoosterLogin() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <Button type="submit" disabled={loading} className="w-full">{loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}</Button>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="remember" 
+                checked={rememberMe} 
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                Husk mig på denne enhed
+              </label>
+            </div>
+            
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Arbejder…" : mode === "login" ? "Log ind" : "Opret"}
+            </Button>
+            
+            {rememberMe && mode === "login" && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <Shield className="h-4 w-4 text-primary" />
+                <span>Du forbliver logget ind, så du hurtigt kan tjekke din kalender og jobs</span>
+              </div>
+            )}
           </form>
           <div className="text-sm text-muted-foreground mt-4 space-y-2">
             {mode === "login" ? (

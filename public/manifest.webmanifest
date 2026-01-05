@@ -1,0 +1,52 @@
+{
+  "name": "BeautyBoosters",
+  "short_name": "BeautyBoosters",
+  "description": "Professionelle beauty services til døren - Book makeup artister, hårfrisører og beauty boosters",
+  "theme_color": "#D4BBA5",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["beauty", "lifestyle", "business"],
+  "shortcuts": [
+    {
+      "name": "Book nu",
+      "short_name": "Book",
+      "url": "/booking",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mine bookinger",
+      "short_name": "Bookinger",
+      "url": "/bookings",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
