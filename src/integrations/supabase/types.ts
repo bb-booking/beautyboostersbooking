@@ -434,47 +434,80 @@ export type Database = {
       booster_profiles: {
         Row: {
           bio: string | null
+          calendar_provider: string | null
+          calendar_sync_token: string | null
+          cpr_encrypted: string | null
           created_at: string
-          hourly_rate: number
+          default_end_time: string | null
+          default_start_time: string | null
+          email: string | null
+          hourly_rate: number | null
           id: string
           is_available: boolean | null
           location: string
           name: string
+          phone: string | null
           portfolio_image_url: string | null
+          private_address: string | null
+          private_city: string | null
+          private_postal_code: string | null
           rating: number | null
           review_count: number | null
           specialties: string[]
           updated_at: string
+          user_id: string | null
           years_experience: number | null
         }
         Insert: {
           bio?: string | null
+          calendar_provider?: string | null
+          calendar_sync_token?: string | null
+          cpr_encrypted?: string | null
           created_at?: string
-          hourly_rate: number
+          default_end_time?: string | null
+          default_start_time?: string | null
+          email?: string | null
+          hourly_rate?: number | null
           id?: string
           is_available?: boolean | null
           location: string
           name: string
+          phone?: string | null
           portfolio_image_url?: string | null
+          private_address?: string | null
+          private_city?: string | null
+          private_postal_code?: string | null
           rating?: number | null
           review_count?: number | null
           specialties?: string[]
           updated_at?: string
+          user_id?: string | null
           years_experience?: number | null
         }
         Update: {
           bio?: string | null
+          calendar_provider?: string | null
+          calendar_sync_token?: string | null
+          cpr_encrypted?: string | null
           created_at?: string
-          hourly_rate?: number
+          default_end_time?: string | null
+          default_start_time?: string | null
+          email?: string | null
+          hourly_rate?: number | null
           id?: string
           is_available?: boolean | null
           location?: string
           name?: string
+          phone?: string | null
           portfolio_image_url?: string | null
+          private_address?: string | null
+          private_city?: string | null
+          private_postal_code?: string | null
           rating?: number | null
           review_count?: number | null
           specialties?: string[]
           updated_at?: string
+          user_id?: string | null
           years_experience?: number | null
         }
         Relationships: []
