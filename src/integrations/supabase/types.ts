@@ -441,6 +441,7 @@ export type Database = {
           default_end_time: string | null
           default_start_time: string | null
           email: string | null
+          employment_type: string | null
           hourly_rate: number | null
           id: string
           is_available: boolean | null
@@ -467,6 +468,7 @@ export type Database = {
           default_end_time?: string | null
           default_start_time?: string | null
           email?: string | null
+          employment_type?: string | null
           hourly_rate?: number | null
           id?: string
           is_available?: boolean | null
@@ -493,6 +495,7 @@ export type Database = {
           default_end_time?: string | null
           default_start_time?: string | null
           email?: string | null
+          employment_type?: string | null
           hourly_rate?: number | null
           id?: string
           is_available?: boolean | null
