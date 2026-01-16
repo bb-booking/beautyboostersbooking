@@ -26,7 +26,9 @@ import {
   PiggyBank,
   CalendarClock,
   Info,
-  ExternalLink
+  ExternalLink,
+  Percent,
+  Banknote
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays, addMonths } from "date-fns";
 import { da } from "date-fns/locale";
@@ -69,16 +71,19 @@ interface Payslip {
   gross: number;
   tax: number;
   net: number;
+  amPension?: number;
+  atpBidrag?: number;
+  downloadUrl?: string;
 }
 
 interface BoosterProfile {
   hasCVR: boolean;
   cvrNumber?: string;
   companyName?: string;
-  businessType: 'cvr' | 'b-income';
+  employmentType: 'freelancer' | 'salaried';
   isVATRegistered: boolean;
-  vatPeriod: 'monthly' | 'quarterly' | 'semi-annual'; // månedsmoms, kvartalsmoms, halvårsmoms
-  annualRevenue?: number; // Determines VAT period
+  vatPeriod: 'monthly' | 'quarterly' | 'semi-annual';
+  annualRevenue?: number;
 }
 
 interface VATDeadline {
@@ -99,9 +104,9 @@ interface MonthlyInvoice {
 
 // Determine VAT period based on annual revenue (Danish rules)
 const determineVATPeriod = (annualRevenue: number): 'monthly' | 'quarterly' | 'semi-annual' => {
-  if (annualRevenue >= 50000000) return 'monthly'; // Over 50 mio = månedsmoms
-  if (annualRevenue >= 5000000) return 'quarterly'; // 5-50 mio = kvartalsmoms
-  return 'semi-annual'; // Under 5 mio = halvårsmoms
+  if (annualRevenue >= 50000000) return 'monthly';
+  if (annualRevenue >= 5000000) return 'quarterly';
+  return 'semi-annual';
 };
 
 const getVATPeriodLabel = (period: 'monthly' | 'quarterly' | 'semi-annual'): string => {
@@ -112,6 +117,9 @@ const getVATPeriodLabel = (period: 'monthly' | 'quarterly' | 'semi-annual'): str
   }
 };
 
+// BeautyBoosters cut percentage for B-income workers
+const BEAUTYBOOSTERS_CUT_PERCENT = 25;
+
 export default function BoosterFinance() {
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -119,20 +127,64 @@ export default function BoosterFinance() {
   const [recentJobs, setRecentJobs] = useState<JobEarning[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
-  const [activeTab, setActiveTab] = useState('invoicing');
+  const [activeTab, setActiveTab] = useState('earnings');
+  const [loading, setLoading] = useState(true);
   const [boosterProfile, setBoosterProfile] = useState<BoosterProfile>({
-    hasCVR: true,
-    cvrNumber: '12345678',
-    companyName: 'Anna\'s Makeup Studio',
-    businessType: 'cvr',
-    isVATRegistered: true, // Would be fetched from CVR API
-    vatPeriod: 'quarterly', // Determined by annual revenue
-    annualRevenue: 374400 // Under 5 mio = halvårsmoms, but showing quarterly for demo
+    hasCVR: false,
+    employmentType: 'freelancer',
+    isVATRegistered: false,
+    vatPeriod: 'quarterly',
   });
   const [vatDeadlines, setVatDeadlines] = useState<VATDeadline[]>([]);
   const [monthlyInvoices, setMonthlyInvoices] = useState<MonthlyInvoice[]>([]);
   const [vatSavingsAmount, setVatSavingsAmount] = useState(0);
-  const [pendingInvoiceAmount, setPendingInvoiceAmount] = useState(0);
+
+  // Fetch booster profile from database
+  useEffect(() => {
+    const fetchBoosterProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile, error } = await supabase
+          .from('booster_profiles')
+          .select('employment_type')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching booster profile:', error);
+          return;
+        }
+
+        if (profile) {
+          // B-income (freelancer) workers don't have CVR
+          const employmentType = (profile.employment_type as 'freelancer' | 'salaried') || 'freelancer';
+          const hasCVR = false; // For now, CVR is not tracked - B-income workers don't have CVR
+          
+          setBoosterProfile({
+            hasCVR,
+            employmentType,
+            isVATRegistered: false,
+            vatPeriod: 'quarterly',
+          });
+
+          // Set default tab based on employment type
+          if (employmentType === 'freelancer') {
+            setActiveTab('earnings');
+          } else {
+            setActiveTab('invoicing');
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBoosterProfile();
+  }, []);
 
   // Calculate VAT deadlines based on VAT period type and current date
   const calculateVATDeadlines = (vatPeriod: 'monthly' | 'quarterly' | 'semi-annual') => {
@@ -142,34 +194,31 @@ export default function BoosterFinance() {
     const deadlines: VATDeadline[] = [];
 
     if (vatPeriod === 'semi-annual') {
-      // Halvårsmoms: H1 (Jan-Jun) due Sep 1, H2 (Jul-Dec) due Mar 1 next year
       const periods = [
-        { period: `H1 ${currentYear} (Jan-Jun)`, dueDate: new Date(currentYear, 8, 1) }, // Sep 1
-        { period: `H2 ${currentYear} (Jul-Dec)`, dueDate: new Date(currentYear + 1, 2, 1) }, // Mar 1 next year
-        { period: `H1 ${currentYear + 1} (Jan-Jun)`, dueDate: new Date(currentYear + 1, 8, 1) }, // Sep 1 next year
+        { period: `H1 ${currentYear} (Jan-Jun)`, dueDate: new Date(currentYear, 8, 1) },
+        { period: `H2 ${currentYear} (Jul-Dec)`, dueDate: new Date(currentYear + 1, 2, 1) },
+        { period: `H1 ${currentYear + 1} (Jan-Jun)`, dueDate: new Date(currentYear + 1, 8, 1) },
       ];
       
       periods.forEach((p, idx) => {
         const daysUntil = differenceInDays(p.dueDate, now);
         let status: VATDeadline['status'] = 'upcoming';
-        if (daysUntil < 0) status = 'paid'; // Assume past deadlines are paid
+        if (daysUntil < 0) status = 'paid';
         else if (daysUntil <= 14) status = 'due_soon';
         
-        // Only show future deadlines and the most recent past one
         if (daysUntil >= -30) {
           deadlines.push({ 
             ...p, 
-            amount: idx === 0 ? 46800 : 0, // Estimated VAT for first period
+            amount: idx === 0 ? 46800 : 0,
             status 
           });
         }
       });
     } else if (vatPeriod === 'quarterly') {
-      // Kvartalsmoms: Q1 due Jun 1, Q2 due Sep 1, Q3 due Dec 1, Q4 due Mar 1 next year
       const quarters = [
-        { period: `Q3 ${currentYear} (Jul-Sep)`, dueDate: new Date(currentYear, 11, 1) }, // Dec 1
-        { period: `Q4 ${currentYear} (Okt-Dec)`, dueDate: new Date(currentYear + 1, 2, 1) }, // Mar 1 next year
-        { period: `Q1 ${currentYear + 1} (Jan-Mar)`, dueDate: new Date(currentYear + 1, 5, 1) }, // Jun 1 next year
+        { period: `Q3 ${currentYear} (Jul-Sep)`, dueDate: new Date(currentYear, 11, 1) },
+        { period: `Q4 ${currentYear} (Okt-Dec)`, dueDate: new Date(currentYear + 1, 2, 1) },
+        { period: `Q1 ${currentYear + 1} (Jan-Mar)`, dueDate: new Date(currentYear + 1, 5, 1) },
       ];
 
       quarters.forEach((q, idx) => {
@@ -185,13 +234,12 @@ export default function BoosterFinance() {
         });
       });
     } else {
-      // Månedsmoms: Due on the 25th of the following month
       for (let i = 0; i < 3; i++) {
         const monthOffset = currentMonth + i;
         const year = currentYear + Math.floor(monthOffset / 12);
         const month = monthOffset % 12;
         const periodDate = new Date(year, month, 1);
-        const dueDate = new Date(year, month + 1, 25); // 25th of next month
+        const dueDate = new Date(year, month + 1, 25);
         
         const daysUntil = differenceInDays(dueDate, now);
         let status: VATDeadline['status'] = 'upcoming';
@@ -305,15 +353,16 @@ export default function BoosterFinance() {
       { id: '4', date: '2025-09-01', amount: 47800, status: 'completed', reference: 'PAY-2025-09-001' },
     ];
 
+    // Mock payslips from Danløn for B-income workers
     const mockPayslips: Payslip[] = [
-      { id: '1', period: 'December 2025', date: '2025-12-01', gross: 57600, tax: 14400, net: 43200 },
-      { id: '2', period: 'November 2025', date: '2025-11-01', gross: 51300, tax: 12825, net: 38475 },
-      { id: '3', period: 'Oktober 2025', date: '2025-10-01', gross: 69500, tax: 17375, net: 52125 },
-      { id: '4', period: 'September 2025', date: '2025-09-01', gross: 63700, tax: 15925, net: 47775 },
-      { id: '5', period: 'August 2025', date: '2025-08-01', gross: 58900, tax: 14725, net: 44175 },
+      { id: '1', period: 'December 2025', date: '2025-12-31', gross: 43200, tax: 16416, net: 26784, amPension: 4320, atpBidrag: 94 },
+      { id: '2', period: 'November 2025', date: '2025-11-30', gross: 38475, tax: 14621, net: 23854, amPension: 3848, atpBidrag: 94 },
+      { id: '3', period: 'Oktober 2025', date: '2025-10-31', gross: 52125, tax: 19808, net: 32317, amPension: 5213, atpBidrag: 94 },
+      { id: '4', period: 'September 2025', date: '2025-09-30', gross: 47775, tax: 18155, net: 29620, amPension: 4778, atpBidrag: 94 },
+      { id: '5', period: 'August 2025', date: '2025-08-31', gross: 44175, tax: 16787, net: 27388, amPension: 4418, atpBidrag: 94 },
     ];
 
-    // Monthly invoices for payroll
+    // Monthly invoices for payroll (only for CVR holders)
     const mockMonthlyInvoices: MonthlyInvoice[] = [
       { id: '1', period: 'December 2025', dueDate: new Date(2025, 11, 31), amount: 57600, status: 'draft', generatedAt: new Date() },
       { id: '2', period: 'November 2025', dueDate: new Date(2025, 10, 30), amount: 51300, status: 'paid' },
@@ -327,27 +376,15 @@ export default function BoosterFinance() {
     setVatDeadlines(calculateVATDeadlines(boosterProfile.vatPeriod));
     setMonthlyInvoices(mockMonthlyInvoices);
     
-    // Calculate VAT savings (20% of gross for CVR = 25% of net)
-    // VAT is 25% of net (netto), which equals 20% of gross (brutto) since brutto = netto * 1.25
     const currentMonthGross = mockEarnings.find(e => e.period === 'Denne måned')?.gross || 0;
     setVatSavingsAmount(currentMonthGross * 0.20);
-    
-    // Pending invoice amount
-    setPendingInvoiceAmount(mockMonthlyInvoices.find(i => i.status === 'draft')?.amount || 0);
-  }, []);
+  }, [boosterProfile.vatPeriod]);
 
   const currentEarnings = earningsData.find(data => {
     if (selectedPeriod === 'day') return data.period === 'I dag';
     if (selectedPeriod === 'week') return data.period === 'Denne uge';
     if (selectedPeriod === 'month') return data.period === 'Denne måned';
     if (selectedPeriod === 'year') return data.period === 'Dette år';
-    return data;
-  }) || earningsData[0];
-
-  const previousEarnings = earningsData.find(data => {
-    if (selectedPeriod === 'day') return data.period === 'Denne uge';
-    if (selectedPeriod === 'week') return data.period === 'Denne måned';
-    if (selectedPeriod === 'month') return data.period === 'Dette år';
     return data;
   }) || earningsData[0];
 
@@ -431,6 +468,19 @@ export default function BoosterFinance() {
   const daysUntilMonthEnd = differenceInDays(endOfMonth(new Date()), new Date());
   const needsInvoiceGeneration = daysUntilMonthEnd <= 5;
 
+  // Calculate B-income specific values
+  const isFreelancer = boosterProfile.employmentType === 'freelancer' && !boosterProfile.hasCVR;
+  const beautyBoostersCut = currentEarnings ? Math.round(currentEarnings.gross * (BEAUTYBOOSTERS_CUT_PERCENT / 100)) : 0;
+  const yourEarningsAfterCut = currentEarnings ? currentEarnings.gross - beautyBoostersCut : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3">
@@ -478,8 +528,49 @@ export default function BoosterFinance() {
         </div>
       </div>
 
-      {/* CRITICAL ALERTS - Invoice and VAT deadlines */}
-      {needsInvoiceGeneration && (
+      {/* B-income: Earnings breakdown card */}
+      {isFreelancer && (
+        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Banknote className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm text-muted-foreground">Din indtjening denne {getPeriodLabel().toLowerCase()}</p>
+                    <Badge variant="outline" className="text-xs">B-indkomst</Badge>
+                  </div>
+                  <p className="text-2xl font-bold text-primary">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
+                  <p className="text-xs text-muted-foreground">
+                    Efter BeautyBoosters cut ({BEAUTYBOOSTERS_CUT_PERCENT}%)
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Næste lønudbetaling</p>
+                <p className="font-medium text-lg">Ultimo måneden</p>
+                <p className="text-xs text-muted-foreground">via Danløn</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* B-income info alert */}
+      {isFreelancer && (
+        <Alert className="border-blue-300 bg-blue-50/50 dark:bg-blue-950/20">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800 dark:text-blue-400">Du er B-lønnet hos BeautyBoosters</AlertTitle>
+          <AlertDescription className="text-blue-700 dark:text-blue-300">
+            Vi håndterer skat, AM-bidrag og ATP for dig. Du modtager løn via Danløn ultimo hver måned og kan hente dine lønsedler under "Lønsedler".
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* CVR/VAT alerts - only for CVR holders */}
+      {boosterProfile.hasCVR && needsInvoiceGeneration && (
         <Alert className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
           <CalendarClock className="h-4 w-4 text-orange-600" />
           <AlertTitle className="text-orange-800 dark:text-orange-400">Månedsfaktura skal sendes</AlertTitle>
@@ -547,24 +638,6 @@ export default function BoosterFinance() {
         </Card>
       )}
 
-      {/* Not VAT registered notice */}
-      {boosterProfile.hasCVR && !boosterProfile.isVATRegistered && (
-        <Card className="border-blue-300 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Info className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="font-medium text-blue-800 dark:text-blue-400">Ikke momsregistreret</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Din virksomhed (CVR: {boosterProfile.cvrNumber}) er ikke momsregistreret. 
-                  Hvis din omsætning overstiger 50.000 kr årligt, skal du momsregistreres.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="relative overflow-hidden">
@@ -604,9 +677,9 @@ export default function BoosterFinance() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Brutto</p>
+                <p className="text-sm text-muted-foreground">{isFreelancer ? 'Job-værdi' : 'Brutto'}</p>
                 <p className="text-2xl font-bold">{currentEarnings?.gross?.toLocaleString('da-DK') || 0} kr</p>
-                <p className="text-xs text-muted-foreground mt-1">før skat</p>
+                <p className="text-xs text-muted-foreground mt-1">{isFreelancer ? 'før cut' : 'før skat'}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center">
                 <DollarSign className="h-6 w-6 text-amber-500" />
@@ -620,8 +693,13 @@ export default function BoosterFinance() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Netto</p>
-                <p className="text-2xl font-bold text-primary">{currentEarnings?.net?.toLocaleString('da-DK') || 0} kr</p>
+                <p className="text-sm text-muted-foreground">{isFreelancer ? 'Din andel' : 'Netto'}</p>
+                <p className="text-2xl font-bold text-primary">
+                  {isFreelancer 
+                    ? yourEarningsAfterCut.toLocaleString('da-DK')
+                    : currentEarnings?.net?.toLocaleString('da-DK') || 0
+                  } kr
+                </p>
                 <div className="flex items-center gap-1 mt-1">
                   {isPositiveGrowth ? (
                     <ArrowUpRight className="h-3 w-3 text-green-500" />
@@ -649,245 +727,305 @@ export default function BoosterFinance() {
               <SelectValue placeholder="Vælg sektion" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="invoicing">Fakturering</SelectItem>
-              <SelectItem value="jobs">Jobs</SelectItem>
-              <SelectItem value="payouts">Udbetalinger</SelectItem>
-              <SelectItem value="statistics">Statistik</SelectItem>
-              <SelectItem value="documents">Lønsedler</SelectItem>
+              {isFreelancer ? (
+                <>
+                  <SelectItem value="earnings">Indtjening</SelectItem>
+                  <SelectItem value="jobs">Jobs</SelectItem>
+                  <SelectItem value="payouts">Udbetalinger</SelectItem>
+                  <SelectItem value="statistics">Statistik</SelectItem>
+                  <SelectItem value="documents">Lønsedler</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="invoicing">Fakturering</SelectItem>
+                  <SelectItem value="jobs">Jobs</SelectItem>
+                  <SelectItem value="payouts">Udbetalinger</SelectItem>
+                  <SelectItem value="statistics">Statistik</SelectItem>
+                  <SelectItem value="documents">Lønsedler</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>
         {/* Desktop: Tabs */}
         <TabsList className="hidden sm:inline-flex">
-          <TabsTrigger value="invoicing" className="flex items-center gap-1">
-            <Send className="h-4 w-4" />
-            Fakturering
-          </TabsTrigger>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          <TabsTrigger value="payouts">Udbetalinger</TabsTrigger>
-          <TabsTrigger value="statistics">Statistik</TabsTrigger>
-          <TabsTrigger value="documents">Lønsedler</TabsTrigger>
+          {isFreelancer ? (
+            <>
+              <TabsTrigger value="earnings" className="flex items-center gap-1">
+                <Banknote className="h-4 w-4" />
+                Indtjening
+              </TabsTrigger>
+              <TabsTrigger value="jobs">Jobs</TabsTrigger>
+              <TabsTrigger value="payouts">Udbetalinger</TabsTrigger>
+              <TabsTrigger value="statistics">Statistik</TabsTrigger>
+              <TabsTrigger value="documents">Lønsedler</TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="invoicing" className="flex items-center gap-1">
+                <Send className="h-4 w-4" />
+                Fakturering
+              </TabsTrigger>
+              <TabsTrigger value="jobs">Jobs</TabsTrigger>
+              <TabsTrigger value="payouts">Udbetalinger</TabsTrigger>
+              <TabsTrigger value="statistics">Statistik</TabsTrigger>
+              <TabsTrigger value="documents">Lønsedler</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
-        {/* Invoicing & VAT Tab */}
-        <TabsContent value="invoicing" className="space-y-4">
-          {/* Monthly Invoice Section */}
+        {/* B-income Earnings Tab */}
+        <TabsContent value="earnings" className="space-y-4">
+          {/* Earnings breakdown */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Månedlige fakturaer til lønsystem
+                <Percent className="h-5 w-5" />
+                Indtjeningsoversigt
               </CardTitle>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                Auto-genereret d. 25 hver måned
-              </Badge>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {monthlyInvoices.map((invoice) => (
-                  <div key={invoice.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                        invoice.status === 'draft' ? 'bg-yellow-500/10' :
-                        invoice.status === 'sent' ? 'bg-blue-500/10' :
-                        invoice.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
-                      }`}>
-                        <FileText className={`h-5 w-5 ${
-                          invoice.status === 'draft' ? 'text-yellow-600' :
-                          invoice.status === 'sent' ? 'text-blue-600' :
-                          invoice.status === 'paid' ? 'text-green-600' : 'text-muted-foreground'
-                        }`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium">{invoice.period}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Frist: {format(invoice.dueDate, "d. MMM yyyy", { locale: da })}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="font-bold">{invoice.amount.toLocaleString('da-DK')} kr</p>
-                            <Badge variant={getInvoiceStatusColor(invoice.status)} className="text-xs">
-                              {invoice.status === 'draft' ? 'Kladde' :
-                               invoice.status === 'sent' ? 'Sendt' :
-                               invoice.status === 'pending' ? 'Afventer' : 'Betalt'}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex justify-end">
-                          {invoice.status === 'draft' && (
-                            <Button size="sm" onClick={() => handleSendMonthlyInvoice(invoice.id)} className="w-full sm:w-auto">
-                              <Send className="h-4 w-4 mr-2" />
-                              Send faktura
-                            </Button>
-                          )}
-                          {invoice.status !== 'draft' && (
-                            <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </Button>
-                          )}
-                        </div>
+              <div className="space-y-6">
+                {/* Visual breakdown */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="h-5 w-5 text-amber-600" />
+                      <div>
+                        <p className="font-medium">Total job-værdi</p>
+                        <p className="text-sm text-muted-foreground">Kundens betaling for dine jobs</p>
                       </div>
                     </div>
+                    <p className="text-xl font-bold">{currentEarnings?.gross?.toLocaleString('da-DK')} kr</p>
                   </div>
-                ))}
-              </div>
-              
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="text-sm text-muted-foreground">
-                    <p className="font-medium mb-1">Sådan fungerer det:</p>
-                    <ol className="list-decimal list-inside space-y-1">
-                      <li>Faktura genereres automatisk d. 25. hver måned baseret på dine afsluttede jobs</li>
-                      <li>Gennemgå og godkend fakturaen inden månedens udgang</li>
-                      <li>Fakturaen sendes til admin/lønsystemet for behandling</li>
-                      <li>Udbetaling sker omkring d. 1. i efterfølgende måned</li>
-                    </ol>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                    <div className="flex items-center gap-3">
+                      <Percent className="h-5 w-5 text-red-600" />
+                      <div>
+                        <p className="font-medium">BeautyBoosters cut ({BEAUTYBOOSTERS_CUT_PERCENT}%)</p>
+                        <p className="text-sm text-muted-foreground">Platform, booking, support & forsikring</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-red-600">-{beautyBoostersCut.toLocaleString('da-DK')} kr</p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-primary/10 border-primary/30">
+                    <div className="flex items-center gap-3">
+                      <Banknote className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Din bruttoløn</p>
+                        <p className="text-sm text-muted-foreground">Før skat, AM-bidrag og ATP</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-primary">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
+                  </div>
+                </div>
+
+                {/* Info box */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="text-sm text-muted-foreground">
+                      <p className="font-medium mb-2">Sådan fungerer B-indkomst hos BeautyBoosters:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Du modtager løn som B-indkomst – vi indberetter og afregner skat for dig</li>
+                        <li>AM-bidrag (8%) og ATP trækkes automatisk</li>
+                        <li>Løn udbetales ultimo hver måned via Danløn</li>
+                        <li>Du modtager lønseddel i din e-Boks og kan se dem under "Lønsedler"</li>
+                        <li>Du skal ikke selv indberette moms eller betale B-skat</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estimated net calculation */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Estimeret AM-bidrag (8%)</p>
+                    <p className="text-lg font-medium">~{Math.round(yourEarningsAfterCut * 0.08).toLocaleString('da-DK')} kr</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Estimeret skat (~38%)</p>
+                    <p className="text-lg font-medium">~{Math.round(yourEarningsAfterCut * 0.92 * 0.38).toLocaleString('da-DK')} kr</p>
+                  </div>
+                </div>
+
+                <div className="p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Estimeret udbetaling (efter skat)</p>
+                      <p className="text-xs text-muted-foreground">Afhænger af dit skattekort</p>
+                    </div>
+                    <p className="text-2xl font-bold text-primary">
+                      ~{Math.round(yourEarningsAfterCut * 0.92 * 0.62).toLocaleString('da-DK')} kr
+                    </p>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* VAT Section for CVR holders */}
-          {boosterProfile.hasCVR && boosterProfile.isVATRegistered && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-3">
+        {/* Invoicing & VAT Tab - Only for CVR holders */}
+        <TabsContent value="invoicing" className="space-y-4">
+          {boosterProfile.hasCVR ? (
+            <>
+              {/* Monthly Invoice Section */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Momsindberetning
+                    <FileText className="h-5 w-5" />
+                    Månedlige fakturaer til lønsystem
                   </CardTitle>
-                  <Badge variant="secondary">{getVATPeriodLabel(boosterProfile.vatPeriod)}</Badge>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://skat.dk" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Gå til SKAT
-                  </a>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* VAT Period Info */}
-                  <div className="p-3 bg-muted/50 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        Din virksomhed ({boosterProfile.cvrNumber}) er registreret for {getVATPeriodLabel(boosterProfile.vatPeriod).toLowerCase()}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {boosterProfile.vatPeriod === 'semi-annual' && 'Årlig omsætning under 5 mio. kr'}
-                      {boosterProfile.vatPeriod === 'quarterly' && 'Årlig omsætning 5-50 mio. kr'}
-                      {boosterProfile.vatPeriod === 'monthly' && 'Årlig omsætning over 50 mio. kr'}
-                    </span>
-                  </div>
-
-                  {/* VAT Overview */}
-                  {/* VAT Overview */}
-                  <div className="grid md:grid-cols-3 gap-4 mb-4">
-                    <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                      <p className="text-sm text-muted-foreground">Udgående moms (salg)</p>
-                      <p className="text-xl font-bold text-green-700 dark:text-green-400">
-                        {Math.round((currentEarnings?.gross || 0) * 0.25).toLocaleString('da-DK')} kr
-                      </p>
-                    </div>
-                    <div className="p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
-                      <p className="text-sm text-muted-foreground">Indgående moms (køb)</p>
-                      <p className="text-xl font-bold text-red-700 dark:text-red-400">
-                        -{Math.round((currentEarnings?.gross || 0) * 0.05).toLocaleString('da-DK')} kr
-                      </p>
-                    </div>
-                    <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                      <p className="text-sm text-muted-foreground">Moms til betaling</p>
-                      <p className="text-xl font-bold text-blue-700 dark:text-blue-400">
-                        {Math.round((currentEarnings?.gross || 0) * 0.20).toLocaleString('da-DK')} kr
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* VAT Deadlines */}
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Info className="h-3 w-3" />
+                    Auto-genereret d. 25 hver måned
+                  </Badge>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-3">
-                    <h4 className="font-medium">Momsfrister</h4>
-                    {vatDeadlines.map((deadline, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          {deadline.status === 'paid' ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          ) : deadline.status === 'overdue' ? (
-                            <AlertTriangle className="h-5 w-5 text-red-600" />
-                          ) : (
-                            <CalendarClock className="h-5 w-5 text-muted-foreground" />
-                          )}
-                          <div>
-                            <p className="font-medium">{deadline.period}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Frist: {format(deadline.dueDate, "d. MMMM yyyy", { locale: da })}
-                            </p>
+                    {monthlyInvoices.map((invoice) => (
+                      <div key={invoice.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
+                            invoice.status === 'draft' ? 'bg-yellow-500/10' :
+                            invoice.status === 'sent' ? 'bg-blue-500/10' :
+                            invoice.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
+                          }`}>
+                            <FileText className={`h-5 w-5 ${
+                              invoice.status === 'draft' ? 'text-yellow-600' :
+                              invoice.status === 'sent' ? 'text-blue-600' :
+                              invoice.status === 'paid' ? 'text-green-600' : 'text-muted-foreground'
+                            }`} />
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {deadline.amount > 0 && (
-                            <span className="font-medium">{deadline.amount.toLocaleString('da-DK')} kr</span>
-                          )}
-                          <Badge className={getVATStatusColor(deadline.status)}>
-                            {deadline.status === 'paid' ? 'Betalt' :
-                             deadline.status === 'upcoming' ? 'Kommende' :
-                             deadline.status === 'due_soon' ? 'Snart' : 'Forfalden'}
-                          </Badge>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-medium">{invoice.period}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Frist: {format(invoice.dueDate, "d. MMM yyyy", { locale: da })}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="font-bold">{invoice.amount.toLocaleString('da-DK')} kr</p>
+                                <Badge variant={getInvoiceStatusColor(invoice.status)} className="text-xs">
+                                  {invoice.status === 'draft' ? 'Kladde' :
+                                   invoice.status === 'sent' ? 'Sendt' :
+                                   invoice.status === 'pending' ? 'Afventer' : 'Betalt'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex justify-end">
+                              {invoice.status === 'draft' && (
+                                <Button size="sm" onClick={() => handleSendMonthlyInvoice(invoice.id)} className="w-full sm:w-auto">
+                                  <Send className="h-4 w-4 mr-2" />
+                                  Send faktura
+                                </Button>
+                              )}
+                              {invoice.status !== 'draft' && (
+                                <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
 
-                  {/* VAT Tip */}
-                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <div className="flex items-start gap-3">
-                      <PiggyBank className="h-5 w-5 text-amber-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-amber-800 dark:text-amber-400">Tip: Læg moms til side løbende</p>
-                        <p className="text-sm text-amber-700 dark:text-amber-300">
-                          Vi anbefaler at lægge 25% af hver udbetaling til side til moms. 
-                          Denne måned bør du lægge ca. <strong>{vatSavingsAmount.toLocaleString('da-DK')} kr</strong> til side.
-                        </p>
+              {/* VAT Section for CVR holders */}
+              {boosterProfile.isVATRegistered && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Momsindberetning
+                      </CardTitle>
+                      <Badge variant="secondary">{getVATPeriodLabel(boosterProfile.vatPeriod)}</Badge>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="https://skat.dk" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Gå til SKAT
+                      </a>
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* VAT Overview */}
+                      <div className="grid md:grid-cols-3 gap-4 mb-4">
+                        <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
+                          <p className="text-sm text-muted-foreground">Udgående moms (salg)</p>
+                          <p className="text-xl font-bold text-green-700 dark:text-green-400">
+                            {Math.round((currentEarnings?.gross || 0) * 0.25).toLocaleString('da-DK')} kr
+                          </p>
+                        </div>
+                        <div className="p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                          <p className="text-sm text-muted-foreground">Indgående moms (køb)</p>
+                          <p className="text-xl font-bold text-red-700 dark:text-red-400">
+                            -{Math.round((currentEarnings?.gross || 0) * 0.05).toLocaleString('da-DK')} kr
+                          </p>
+                        </div>
+                        <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                          <p className="text-sm text-muted-foreground">Moms til betaling</p>
+                          <p className="text-xl font-bold text-blue-700 dark:text-blue-400">
+                            {Math.round((currentEarnings?.gross || 0) * 0.20).toLocaleString('da-DK')} kr
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* VAT Deadlines */}
+                      <div className="space-y-3">
+                        <h4 className="font-medium">Momsfrister</h4>
+                        {vatDeadlines.map((deadline, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              {deadline.status === 'paid' ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                              ) : deadline.status === 'overdue' ? (
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                              ) : (
+                                <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                              )}
+                              <div>
+                                <p className="font-medium">{deadline.period}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Frist: {format(deadline.dueDate, "d. MMMM yyyy", { locale: da })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {deadline.amount > 0 && (
+                                <span className="font-medium">{deadline.amount.toLocaleString('da-DK')} kr</span>
+                              )}
+                              <Badge className={getVATStatusColor(deadline.status)}>
+                                {deadline.status === 'paid' ? 'Betalt' :
+                                 deadline.status === 'upcoming' ? 'Kommende' :
+                                 deadline.status === 'due_soon' ? 'Snart' : 'Forfalden'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* B-income info for non-CVR */}
-          {!boosterProfile.hasCVR && (
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Info className="h-5 w-5" />
-                  B-indkomst information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-muted-foreground">
-                    Som B-lønnet betaler BeautyBoosters skat for dig. Du modtager din nettoløn direkte.
-                  </p>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <p className="text-sm text-muted-foreground">Brutto denne måned</p>
-                      <p className="text-xl font-bold">{currentEarnings?.gross?.toLocaleString('da-DK')} kr</p>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <p className="text-sm text-muted-foreground">Estimeret skat (ca. 38%)</p>
-                      <p className="text-xl font-bold text-red-600">-{currentEarnings?.tax?.toLocaleString('da-DK')} kr</p>
-                    </div>
-                  </div>
-                </div>
+              <CardContent className="p-8 text-center">
+                <Info className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Fakturering er ikke relevant for B-lønnede</h3>
+                <p className="text-muted-foreground">
+                  Som B-lønnet behøver du ikke at fakturere. Se i stedet din indtjening og lønsedler.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -919,6 +1057,11 @@ export default function BoosterFinance() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg">{job.total.toLocaleString('da-DK')} kr</p>
+                      {isFreelancer && (
+                        <p className="text-xs text-muted-foreground">
+                          Din andel: {Math.round(job.total * (1 - BEAUTYBOOSTERS_CUT_PERCENT / 100)).toLocaleString('da-DK')} kr
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -939,12 +1082,21 @@ export default function BoosterFinance() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Beløb</span>
-                    <span className="text-2xl font-bold text-primary">{currentEarnings?.net?.toLocaleString('da-DK') || 0} kr</span>
+                    <span className="text-muted-foreground">Estimeret beløb</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {isFreelancer 
+                        ? `~${Math.round(yourEarningsAfterCut * 0.92 * 0.62).toLocaleString('da-DK')}`
+                        : currentEarnings?.net?.toLocaleString('da-DK') || 0
+                      } kr
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Forventet dato</span>
-                    <span>1. januar 2026</span>
+                    <span>Ultimo januar 2026</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Udbetales via</span>
+                    <span>{isFreelancer ? 'Danløn' : 'Bank'}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
@@ -993,7 +1145,7 @@ export default function BoosterFinance() {
                         <ArrowUpRight className="h-5 w-5 text-green-500" />
                       </div>
                       <div>
-                        <p className="font-medium">Månedlig udbetaling</p>
+                        <p className="font-medium">{isFreelancer ? 'Lønudbetaling' : 'Månedlig udbetaling'}</p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(payout.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
@@ -1117,7 +1269,7 @@ export default function BoosterFinance() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Receipt className="h-5 w-5" />
-                Lønsedler
+                Lønsedler fra Danløn
               </CardTitle>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
@@ -1125,6 +1277,19 @@ export default function BoosterFinance() {
               </Button>
             </CardHeader>
             <CardContent>
+              {isFreelancer && (
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-800 dark:text-blue-400">Lønsedler via Danløn</p>
+                      <p className="text-blue-700 dark:text-blue-300">
+                        Dine lønsedler sendes automatisk til din e-Boks. Du kan også downloade dem her.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="space-y-3">
                 {payslips.map((payslip) => (
                   <div key={payslip.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
@@ -1144,12 +1309,18 @@ export default function BoosterFinance() {
                         <p className="text-sm text-muted-foreground">Brutto</p>
                         <p className="font-medium">{payslip.gross.toLocaleString('da-DK')} kr</p>
                       </div>
+                      {isFreelancer && payslip.amPension && (
+                        <div className="text-right hidden md:block">
+                          <p className="text-sm text-muted-foreground">AM-bidrag</p>
+                          <p className="font-medium text-orange-500">-{payslip.amPension.toLocaleString('da-DK')} kr</p>
+                        </div>
+                      )}
                       <div className="text-right hidden sm:block">
                         <p className="text-sm text-muted-foreground">Skat</p>
                         <p className="font-medium text-red-500">-{payslip.tax.toLocaleString('da-DK')} kr</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Netto</p>
+                        <p className="text-sm text-muted-foreground">Udbetalt</p>
                         <p className="font-bold text-primary">{payslip.net.toLocaleString('da-DK')} kr</p>
                       </div>
                       <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
