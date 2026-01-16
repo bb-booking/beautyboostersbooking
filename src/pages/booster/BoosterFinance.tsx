@@ -117,8 +117,9 @@ const getVATPeriodLabel = (period: 'monthly' | 'quarterly' | 'semi-annual'): str
   }
 };
 
-// BeautyBoosters cut percentage for B-income workers
-const BEAUTYBOOSTERS_CUT_PERCENT = 25;
+// BeautyBoosters cut percentage for B-income workers (40% of amount AFTER VAT)
+const BEAUTYBOOSTERS_CUT_PERCENT = 40;
+const VAT_RATE = 0.25; // 25% Danish VAT
 
 export default function BoosterFinance() {
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
@@ -469,9 +470,12 @@ export default function BoosterFinance() {
   const needsInvoiceGeneration = daysUntilMonthEnd <= 5;
 
   // Calculate B-income specific values
+  // Customer pays X kr inkl. moms -> After VAT = X / 1.25 -> Booster gets 60% of that
   const isFreelancer = boosterProfile.employmentType === 'freelancer' && !boosterProfile.hasCVR;
-  const beautyBoostersCut = currentEarnings ? Math.round(currentEarnings.gross * (BEAUTYBOOSTERS_CUT_PERCENT / 100)) : 0;
-  const yourEarningsAfterCut = currentEarnings ? currentEarnings.gross - beautyBoostersCut : 0;
+  const grossInclVat = currentEarnings?.gross || 0; // This is what customer pays (inkl. moms)
+  const grossExVat = Math.round(grossInclVat / (1 + VAT_RATE)); // Amount after VAT removed
+  const beautyBoostersCut = Math.round(grossExVat * (BEAUTYBOOSTERS_CUT_PERCENT / 100)); // 40% cut
+  const yourEarningsAfterCut = grossExVat - beautyBoostersCut; // Booster's earnings (60% of ex-VAT)
 
   if (loading) {
     return (
@@ -544,7 +548,7 @@ export default function BoosterFinance() {
                   </div>
                   <p className="text-2xl font-bold text-primary">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
                   <p className="text-xs text-muted-foreground">
-                    Efter BeautyBoosters cut ({BEAUTYBOOSTERS_CUT_PERCENT}%)
+                    Efter moms og {BEAUTYBOOSTERS_CUT_PERCENT}% cut
                   </p>
                 </div>
               </div>
@@ -560,11 +564,17 @@ export default function BoosterFinance() {
 
       {/* B-income info alert */}
       {isFreelancer && (
-        <Alert className="border-blue-300 bg-blue-50/50 dark:bg-blue-950/20">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-800 dark:text-blue-400">Du er B-lønnet hos BeautyBoosters</AlertTitle>
-          <AlertDescription className="text-blue-700 dark:text-blue-300">
-            Vi håndterer skat, AM-bidrag og ATP for dig. Du modtager løn via Danløn ultimo hver måned og kan hente dine lønsedler under "Lønsedler".
+        <Alert className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800 dark:text-amber-400">Du har selv ansvar for skatteindberetning</AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-300">
+            Som B-lønnet freelancer skal du selv indberette din indtjening til SKAT. BeautyBoosters udbetaler din andel efter moms og cut – skatten håndterer du selv via din forskudsopgørelse og årsopgørelse.
+            <Button size="sm" variant="outline" className="ml-4 mt-2" asChild>
+              <a href="https://skat.dk" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Gå til SKAT
+              </a>
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -792,11 +802,33 @@ export default function BoosterFinance() {
                     <div className="flex items-center gap-3">
                       <DollarSign className="h-5 w-5 text-amber-600" />
                       <div>
-                        <p className="font-medium">Total job-værdi</p>
-                        <p className="text-sm text-muted-foreground">Kundens betaling for dine jobs</p>
+                        <p className="font-medium">Kunde betaler (inkl. moms)</p>
+                        <p className="text-sm text-muted-foreground">Total job-værdi fra kunder</p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold">{currentEarnings?.gross?.toLocaleString('da-DK')} kr</p>
+                    <p className="text-xl font-bold">{grossInclVat.toLocaleString('da-DK')} kr</p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-950/20">
+                    <div className="flex items-center gap-3">
+                      <Percent className="h-5 w-5 text-gray-600" />
+                      <div>
+                        <p className="font-medium">Moms (25%)</p>
+                        <p className="text-sm text-muted-foreground">Fratrækkes kundens betaling</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-gray-600">-{(grossInclVat - grossExVat).toLocaleString('da-DK')} kr</p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium">Beløb ex. moms</p>
+                        <p className="text-sm text-muted-foreground">Grundlag for cut-beregning</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-blue-600">{grossExVat.toLocaleString('da-DK')} kr</p>
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
@@ -814,8 +846,8 @@ export default function BoosterFinance() {
                     <div className="flex items-center gap-3">
                       <Banknote className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="font-medium">Din bruttoløn</p>
-                        <p className="text-sm text-muted-foreground">Før skat, AM-bidrag og ATP</p>
+                        <p className="font-medium">Din indtjening</p>
+                        <p className="text-sm text-muted-foreground">Udbetales til dig (før din egen skat)</p>
                       </div>
                     </div>
                     <p className="text-xl font-bold text-primary">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
@@ -823,42 +855,47 @@ export default function BoosterFinance() {
                 </div>
 
                 {/* Info box */}
-                <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
                   <div className="flex items-start gap-3">
-                    <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="text-sm text-muted-foreground">
-                      <p className="font-medium mb-2">Sådan fungerer B-indkomst hos BeautyBoosters:</p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Du modtager løn som B-indkomst – vi indberetter og afregner skat for dig</li>
-                        <li>AM-bidrag (8%) og ATP trækkes automatisk</li>
-                        <li>Løn udbetales ultimo hver måned via Danløn</li>
-                        <li>Du modtager lønseddel i din e-Boks og kan se dem under "Lønsedler"</li>
-                        <li>Du skal ikke selv indberette moms eller betale B-skat</li>
+                    <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-800 dark:text-amber-400 mb-2">Vigtigt: Du har selv ansvar for skatteindberetning</p>
+                      <ul className="list-disc list-inside space-y-1 text-amber-700 dark:text-amber-300">
+                        <li>Du modtager B-indkomst fra BeautyBoosters</li>
+                        <li>Du skal selv indberette din indtjening til SKAT</li>
+                        <li>Husk at sætte penge til side til skat (typisk 38-52%)</li>
+                        <li>Opdater din forskudsopgørelse så du betaler løbende B-skat</li>
+                        <li>Gem dokumentation for alle udbetalinger til din årsopgørelse</li>
                       </ul>
                     </div>
                   </div>
                 </div>
 
-                {/* Estimated net calculation */}
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Estimeret AM-bidrag (8%)</p>
-                    <p className="text-lg font-medium">~{Math.round(yourEarningsAfterCut * 0.08).toLocaleString('da-DK')} kr</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Estimeret skat (~38%)</p>
-                    <p className="text-lg font-medium">~{Math.round(yourEarningsAfterCut * 0.92 * 0.38).toLocaleString('da-DK')} kr</p>
+                {/* Example calculation */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="text-sm text-muted-foreground">
+                      <p className="font-medium mb-2">Eksempel på beregning:</p>
+                      <div className="space-y-1 font-mono text-xs">
+                        <p>Kunde betaler: 2.000 kr (inkl. moms)</p>
+                        <p>Efter moms (÷25%): 2.000 / 1,25 = 1.600 kr</p>
+                        <p>BeautyBoosters cut (40%): 1.600 × 0,40 = -640 kr</p>
+                        <p className="font-bold text-foreground">Din indtjening: 1.600 - 640 = 960 kr</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+                {/* Estimated tax to set aside */}
+                <div className="p-4 border-2 border-amber-300 rounded-lg bg-amber-50/50 dark:bg-amber-950/20">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Estimeret udbetaling (efter skat)</p>
-                      <p className="text-xs text-muted-foreground">Afhænger af dit skattekort</p>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Anbefalet at sætte til side til skat</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300">Ca. 40% af din indtjening</p>
                     </div>
-                    <p className="text-2xl font-bold text-primary">
-                      ~{Math.round(yourEarningsAfterCut * 0.92 * 0.62).toLocaleString('da-DK')} kr
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+                      ~{Math.round(yourEarningsAfterCut * 0.40).toLocaleString('da-DK')} kr
                     </p>
                   </div>
                 </div>
@@ -1059,7 +1096,7 @@ export default function BoosterFinance() {
                       <p className="font-bold text-lg">{job.total.toLocaleString('da-DK')} kr</p>
                       {isFreelancer && (
                         <p className="text-xs text-muted-foreground">
-                          Din andel: {Math.round(job.total * (1 - BEAUTYBOOSTERS_CUT_PERCENT / 100)).toLocaleString('da-DK')} kr
+                          Din andel: {Math.round((job.total / (1 + VAT_RATE)) * (1 - BEAUTYBOOSTERS_CUT_PERCENT / 100)).toLocaleString('da-DK')} kr
                         </p>
                       )}
                     </div>
@@ -1084,10 +1121,7 @@ export default function BoosterFinance() {
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Estimeret beløb</span>
                     <span className="text-2xl font-bold text-primary">
-                      {isFreelancer 
-                        ? `~${Math.round(yourEarningsAfterCut * 0.92 * 0.62).toLocaleString('da-DK')}`
-                        : currentEarnings?.net?.toLocaleString('da-DK') || 0
-                      } kr
+                      {yourEarningsAfterCut.toLocaleString('da-DK')} kr
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
