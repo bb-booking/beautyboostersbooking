@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, Trash2, FileText, Download, ExternalLink, BookOpen, Calendar, CheckCircle2, Loader2, Unlink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useRef } from "react";
 
 interface BoosterSettings {
   // Personal Info
@@ -67,7 +68,8 @@ export default function BoosterSettings() {
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
   const [connectingCalendarType, setConnectingCalendarType] = useState<'google' | 'apple' | 'outlook' | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
-
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   // Mock initial data
   useEffect(() => {
     setSettings(prev => ({
@@ -89,11 +91,92 @@ export default function BoosterSettings() {
     });
   };
 
-  const handleImageUpload = () => {
-    toast({
-      title: "Upload profilbillede",
-      description: "Vælg et nyt profilbillede fra din enhed",
-    });
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Ugyldig filtype",
+        description: "Vælg venligst en JPG, PNG eller GIF fil.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Filen er for stor",
+        description: "Maksimal filstørrelse er 2MB.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Ikke logget ind",
+          description: "Log ind for at uploade profilbillede.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('booster-avatars')
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('booster-avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new image URL
+      const { error: updateError } = await supabase
+        .from('booster_profiles')
+        .update({ portfolio_image_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setSettings(prev => ({ ...prev, profileImage: publicUrl }));
+      
+      toast({
+        title: "Billede uploadet",
+        description: "Dit profilbillede er blevet opdateret.",
+      });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload fejlede",
+        description: error.message || "Kunne ikke uploade billede. Prøv igen.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleImageButtonClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleDeleteAccount = () => {
@@ -218,9 +301,20 @@ export default function BoosterSettings() {
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <Button variant="outline" onClick={handleImageUpload}>
-                  <Camera className="h-4 w-4 mr-2" />
-                  Skift billede
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Button variant="outline" onClick={handleImageButtonClick} disabled={uploadingImage}>
+                  {uploadingImage ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4 mr-2" />
+                  )}
+                  {uploadingImage ? "Uploader..." : "Skift billede"}
                 </Button>
                 <p className="text-xs text-muted-foreground">
                   JPG, PNG eller GIF. Max 2MB.
