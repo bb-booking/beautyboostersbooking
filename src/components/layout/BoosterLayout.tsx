@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function BoosterLayout() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export function BoosterLayout() {
   const [authorized, setAuthorized] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
   const [boosterName, setBoosterName] = useState<string>("Beauty Boosters");
+  const [boosterImage, setBoosterImage] = useState<string | null>(null);
 
   // Enable chat notifications for boosters
   useChatNotifications({ userId, userType: 'booster', enabled: authorized });
@@ -24,6 +26,7 @@ export function BoosterLayout() {
         setChecking(false);
         setUserId(undefined);
         setBoosterName("Beauty Boosters");
+        setBoosterImage(null);
         navigate("/booster/login");
       } else {
         setUserId(session.user.id);
@@ -37,14 +40,15 @@ export function BoosterLayout() {
           setChecking(false);
           if (!isBooster) navigate("/booster/login");
           
-          // Fetch booster name
+          // Fetch booster name and image
           if (isBooster) {
             const { data: profile } = await supabase
               .from("booster_profiles")
-              .select("name")
+              .select("name, portfolio_image_url")
               .eq("user_id", session.user.id)
               .maybeSingle();
             if (profile?.name) setBoosterName(profile.name);
+            if (profile?.portfolio_image_url) setBoosterImage(profile.portfolio_image_url);
           }
         }, 0);
       }
@@ -65,14 +69,15 @@ export function BoosterLayout() {
         setAuthorized(isBooster);
         if (!isBooster) navigate("/booster/login");
         
-        // Fetch booster name
+        // Fetch booster name and image
         if (isBooster) {
           const { data: profile } = await supabase
             .from("booster_profiles")
-            .select("name")
+            .select("name, portfolio_image_url")
             .eq("user_id", session.user.id)
             .maybeSingle();
           if (profile?.name) setBoosterName(profile.name);
+          if (profile?.portfolio_image_url) setBoosterImage(profile.portfolio_image_url);
         }
       }
     }).finally(() => setChecking(false));
@@ -87,8 +92,14 @@ export function BoosterLayout() {
         
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-12 sm:h-14 flex items-center justify-between border-b bg-background px-2 sm:px-4 sticky top-0 z-10">
-            <div className="flex items-center min-w-0">
-              <SidebarTrigger className="mr-2 sm:mr-4 flex-shrink-0" />
+            <div className="flex items-center min-w-0 gap-2 sm:gap-3">
+              <SidebarTrigger className="flex-shrink-0" />
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarImage src={boosterImage || ""} alt={boosterName} />
+                <AvatarFallback className="text-xs">
+                  {boosterName.split(' ').map(n => n.charAt(0)).join('').slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
               <h1 className="text-sm sm:text-lg font-semibold truncate">{boosterName}</h1>
             </div>
             <Button
