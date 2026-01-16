@@ -1324,39 +1324,171 @@ export default function BoosterFinance() {
                   </div>
                 </div>
               )}
+              
+              {/* Estimated tax calculation card */}
+              {isFreelancer && payslips.length > 0 && (
+                <Card className="mb-4 border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Percent className="h-5 w-5 text-amber-600" />
+                      Estimeret skat du selv skal indberette
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Baseret på din B-indkomst i år: <span className="font-medium">{payslips[0]?.bIndkomstYearToDate.toLocaleString('da-DK')} kr</span>
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const yearToDate = payslips[0]?.bIndkomstYearToDate || 0;
+                      // AM-bidrag: 8% af B-indkomst
+                      const amBidrag = Math.round(yearToDate * 0.08);
+                      // Grundlag efter AM-bidrag
+                      const afterAm = yearToDate - amBidrag;
+                      // Personfradrag 2025 (årligt) - antager det bruges
+                      const personfradrag = 49700;
+                      // Skattepligtig indkomst efter fradrag
+                      const skattepligtigIndkomst = Math.max(0, afterAm - personfradrag);
+                      // Bundskat: 12.09%
+                      const bundskat = Math.round(skattepligtigIndkomst * 0.1209);
+                      // Kommuneskat: ca. 24.97% (gennemsnit)
+                      const kommuneskat = Math.round(skattepligtigIndkomst * 0.2497);
+                      // Kirkeskat: ca. 0.68% (valgfri, antager medlem)
+                      const kirkeskat = Math.round(skattepligtigIndkomst * 0.0068);
+                      // Total skat
+                      const totalSkat = amBidrag + bundskat + kommuneskat + kirkeskat;
+                      // Effektiv skatteprocent
+                      const effektivProcent = yearToDate > 0 ? Math.round((totalSkat / yearToDate) * 100) : 0;
+                      
+                      return (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Left column - breakdown */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">B-indkomst i år</span>
+                                <span className="font-medium">{yearToDate.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">AM-bidrag (8%)</span>
+                                <span className="font-medium text-red-600">-{amBidrag.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm border-t pt-2">
+                                <span className="text-muted-foreground">Grundlag efter AM</span>
+                                <span className="font-medium">{afterAm.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Personfradrag (årligt)</span>
+                                <span className="font-medium text-green-600">-{personfradrag.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm border-t pt-2">
+                                <span className="text-muted-foreground">Skattepligtig indkomst</span>
+                                <span className="font-medium">{skattepligtigIndkomst.toLocaleString('da-DK')} kr</span>
+                              </div>
+                            </div>
+                            
+                            {/* Right column - taxes */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Bundskat (12,09%)</span>
+                                <span className="font-medium">{bundskat.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Kommuneskat (~24,97%)</span>
+                                <span className="font-medium">{kommuneskat.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Kirkeskat (~0,68%)</span>
+                                <span className="font-medium">{kirkeskat.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm border-t pt-2 font-bold">
+                                <span>Estimeret skat i alt</span>
+                                <span className="text-amber-700 dark:text-amber-400">{totalSkat.toLocaleString('da-DK')} kr</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Effektiv skatteprocent</span>
+                                <span className="font-medium">{effektivProcent}%</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg mt-4">
+                            <div>
+                              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Du bør have lagt til side</p>
+                              <p className="text-xs text-amber-700 dark:text-amber-400">Til at betale B-skat</p>
+                            </div>
+                            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{totalSkat.toLocaleString('da-DK')} kr</p>
+                          </div>
+                          
+                          <div className="flex items-start gap-2 text-xs text-muted-foreground mt-2">
+                            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <p>
+                              Dette er et estimat baseret på gennemsnitlige satser. Din faktiske skat afhænger af din kommune, 
+                              andre indkomster, og fradrag. Opdater din forskudsopgørelse på{' '}
+                              <a href="https://skat.dk" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">
+                                SKAT.dk
+                              </a>
+                              {' '}for at betale løbende B-skat.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+              
               <div className="space-y-3">
-                {payslips.map((payslip) => (
-                  <div key={payslip.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-primary" />
+                {payslips.map((payslip) => {
+                  // Calculate estimated tax for each payslip
+                  const amBidrag = Math.round(payslip.honorar * 0.08);
+                  const afterAm = payslip.honorar - amBidrag;
+                  const skatProcent = 0.37; // Simplified rate after AM-bidrag
+                  const estimatedTax = amBidrag + Math.round(afterAm * skatProcent);
+                  
+                  return (
+                    <div key={payslip.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{payslip.period}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Lønperiode: {new Date(payslip.periodStart).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })} - {new Date(payslip.periodEnd).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-right hidden sm:block">
+                            <p className="text-sm text-muted-foreground">Honorar</p>
+                            <p className="font-medium text-foreground">{payslip.honorar.toLocaleString('da-DK')} kr</p>
+                          </div>
+                          <div className="text-right hidden md:block">
+                            <p className="text-sm text-muted-foreground">B-indkomst i alt</p>
+                            <p className="font-medium text-muted-foreground">{payslip.bIndkomstYearToDate.toLocaleString('da-DK')} kr</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Udbetalt</p>
+                            <p className="font-bold text-foreground">{payslip.honorar.toLocaleString('da-DK')} kr</p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{payslip.period}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Lønperiode: {new Date(payslip.periodStart).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })} - {new Date(payslip.periodEnd).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </p>
+                      
+                      {/* Estimated tax for this period */}
+                      <div className="mt-3 pt-3 border-t border-dashed flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Percent className="h-4 w-4" />
+                          <span>Estimeret skat for denne periode (til selvindberetning)</span>
+                        </div>
+                        <span className="font-medium text-amber-600 dark:text-amber-400">~{estimatedTax.toLocaleString('da-DK')} kr</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm text-muted-foreground">Honorar</p>
-                        <p className="font-medium text-foreground">{payslip.honorar.toLocaleString('da-DK')} kr</p>
-                      </div>
-                      <div className="text-right hidden md:block">
-                        <p className="text-sm text-muted-foreground">B-indkomst i alt</p>
-                        <p className="font-medium text-muted-foreground">{payslip.bIndkomstYearToDate.toLocaleString('da-DK')} kr</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Udbetalt</p>
-                        <p className="font-bold text-foreground">{payslip.honorar.toLocaleString('da-DK')} kr</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
