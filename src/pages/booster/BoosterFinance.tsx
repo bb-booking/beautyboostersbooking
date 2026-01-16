@@ -67,12 +67,11 @@ interface Payout {
 interface Payslip {
   id: string;
   period: string;
+  periodStart: string;
+  periodEnd: string;
   date: string;
-  gross: number;
-  tax: number;
-  net: number;
-  amPension?: number;
-  atpBidrag?: number;
+  honorar: number; // B-income: Honorar, bidragspligtigt (amount paid out)
+  bIndkomstYearToDate: number; // Year to date B-income
   downloadUrl?: string;
 }
 
@@ -355,12 +354,13 @@ export default function BoosterFinance() {
     ];
 
     // Mock payslips from Danløn for B-income workers
+    // B-income: Honorar bidragspligtigt - no tax/AM-bidrag deducted, booster handles this themselves
     const mockPayslips: Payslip[] = [
-      { id: '1', period: 'December 2025', date: '2025-12-31', gross: 43200, tax: 16416, net: 26784, amPension: 4320, atpBidrag: 94 },
-      { id: '2', period: 'November 2025', date: '2025-11-30', gross: 38475, tax: 14621, net: 23854, amPension: 3848, atpBidrag: 94 },
-      { id: '3', period: 'Oktober 2025', date: '2025-10-31', gross: 52125, tax: 19808, net: 32317, amPension: 5213, atpBidrag: 94 },
-      { id: '4', period: 'September 2025', date: '2025-09-30', gross: 47775, tax: 18155, net: 29620, amPension: 4778, atpBidrag: 94 },
-      { id: '5', period: 'August 2025', date: '2025-08-31', gross: 44175, tax: 16787, net: 27388, amPension: 4418, atpBidrag: 94 },
+      { id: '1', period: 'December 2025', periodStart: '2025-11-20', periodEnd: '2025-12-19', date: '2025-12-31', honorar: 27648, bIndkomstYearToDate: 158420 },
+      { id: '2', period: 'November 2025', periodStart: '2025-10-20', periodEnd: '2025-11-19', date: '2025-11-30', honorar: 24180, bIndkomstYearToDate: 130772 },
+      { id: '3', period: 'Oktober 2025', periodStart: '2025-09-20', periodEnd: '2025-10-19', date: '2025-10-31', honorar: 32840, bIndkomstYearToDate: 106592 },
+      { id: '4', period: 'September 2025', periodStart: '2025-08-20', periodEnd: '2025-09-19', date: '2025-09-30', honorar: 28650, bIndkomstYearToDate: 73752 },
+      { id: '5', period: 'August 2025', periodStart: '2025-07-20', periodEnd: '2025-08-19', date: '2025-08-31', honorar: 21590, bIndkomstYearToDate: 45102 },
     ];
 
     // Monthly invoices for payroll (only for CVR holders)
@@ -1316,9 +1316,9 @@ export default function BoosterFinance() {
                   <div className="flex items-start gap-3">
                     <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div className="text-sm">
-                      <p className="font-medium text-blue-800 dark:text-blue-400">Lønsedler via Danløn</p>
+                      <p className="font-medium text-blue-800 dark:text-blue-400">B-indkomst lønsedler via Danløn</p>
                       <p className="text-blue-700 dark:text-blue-300">
-                        Dine lønsedler sendes automatisk til din e-Boks. Du kan også downloade dem her.
+                        Dit honorar udbetales som B-indkomst (bidragspligtigt). Du er selv ansvarlig for at indberette og betale skat via SKAT.dk.
                       </p>
                     </div>
                   </div>
@@ -1334,28 +1334,22 @@ export default function BoosterFinance() {
                       <div>
                         <p className="font-medium">{payslip.period}</p>
                         <p className="text-sm text-muted-foreground">
-                          Udstedt {new Date(payslip.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          Lønperiode: {new Date(payslip.periodStart).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })} - {new Date(payslip.periodEnd).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right hidden sm:block">
-                        <p className="text-sm text-muted-foreground">Brutto</p>
-                        <p className="font-medium">{payslip.gross.toLocaleString('da-DK')} kr</p>
+                        <p className="text-sm text-muted-foreground">Honorar</p>
+                        <p className="font-medium text-foreground">{payslip.honorar.toLocaleString('da-DK')} kr</p>
                       </div>
-                      {isFreelancer && payslip.amPension && (
-                        <div className="text-right hidden md:block">
-                          <p className="text-sm text-muted-foreground">AM-bidrag</p>
-                          <p className="font-medium text-orange-500">-{payslip.amPension.toLocaleString('da-DK')} kr</p>
-                        </div>
-                      )}
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm text-muted-foreground">Skat</p>
-                        <p className="font-medium text-red-500">-{payslip.tax.toLocaleString('da-DK')} kr</p>
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm text-muted-foreground">B-indkomst i alt</p>
+                        <p className="font-medium text-muted-foreground">{payslip.bIndkomstYearToDate.toLocaleString('da-DK')} kr</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-muted-foreground">Udbetalt</p>
-                        <p className="font-bold text-primary">{payslip.net.toLocaleString('da-DK')} kr</p>
+                        <p className="font-bold text-foreground">{payslip.honorar.toLocaleString('da-DK')} kr</p>
                       </div>
                       <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
                         <Download className="h-4 w-4" />
