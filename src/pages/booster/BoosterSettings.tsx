@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Trash2, FileText, Download, ExternalLink, BookOpen, Calendar, CheckCircle2, Loader2, Unlink } from "lucide-react";
+import { Camera, Trash2, FileText, Download, ExternalLink, BookOpen, Calendar, CheckCircle2, Loader2, Unlink, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRef } from "react";
@@ -69,26 +69,130 @@ export default function BoosterSettings() {
   const [connectingCalendarType, setConnectingCalendarType] = useState<'google' | 'apple' | 'outlook' | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [boosterProfileId, setBoosterProfileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Mock initial data
+  // Fetch existing profile data from database
   useEffect(() => {
-    setSettings(prev => ({
-      ...prev,
-      firstName: "Anna",
-      lastName: "Nielsen",
-      email: "anna.nielsen@example.com",
-      phone: "+45 12 34 56 78",
-      accountNumber: "1234567890",
-      regNumber: "1234",
-      cprNumber: "123456-7890"
-    }));
+    const fetchProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        const { data: profile, error } = await supabase
+          .from('booster_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast({
+            title: "Fejl ved hentning af profil",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+
+        if (profile) {
+          setBoosterProfileId(profile.id);
+          // Split name into first and last name
+          const nameParts = (profile.name || '').split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          setSettings(prev => ({
+            ...prev,
+            firstName,
+            lastName,
+            email: profile.email || user.email || '',
+            phone: profile.phone || '',
+            profileImage: profile.portfolio_image_url || null,
+          }));
+        } else {
+          // No profile exists, use auth user email
+          setSettings(prev => ({
+            ...prev,
+            email: user.email || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, []);
 
-  const handleSave = () => {
-    toast({
-      title: "Indstillinger gemt",
-      description: "Dine indstillinger er blevet opdateret",
-    });
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Ikke logget ind",
+          description: "Log ind for at gemme indstillinger.",
+          variant: "destructive"
+        });
+        setSaving(false);
+        return;
+      }
+
+      const fullName = `${settings.firstName} ${settings.lastName}`.trim();
+      
+      const updateData = {
+        name: fullName,
+        email: settings.email,
+        phone: settings.phone,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (boosterProfileId) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('booster_profiles')
+          .update(updateData)
+          .eq('id', boosterProfileId);
+
+        if (error) throw error;
+      } else {
+        // Create new profile if it doesn't exist
+        const { data: newProfile, error } = await supabase
+          .from('booster_profiles')
+          .insert({
+            ...updateData,
+            user_id: user.id,
+            location: 'København', // Default location
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (newProfile) {
+          setBoosterProfileId(newProfile.id);
+        }
+      }
+
+      toast({
+        title: "Indstillinger gemt",
+        description: "Dine profiloplysninger er blevet opdateret.",
+      });
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast({
+        title: "Fejl ved gemning",
+        description: error.message || "Kunne ikke gemme indstillinger. Prøv igen.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -859,8 +963,13 @@ export default function BoosterSettings() {
         </Card>
 
         <div className="flex justify-end">
-          <Button onClick={handleSave}>
-            Gem indstillinger
+          <Button onClick={handleSave} disabled={saving || loading}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {saving ? "Gemmer..." : "Gem indstillinger"}
           </Button>
         </div>
       </div>
