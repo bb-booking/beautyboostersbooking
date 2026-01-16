@@ -546,7 +546,7 @@ export default function BoosterFinance() {
                     <p className="text-sm text-muted-foreground">Din indtjening denne {getPeriodLabel().toLowerCase()}</p>
                     <Badge variant="outline" className="text-xs">B-indkomst</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-primary">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
+                  <p className="text-2xl font-bold text-foreground">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
                   <p className="text-xs text-muted-foreground">
                     Efter moms og {BEAUTYBOOSTERS_CUT_PERCENT}% cut
                   </p>
