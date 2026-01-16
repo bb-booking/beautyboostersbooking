@@ -12,6 +12,7 @@ export function BoosterLayout() {
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
+  const [boosterName, setBoosterName] = useState<string>("Beauty Boosters");
 
   // Enable chat notifications for boosters
   useChatNotifications({ userId, userType: 'booster', enabled: authorized });
@@ -22,6 +23,7 @@ export function BoosterLayout() {
         setAuthorized(false);
         setChecking(false);
         setUserId(undefined);
+        setBoosterName("Beauty Boosters");
         navigate("/booster/login");
       } else {
         setUserId(session.user.id);
@@ -34,6 +36,16 @@ export function BoosterLayout() {
           setAuthorized(isBooster);
           setChecking(false);
           if (!isBooster) navigate("/booster/login");
+          
+          // Fetch booster name
+          if (isBooster) {
+            const { data: profile } = await supabase
+              .from("booster_profiles")
+              .select("name")
+              .eq("user_id", session.user.id)
+              .maybeSingle();
+            if (profile?.name) setBoosterName(profile.name);
+          }
         }, 0);
       }
     });
@@ -52,6 +64,16 @@ export function BoosterLayout() {
         const isBooster = !error && (data?.some(r => r.role === "booster") ?? false);
         setAuthorized(isBooster);
         if (!isBooster) navigate("/booster/login");
+        
+        // Fetch booster name
+        if (isBooster) {
+          const { data: profile } = await supabase
+            .from("booster_profiles")
+            .select("name")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          if (profile?.name) setBoosterName(profile.name);
+        }
       }
     }).finally(() => setChecking(false));
 
@@ -67,7 +89,7 @@ export function BoosterLayout() {
           <header className="h-12 sm:h-14 flex items-center justify-between border-b bg-background px-2 sm:px-4 sticky top-0 z-10">
             <div className="flex items-center min-w-0">
               <SidebarTrigger className="mr-2 sm:mr-4 flex-shrink-0" />
-              <h1 className="text-sm sm:text-lg font-semibold truncate">Beauty Boosters</h1>
+              <h1 className="text-sm sm:text-lg font-semibold truncate">{boosterName}</h1>
             </div>
             <Button
               variant="ghost"
