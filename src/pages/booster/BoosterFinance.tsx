@@ -798,59 +798,59 @@ export default function BoosterFinance() {
               <div className="space-y-6">
                 {/* Visual breakdown */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                     <div className="flex items-center gap-3">
-                      <DollarSign className="h-5 w-5 text-amber-600" />
+                      <DollarSign className="h-5 w-5 text-foreground" />
                       <div>
-                        <p className="font-medium">Kunde betaler (inkl. moms)</p>
-                        <p className="text-sm text-muted-foreground">Total job-værdi fra kunder</p>
+                        <p className="font-medium text-foreground">Kunde betaler (inkl. moms)</p>
+                        <p className="text-sm text-foreground/70">Total job-værdi fra kunder</p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold">{grossInclVat.toLocaleString('da-DK')} kr</p>
+                    <p className="text-xl font-bold text-foreground">{grossInclVat.toLocaleString('da-DK')} kr</p>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-950/20">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                     <div className="flex items-center gap-3">
-                      <Percent className="h-5 w-5 text-gray-600" />
+                      <Percent className="h-5 w-5 text-foreground" />
                       <div>
-                        <p className="font-medium">Moms (25%)</p>
-                        <p className="text-sm text-muted-foreground">Fratrækkes kundens betaling</p>
+                        <p className="font-medium text-foreground">Moms (25%)</p>
+                        <p className="text-sm text-foreground/70">Fratrækkes kundens betaling</p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold text-gray-600">-{(grossInclVat - grossExVat).toLocaleString('da-DK')} kr</p>
+                    <p className="text-xl font-bold text-foreground">-{(grossInclVat - grossExVat).toLocaleString('da-DK')} kr</p>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                     <div className="flex items-center gap-3">
-                      <DollarSign className="h-5 w-5 text-blue-600" />
+                      <DollarSign className="h-5 w-5 text-foreground" />
                       <div>
-                        <p className="font-medium">Beløb ex. moms</p>
-                        <p className="text-sm text-muted-foreground">Grundlag for cut-beregning</p>
+                        <p className="font-medium text-foreground">Beløb ex. moms</p>
+                        <p className="text-sm text-foreground/70">Grundlag for cut-beregning</p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold text-blue-600">{grossExVat.toLocaleString('da-DK')} kr</p>
+                    <p className="text-xl font-bold text-foreground">{grossExVat.toLocaleString('da-DK')} kr</p>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                     <div className="flex items-center gap-3">
-                      <Percent className="h-5 w-5 text-red-600" />
+                      <Percent className="h-5 w-5 text-foreground" />
                       <div>
-                        <p className="font-medium">BeautyBoosters cut ({BEAUTYBOOSTERS_CUT_PERCENT}%)</p>
-                        <p className="text-sm text-muted-foreground">Platform, booking, support & forsikring</p>
+                        <p className="font-medium text-foreground">BeautyBoosters cut ({BEAUTYBOOSTERS_CUT_PERCENT}%)</p>
+                        <p className="text-sm text-foreground/70">Platform, booking, support & forsikring</p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold text-red-600">-{beautyBoostersCut.toLocaleString('da-DK')} kr</p>
+                    <p className="text-xl font-bold text-foreground">-{beautyBoostersCut.toLocaleString('da-DK')} kr</p>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-primary/10 border-primary/30">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card border-primary/30">
                     <div className="flex items-center gap-3">
-                      <Banknote className="h-5 w-5 text-primary" />
+                      <Banknote className="h-5 w-5 text-foreground" />
                       <div>
-                        <p className="font-medium">Din indtjening</p>
-                        <p className="text-sm text-muted-foreground">Udbetales til dig (før din egen skat)</p>
+                        <p className="font-medium text-foreground">Din indtjening</p>
+                        <p className="text-sm text-foreground/70">Udbetales til dig (før din egen skat)</p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold text-primary">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
+                    <p className="text-xl font-bold text-foreground">{yourEarningsAfterCut.toLocaleString('da-DK')} kr</p>
                   </div>
                 </div>
 
