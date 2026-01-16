@@ -62,8 +62,10 @@ export default function BoosterSettings() {
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState<string | null>(null);
   const [appleCalendarConnected, setAppleCalendarConnected] = useState(false);
   const [appleCalendarEmail, setAppleCalendarEmail] = useState<string | null>(null);
+  const [outlookCalendarConnected, setOutlookCalendarConnected] = useState(false);
+  const [outlookCalendarEmail, setOutlookCalendarEmail] = useState<string | null>(null);
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
-  const [connectingCalendarType, setConnectingCalendarType] = useState<'google' | 'apple' | null>(null);
+  const [connectingCalendarType, setConnectingCalendarType] = useState<'google' | 'apple' | 'outlook' | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   // Mock initial data
@@ -102,18 +104,30 @@ export default function BoosterSettings() {
     });
   };
 
-  const handleConnectCalendar = async (type: 'google' | 'apple') => {
+  const handleConnectCalendar = async (type: 'google' | 'apple' | 'outlook') => {
     setIsConnectingCalendar(true);
     setConnectingCalendarType(type);
     
     try {
-      const functionName = type === 'google' ? 'google-calendar-auth' : 'apple-calendar-auth';
+      const functionNames: Record<string, string> = {
+        google: 'google-calendar-auth',
+        apple: 'apple-calendar-auth',
+        outlook: 'outlook-calendar-auth'
+      };
+      const calendarNames: Record<string, string> = {
+        google: 'Google',
+        apple: 'Apple',
+        outlook: 'Outlook'
+      };
+      
+      const functionName = functionNames[type];
+      const calendarName = calendarNames[type];
+      
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: { action: 'get_auth_url' }
       });
       
       if (error) {
-        const calendarName = type === 'google' ? 'Google' : 'Apple';
         toast({
           title: `${calendarName} Kalender integration`,
           description: `${calendarName} integration er ved at blive konfigureret. Prøv igen senere.`,
@@ -137,9 +151,22 @@ export default function BoosterSettings() {
     }
   };
 
-  const handleDisconnectCalendar = async (type: 'google' | 'apple') => {
+  const handleDisconnectCalendar = async (type: 'google' | 'apple' | 'outlook') => {
     try {
-      const functionName = type === 'google' ? 'google-calendar-auth' : 'apple-calendar-auth';
+      const functionNames: Record<string, string> = {
+        google: 'google-calendar-auth',
+        apple: 'apple-calendar-auth',
+        outlook: 'outlook-calendar-auth'
+      };
+      const calendarNames: Record<string, string> = {
+        google: 'Google',
+        apple: 'Apple',
+        outlook: 'Outlook'
+      };
+      
+      const functionName = functionNames[type];
+      const calendarName = calendarNames[type];
+      
       await supabase.functions.invoke(functionName, {
         body: { action: 'disconnect' }
       });
@@ -147,12 +174,14 @@ export default function BoosterSettings() {
       if (type === 'google') {
         setGoogleCalendarConnected(false);
         setGoogleCalendarEmail(null);
-      } else {
+      } else if (type === 'apple') {
         setAppleCalendarConnected(false);
         setAppleCalendarEmail(null);
+      } else if (type === 'outlook') {
+        setOutlookCalendarConnected(false);
+        setOutlookCalendarEmail(null);
       }
       
-      const calendarName = type === 'google' ? 'Google' : 'Apple';
       toast({
         title: "Kalender afbrudt",
         description: `Din ${calendarName} Kalender er nu afbrudt fra Beauty Boosters`,
@@ -518,8 +547,57 @@ export default function BoosterSettings() {
               )}
             </div>
 
+            {/* Outlook/Microsoft 365 Calendar */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#0078D4]/10 flex items-center justify-center">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24">
+                    <path fill="#0078D4" d="M21.17 2.06h-8.7v4.65L17.34 9 21.17 6.71zm-10.7 0H2.76A.76.76 0 0 0 2 2.83v8.7a.76.76 0 0 0 .76.76h7.71zm10.7 5.64L17.34 10.28l-4.87-2.28v4.71l8.7-4.58c.12-.06.2-.18.2-.32zM12.47 12.47v8.7a.76.76 0 0 0 .76.76h7.94a.76.76 0 0 0 .76-.76V14zm-10.7 0H2v8.7c0 .42.34.76.76.76h7.71v-9.46zm10.7-2.18v-4.65L8.5 8 12.47 10.29z"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium">Outlook Kalender</h4>
+                  <p className="text-sm text-muted-foreground">Microsoft 365, Outlook.com</p>
+                </div>
+                {outlookCalendarConnected ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Forbundet
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDisconnectCalendar('outlook')}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Unlink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConnectCalendar('outlook')}
+                    disabled={isConnectingCalendar && connectingCalendarType === 'outlook'}
+                  >
+                    {isConnectingCalendar && connectingCalendarType === 'outlook' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Forbind'
+                    )}
+                  </Button>
+                )}
+              </div>
+              {outlookCalendarConnected && outlookCalendarEmail && (
+                <p className="text-xs text-muted-foreground pl-13">
+                  Forbundet: {outlookCalendarEmail}
+                </p>
+              )}
+            </div>
+
             {/* Info section */}
-            {(googleCalendarConnected || appleCalendarConnected) ? (
+            {(googleCalendarConnected || appleCalendarConnected || outlookCalendarConnected) ? (
               <div className="bg-muted/50 rounded-lg p-4">
                 <h4 className="font-medium mb-2">Sådan virker det:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
