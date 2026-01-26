@@ -272,6 +272,9 @@ export type Database = {
       booster_applications: {
         Row: {
           address: string | null
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to_admin_id: string | null
           business_type: string | null
           city: string | null
           cpr_number: string | null
@@ -298,6 +301,9 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to_admin_id?: string | null
           business_type?: string | null
           city?: string | null
           cpr_number?: string | null
@@ -324,6 +330,9 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to_admin_id?: string | null
           business_type?: string | null
           city?: string | null
           cpr_number?: string | null
