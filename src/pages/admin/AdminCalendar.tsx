@@ -266,6 +266,11 @@ const AdminCalendar = () => {
   // View/Edit booking dialog
   const [viewBookingOpen, setViewBookingOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<{ booking: BoosterAvailability; job: Job | null; boosterName: string; boosterId: string } | null>(null);
+  
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editTime, setEditTime] = useState({ start: '', end: '' });
+  const [editDate, setEditDate] = useState<Date | undefined>(undefined);
 
   // Drag state
   const [activeBooking, setActiveBooking] = useState<{ booking: BoosterAvailability; job: Job | null } | null>(null);
@@ -1256,7 +1261,10 @@ const AdminCalendar = () => {
       />
 
       {/* View/Edit Booking Dialog - Booster Calendar Style */}
-      <Dialog open={viewBookingOpen} onOpenChange={setViewBookingOpen}>
+      <Dialog open={viewBookingOpen} onOpenChange={(open) => {
+        setViewBookingOpen(open);
+        if (!open) setIsEditMode(false);
+      }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           {selectedBooking && (() => {
             // Parse notes for team info
@@ -1406,38 +1414,62 @@ const AdminCalendar = () => {
                     </div>
                   </div>
 
-                  {/* Team Boosters */}
-                  {hasTeam && (
+                  {/* Team Boosters - Show with avatars */}
+                  {hasTeam ? (
                     <div className="space-y-2">
                       <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                         Team ({allTeamMembers.length} boosters)
                       </h4>
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Users className="h-4 w-4 text-blue-600" />
-                          <span className="font-medium text-blue-800 dark:text-blue-200">Team opgave</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {allTeamMembers.map((name, idx) => (
-                            <Badge key={idx} variant={idx === 0 ? "secondary" : "outline"} className="bg-blue-100 dark:bg-blue-800 text-foreground">
-                              {name}
-                            </Badge>
-                          ))}
-                        </div>
+                      <div className="space-y-2">
+                        {allTeamMembers.map((name, idx) => {
+                          // Find booster profile to get image
+                          const boosterProfile = boosters.find(b => b.name === name);
+                          const imageUrl = boosterProfile 
+                            ? (boosterImageOverrides[boosterProfile.name] || boosterProfile.portfolio_image_url)
+                            : null;
+                          const initials = name.split(' ').map(n => n[0]).join('');
+                          
+                          return (
+                            <div key={idx} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                              <Avatar className="h-10 w-10">
+                                {imageUrl ? (
+                                  <AvatarImage src={imageUrl} alt={name} />
+                                ) : null}
+                                <AvatarFallback className="text-sm bg-primary/10">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <span className="font-medium text-foreground">{name}</span>
+                                {idx === 0 && (
+                                  <span className="ml-2 text-xs text-muted-foreground">(primær)</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  )}
-
-                  {/* Single Booster (no team) */}
-                  {!hasTeam && (
+                  ) : (
                     <div className="space-y-2">
                       <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Tildelt</h4>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {selectedBooking.boosterName.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
+                      <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                        {(() => {
+                          const boosterProfile = boosters.find(b => b.name === selectedBooking.boosterName);
+                          const imageUrl = boosterProfile 
+                            ? (boosterImageOverrides[boosterProfile.name] || boosterProfile.portfolio_image_url)
+                            : null;
+                          return (
+                            <Avatar className="h-10 w-10">
+                              {imageUrl ? (
+                                <AvatarImage src={imageUrl} alt={selectedBooking.boosterName} />
+                              ) : null}
+                              <AvatarFallback className="text-sm bg-primary/10">
+                                {selectedBooking.boosterName.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                          );
+                        })()}
                         <span className="font-medium text-foreground">{selectedBooking.boosterName}</span>
                       </div>
                     </div>
@@ -1489,70 +1521,177 @@ const AdminCalendar = () => {
                     </div>
                   </div>
 
+                  {/* Edit Mode Form */}
+                  {isEditMode && (
+                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                      <h4 className="font-medium text-foreground">Rediger tidspunkt</h4>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-sm">Start tid</Label>
+                          <Input 
+                            type="time" 
+                            value={editTime.start}
+                            onChange={(e) => setEditTime({ ...editTime, start: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-sm">Slut tid</Label>
+                          <Input 
+                            type="time" 
+                            value={editTime.end}
+                            onChange={(e) => setEditTime({ ...editTime, end: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-sm">Dato</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {editDate ? format(editDate, "PPP", { locale: da }) : "Vælg dato"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={editDate}
+                              onSelect={setEditDate}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="default" 
+                          className="flex-1"
+                          onClick={async () => {
+                            if (!selectedBooking) return;
+                            try {
+                              const { error } = await supabase
+                                .from('booster_availability')
+                                .update({
+                                  start_time: editTime.start,
+                                  end_time: editTime.end,
+                                  date: editDate ? format(editDate, 'yyyy-MM-dd') : selectedBooking.booking.date
+                                })
+                                .eq('id', selectedBooking.booking.id);
+
+                              if (error) throw error;
+                              toast.success("Booking opdateret");
+                              setIsEditMode(false);
+                              setViewBookingOpen(false);
+                              fetchAvailability();
+                            } catch (error) {
+                              console.error('Error updating booking:', error);
+                              toast.error("Kunne ikke opdatere booking");
+                            }
+                          }}
+                        >
+                          Gem ændringer
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setIsEditMode(false)}
+                        >
+                          Annuller
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Admin Action Buttons */}
-                  <div className="space-y-3 pt-2 border-t">
-                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Handlinger</h4>
-                    
-                    {/* Primary Admin Actions */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="gap-2" onClick={() => {
-                        toast.info("Rediger booking...");
-                        // TODO: Open edit dialog
-                      }}>
-                        <Edit className="h-4 w-4" />
-                        Rediger
-                      </Button>
-                      <Button variant="outline" className="gap-2" onClick={() => {
-                        toast.info("Tilføj service...");
-                        // TODO: Open add service dialog
-                      }}>
-                        <Plus className="h-4 w-4" />
-                        Tilføj service
-                      </Button>
-                    </div>
+                  {!isEditMode && (
+                    <div className="space-y-3 pt-2 border-t">
+                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Handlinger</h4>
+                      
+                      {/* Primary Admin Actions */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" className="gap-2" onClick={() => {
+                          setEditTime({
+                            start: selectedBooking.booking.start_time.slice(0, 5),
+                            end: selectedBooking.booking.end_time.slice(0, 5)
+                          });
+                          setEditDate(new Date(selectedBooking.booking.date));
+                          setIsEditMode(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                          Rediger
+                        </Button>
+                        <Button variant="outline" className="gap-2" onClick={() => {
+                          // Open the job dialog with prefilled data for adding services
+                          setViewBookingOpen(false);
+                          setNewJobBooster(selectedBooking.boosterId);
+                          setNewJobTime(selectedBooking.booking.start_time.slice(0, 5));
+                          setNewJobDate(new Date(selectedBooking.booking.date));
+                          setJobDialogOpen(true);
+                        }}>
+                          <Plus className="h-4 w-4" />
+                          Tilføj service
+                        </Button>
+                      </div>
 
-                    {/* Communication Actions */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="default" className="gap-2" onClick={handleOpenChat}>
-                        <MessageCircle className="h-4 w-4" />
-                        Chat
-                      </Button>
-                      <Button variant="outline" className="gap-2" onClick={openGoogleMaps}>
-                        <Navigation className="h-4 w-4" />
-                        Navigation
-                      </Button>
-                    </div>
+                      {/* Communication Actions */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="default" className="gap-2" onClick={handleOpenChat}>
+                          <MessageCircle className="h-4 w-4" />
+                          Chat
+                        </Button>
+                        <Button variant="outline" className="gap-2" onClick={openGoogleMaps}>
+                          <Navigation className="h-4 w-4" />
+                          Navigation
+                        </Button>
+                      </div>
 
-                    {hasTeam && (
-                      <Button variant="secondary" className="w-full gap-2" onClick={handleCreateGroupChat}>
-                        <Users className="h-4 w-4" />
-                        Opret gruppechat
-                      </Button>
-                    )}
+                      {hasTeam && (
+                        <Button variant="secondary" className="w-full gap-2" onClick={handleCreateGroupChat}>
+                          <Users className="h-4 w-4" />
+                          Opret gruppechat
+                        </Button>
+                      )}
 
-                    {/* Destructive Actions */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                      <Button 
-                        variant="outline" 
-                        className="gap-2"
-                        onClick={handleReleaseJob}
-                      >
-                        <HandHelping className="h-4 w-4" />
-                        Frigiv job
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          toast.info("Sletter booking...");
-                          // TODO: Implement delete
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Slet
-                      </Button>
+                      {/* Destructive Actions */}
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                        <Button 
+                          variant="outline" 
+                          className="gap-2"
+                          onClick={handleReleaseJob}
+                        >
+                          <HandHelping className="h-4 w-4" />
+                          Frigiv job
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={async () => {
+                            if (!selectedBooking) return;
+                            try {
+                              const { error } = await supabase
+                                .from('booster_availability')
+                                .delete()
+                                .eq('id', selectedBooking.booking.id);
+
+                              if (error) throw error;
+                              toast.success("Booking slettet");
+                              setViewBookingOpen(false);
+                              fetchAvailability();
+                            } catch (error) {
+                              console.error('Error deleting booking:', error);
+                              toast.error("Kunne ikke slette booking");
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Slet
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </>
             );
