@@ -175,31 +175,45 @@ export default function AdminCustomers() {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
     
-    // Parse header to find columns
+    // Parse header to find columns - Planway format: Navn;Email;Tlf;...
     const header = lines[0].split(/[,;\t]/).map(h => h.trim().toLowerCase().replace(/"/g, ''));
     
-    const nameIdx = header.findIndex(h => 
+    // Try to find columns by header names first
+    let nameIdx = header.findIndex(h => 
       h.includes('navn') || h.includes('name') || h.includes('fornavn') || h === 'kunde'
     );
-    const emailIdx = header.findIndex(h => 
+    let emailIdx = header.findIndex(h => 
       h.includes('email') || h.includes('e-mail') || h.includes('mail')
     );
-    const phoneIdx = header.findIndex(h => 
+    let phoneIdx = header.findIndex(h => 
       h.includes('telefon') || h.includes('phone') || h.includes('tlf') || h.includes('mobil')
     );
     
+    // Planway fallback: If headers match expected order (Navn, Email, Tlf), use positions
+    if (nameIdx === -1 && emailIdx === -1 && header.length >= 3) {
+      // Assume Planway format: column 0 = Navn, column 1 = Email, column 2 = Tlf
+      nameIdx = 0;
+      emailIdx = 1;
+      phoneIdx = 2;
+    }
+    
     if (emailIdx === -1) {
-      setImportError('Kunne ikke finde en email-kolonne i filen. Sørg for at have en kolonne med "Email" eller "E-mail".');
+      setImportError('Kunne ikke finde en email-kolonne i filen. Sørg for at have en kolonne med "Email" eller brug Planway-format (Navn;Email;Tlf).');
       return [];
     }
     
     const customers: ImportedCustomer[] = [];
+    const seenEmails = new Set<string>();
     
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(/[,;\t]/).map(v => v.trim().replace(/"/g, ''));
       
-      const email = values[emailIdx]?.trim();
+      const email = values[emailIdx]?.trim()?.toLowerCase();
       if (!email || !email.includes('@')) continue;
+      
+      // Skip duplicates
+      if (seenEmails.has(email)) continue;
+      seenEmails.add(email);
       
       customers.push({
         name: nameIdx >= 0 ? values[nameIdx]?.trim() || '' : '',
@@ -672,10 +686,11 @@ export default function AdminCustomers() {
             )}
 
             <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
-              <p className="font-medium mb-1">Forventet kolonneformat:</p>
-              <p>• <strong>Email</strong> (påkrævet): email, e-mail, mail</p>
-              <p>• <strong>Navn</strong> (valgfrit): navn, name, fornavn, kunde</p>
-              <p>• <strong>Telefon</strong> (valgfrit): telefon, phone, tlf, mobil</p>
+              <p className="font-medium mb-1">Forventet kolonneformat (Planway):</p>
+              <p>• <strong>Kolonne 1 - Navn</strong>: kundens navn</p>
+              <p>• <strong>Kolonne 2 - Email</strong>: kundens email (påkrævet)</p>
+              <p>• <strong>Kolonne 3 - Telefon</strong>: kundens telefonnummer</p>
+              <p className="mt-1 text-muted-foreground/70">Separator: semikolon (;) eller komma (,)</p>
             </div>
           </div>
 
