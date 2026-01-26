@@ -10,7 +10,6 @@ import { format } from "date-fns";
 import { Plus, Trash2, User, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { boosterImageOverrides } from "@/data/boosterImages";
 
 interface BoosterProfile {
@@ -332,12 +331,12 @@ export const MultiServiceJobDialog = ({
         setCustomerSuggestions([]);
       }
     }}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Opret job med flere services</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 overflow-y-auto pr-2 -mr-2" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           <div className="space-y-4 py-4">
             {/* Customer Type */}
             <div className="grid grid-cols-2 gap-4">
@@ -601,9 +600,9 @@ export const MultiServiceJobDialog = ({
               )}
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="pt-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuller
           </Button>
