@@ -115,6 +115,13 @@ export default function BoosterLogin() {
               </div>
             )}
           </form>
+          {mode === "login" && (
+            <div className="mt-3 text-right">
+              <Link to="/admin/login" className="underline text-sm text-muted-foreground hover:text-foreground">
+                Glemt kodeord?
+              </Link>
+            </div>
+          )}
           <div className="text-sm text-muted-foreground mt-4 space-y-2">
             {mode === "login" ? (
               <button className="underline" onClick={() => setMode("signup")}>Har du ikke en konto? Opret</button>
