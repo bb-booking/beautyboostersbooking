@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Star, MapPin, Calendar, Phone, Mail, Briefcase, Clock, Pencil, Trash2, Save, X, Upload, Plus } from "lucide-react";
+import { Star, MapPin, Calendar, Phone, Mail, Briefcase, Clock, Pencil, Trash2, Save, X, Upload, Plus, Heart, ExternalLink } from "lucide-react";
 
 interface BoosterProfile {
   id: string;
@@ -65,6 +66,7 @@ export const BoosterProfileDialog = ({
 }: BoosterProfileDialogProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -88,6 +90,7 @@ export const BoosterProfileDialog = ({
   useEffect(() => {
     if (booster && open) {
       fetchReviews(booster.id);
+      fetchFavoritesCount(booster.id);
       setEditForm({
         name: booster.name || "",
         email: booster.email || "",
@@ -104,6 +107,20 @@ export const BoosterProfileDialog = ({
       setIsEditing(false);
     }
   }, [booster, open]);
+
+  const fetchFavoritesCount = async (boosterId: string) => {
+    try {
+      const { count, error } = await supabase
+        .from('customer_favorites')
+        .select('*', { count: 'exact', head: true })
+        .eq('booster_id', boosterId);
+
+      if (error) throw error;
+      setFavoritesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching favorites count:', error);
+    }
+  };
 
   const fetchReviews = async (boosterId: string) => {
     setLoadingReviews(true);
@@ -414,7 +431,15 @@ export const BoosterProfileDialog = ({
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-2xl font-bold text-foreground">{displayData.name}</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-foreground">{displayData.name}</h2>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/stylists/${booster.id}`} target="_blank">
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Gå til profil
+                        </Link>
+                      </Button>
+                    </div>
                     
                     <div className="flex flex-wrap gap-4 text-sm">
                       <div className="flex items-center gap-1 text-muted-foreground">
@@ -429,6 +454,11 @@ export const BoosterProfileDialog = ({
                         <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                         <span className="text-foreground font-medium">{booster.rating?.toFixed(1) || '5.0'}</span>
                         <span className="text-muted-foreground">({booster.review_count || 0} anmeldelser)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+                        <span className="text-foreground font-medium">{favoritesCount}</span>
+                        <span className="text-muted-foreground">favoritter</span>
                       </div>
                     </div>
 
