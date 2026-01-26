@@ -2,9 +2,10 @@ import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, SelectSingleEventHandler } from "react-day-picker";
 import { da } from "date-fns/locale";
-import { format, setMonth, setYear } from "date-fns";
+import { format, setMonth, setYear, startOfDay, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 type CalendarEnhancedMode = "days" | "months" | "years";
 
@@ -14,6 +15,8 @@ export interface CalendarEnhancedProps {
   className?: string;
   showOutsideDays?: boolean;
   initialFocus?: boolean;
+  showTodayButton?: boolean;
+  disabled?: (date: Date) => boolean;
 }
 
 function CalendarEnhanced({
@@ -22,11 +25,22 @@ function CalendarEnhanced({
   selected,
   onSelect,
   initialFocus,
+  showTodayButton = true,
+  disabled,
 }: CalendarEnhancedProps) {
   const [viewMode, setViewMode] = React.useState<CalendarEnhancedMode>("days");
   const [currentMonth, setCurrentMonth] = React.useState<Date>(
     selected || new Date()
   );
+
+  const handleGoToToday = () => {
+    const today = startOfDay(new Date());
+    setCurrentMonth(today);
+    setViewMode("days");
+    if (onSelect) {
+      onSelect(today, today, {}, { nativeEvent: new MouseEvent('click') } as any);
+    }
+  };
 
   const currentYear = currentMonth.getFullYear();
   const yearRangeStart = Math.floor(currentYear / 12) * 12;
@@ -185,13 +199,28 @@ function CalendarEnhanced({
   }
 
   return (
-    <DayPicker
-      locale={da}
-      mode="single"
-      showOutsideDays={showOutsideDays}
-      month={currentMonth}
-      onMonthChange={setCurrentMonth}
-      className={cn("p-3 pointer-events-auto", className)}
+    <div className={cn("pointer-events-auto", className)}>
+      {showTodayButton && (
+        <div className="px-3 pt-3 pb-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full text-xs"
+            onClick={handleGoToToday}
+          >
+            I dag
+          </Button>
+        </div>
+      )}
+      <DayPicker
+        locale={da}
+        mode="single"
+        showOutsideDays={showOutsideDays}
+        month={currentMonth}
+        onMonthChange={setCurrentMonth}
+        disabled={disabled}
+        className="p-3"
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
@@ -247,10 +276,11 @@ function CalendarEnhanced({
           </div>
         ),
       }}
-      selected={selected}
-      onSelect={onSelect}
-      initialFocus={initialFocus}
-    />
+        selected={selected}
+        onSelect={onSelect}
+        initialFocus={initialFocus}
+      />
+    </div>
   );
 }
 
