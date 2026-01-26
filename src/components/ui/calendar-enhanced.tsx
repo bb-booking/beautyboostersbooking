@@ -79,19 +79,19 @@ function CalendarEnhanced({
     const canGoPrev = startYear > minYear;
     
     return (
-      <div className={cn("p-3 pointer-events-auto", className)}>
-        <div className="flex items-center justify-between mb-4">
+      <div className={cn("p-3 pointer-events-auto relative z-50 bg-popover", className)}>
+        <div className="flex items-center justify-between mb-4 relative z-10">
           <button
             type="button"
             onClick={handlePrevYearRange}
             disabled={!canGoPrev}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0",
+              "h-7 w-7 bg-transparent p-0 relative z-20 pointer-events-auto",
               canGoPrev ? "opacity-50 hover:opacity-100" : "opacity-20 cursor-not-allowed"
             )}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 pointer-events-none" />
           </button>
           <span className="text-sm font-medium">
             {startYear} - {startYear + 11}
@@ -101,10 +101,10 @@ function CalendarEnhanced({
             onClick={handleNextYearRange}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 relative z-20 pointer-events-auto"
             )}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 pointer-events-none" />
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -131,24 +131,24 @@ function CalendarEnhanced({
     const canGoPrevYear = currentYear > minYear;
     
     return (
-      <div className={cn("p-3 pointer-events-auto", className)}>
-        <div className="flex items-center justify-between mb-4">
+      <div className={cn("p-3 pointer-events-auto relative z-50 bg-popover", className)}>
+        <div className="flex items-center justify-between mb-4 relative z-10">
           <button
             type="button"
             onClick={handlePrevYear}
             disabled={!canGoPrevYear}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0",
+              "h-7 w-7 bg-transparent p-0 relative z-20 pointer-events-auto",
               canGoPrevYear ? "opacity-50 hover:opacity-100" : "opacity-20 cursor-not-allowed"
             )}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 pointer-events-none" />
           </button>
           <button
             type="button"
             onClick={() => setViewMode("years")}
-            className="text-sm font-medium hover:text-primary transition-colors cursor-pointer"
+            className="text-sm font-medium hover:text-primary transition-colors cursor-pointer pointer-events-auto"
           >
             {currentYear}
           </button>
@@ -157,10 +157,10 @@ function CalendarEnhanced({
             onClick={handleNextYear}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 relative z-20 pointer-events-auto"
             )}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 pointer-events-none" />
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2">
