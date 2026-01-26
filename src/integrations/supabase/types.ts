@@ -110,6 +110,35 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_images: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          id: string
+          image_url: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_images_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_reminders: {
         Row: {
           created_at: string
