@@ -545,10 +545,14 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData}>
+              <LineChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis 
+                  tick={{ fontSize: 12 }} 
+                  width={60}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                />
                 <Tooltip 
                   formatter={(value: any) => `${Number(value).toLocaleString('da-DK')} kr`}
                 />
@@ -564,10 +568,10 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={servicesData}>
+              <BarChart data={servicesData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                <YAxis tick={{ fontSize: 12 }} width={40} />
                 <Tooltip />
                 <Bar dataKey="count" fill="#10b981" />
               </BarChart>
