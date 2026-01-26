@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, User, LogOut, Search, Menu, Download, Info, Users, Gift } from "lucide-react";
+import { Calendar, User, LogOut, Search, Menu, Download, Info, Users, Gift, LayoutDashboard } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -35,16 +35,40 @@ const Header = () => {
 
   const [loggedIn, setLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'booster' | null>(null);
   
   // Track auth state to toggle Login/Logout
   useEffect(() => {
+    const checkUserRole = async (userId: string) => {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      if (roles?.some(r => r.role === 'admin')) {
+        setUserRole('admin');
+      } else if (roles?.some(r => r.role === 'booster')) {
+        setUserRole('booster');
+      } else {
+        setUserRole(null);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setLoggedIn(!!session);
       setUserEmail(session?.user?.email || null);
+      if (session?.user?.id) {
+        checkUserRole(session.user.id);
+      } else {
+        setUserRole(null);
+      }
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setLoggedIn(!!session);
       setUserEmail(session?.user?.email || null);
+      if (session?.user?.id) {
+        checkUserRole(session.user.id);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -149,6 +173,11 @@ const Header = () => {
               <DropdownMenuSeparator />
               <Link to="/address"><DropdownMenuItem><Calendar className="mr-2 h-4 w-4" /> Book nu</DropdownMenuItem></Link>
               <Link to="/services"><DropdownMenuItem><Search className="mr-2 h-4 w-4" /> Se services</DropdownMenuItem></Link>
+              {loggedIn && userRole && (
+                <Link to={userRole === 'admin' ? '/admin/dashboard' : '/booster/dashboard'}>
+                  <DropdownMenuItem><LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard</DropdownMenuItem>
+                </Link>
+              )}
               {loggedIn && (
                 <Link to="/customer/dashboard"><DropdownMenuItem><User className="mr-2 h-4 w-4" /> Min konto</DropdownMenuItem></Link>
               )}
@@ -195,6 +224,14 @@ const Header = () => {
                 <nav className="grid gap-3">
                   <Link to="/address" className="text-foreground hover:underline font-medium">Book nu</Link>
                   <Link to="/services" className="text-foreground hover:underline">Se alle services</Link>
+                  {loggedIn && userRole && (
+                    <Link 
+                      to={userRole === 'admin' ? '/admin/dashboard' : '/booster/dashboard'} 
+                      className="text-foreground hover:underline font-medium"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
                   {loggedIn && (
                     <Link to="/customer/dashboard" className="text-foreground hover:underline">Min konto</Link>
                   )}
