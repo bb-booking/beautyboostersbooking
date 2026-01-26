@@ -493,6 +493,47 @@ export type Database = {
           },
         ]
       }
+      booster_portfolio_images: {
+        Row: {
+          booster_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          project_type: string | null
+          role: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          booster_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          project_type?: string | null
+          role?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          booster_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          project_type?: string | null
+          role?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booster_portfolio_images_booster_id_fkey"
+            columns: ["booster_id"]
+            isOneToOne: false
+            referencedRelation: "booster_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booster_profiles: {
         Row: {
           bio: string | null
