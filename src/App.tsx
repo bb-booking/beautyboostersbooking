@@ -44,6 +44,7 @@ import AdminJobChats from "./pages/admin/AdminJobChats";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminInvoicesPage from "./pages/admin/AdminInvoices";
+import AdminCustomers from "./pages/admin/AdminCustomers";
 import { BoosterLayout } from "@/components/layout/BoosterLayout";
 import BoosterDashboard from "./pages/booster/BoosterDashboard";
 import BoosterCalendar from "./pages/booster/BoosterCalendar";
@@ -128,6 +129,7 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="customers" element={<AdminCustomers />} />
             <Route path="jobs" element={<AdminJobs />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="bookings" element={<Navigate to="/admin/jobs" replace />} />
