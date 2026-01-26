@@ -286,7 +286,35 @@ const AdminFinance = () => {
         },
       };
       
-      const currentPeriod = periodData[selectedPeriod] || periodData['month'];
+      let currentPeriod;
+      
+      // Handle custom date range
+      if (selectedPeriod === 'custom' && customStartDate && customEndDate) {
+        const daysDiff = differenceInDays(customEndDate, customStartDate) + 1;
+        // Calculate mock data based on days in range (average ~6000 kr per day)
+        const dailyRevenue = 9640; // Average daily revenue
+        const dailyJobs = 1.6; // Average jobs per day
+        
+        const calculatedRevenue = Math.round(daysDiff * dailyRevenue);
+        const calculatedJobs = Math.round(daysDiff * dailyJobs);
+        const previousRevenue = Math.round(calculatedRevenue * 0.92); // 8% growth
+        
+        // Distribute earnings among boosters based on days
+        const boosterShare = calculatedRevenue / 1.25 * 0.6; // 60% of eks. moms
+        currentPeriod = {
+          revenue: calculatedRevenue,
+          jobs: calculatedJobs,
+          previousRevenue: previousRevenue,
+          boosters: [
+            { name: 'Angelica', earnings: Math.round(boosterShare * 0.29), jobs_completed: Math.round(calculatedJobs * 0.29) },
+            { name: 'Anna K.', earnings: Math.round(boosterShare * 0.25), jobs_completed: Math.round(calculatedJobs * 0.25) },
+            { name: 'My Phung', earnings: Math.round(boosterShare * 0.23), jobs_completed: Math.round(calculatedJobs * 0.23) },
+            { name: 'Marie S.', earnings: Math.round(boosterShare * 0.23), jobs_completed: Math.round(calculatedJobs * 0.23) },
+          ]
+        };
+      } else {
+        currentPeriod = periodData[selectedPeriod] || periodData['month'];
+      }
       
       const totalRevenue = currentPeriod.revenue;
       const completedJobs = currentPeriod.jobs;
