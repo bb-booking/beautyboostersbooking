@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,45 +7,103 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save, Settings, Mail, Phone, MapPin } from "lucide-react";
+import { Save, Settings, Mail, Phone, MapPin, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+const defaultSettings = {
+  companyName: "Beauty Boosters",
+  companyEmail: "hello@beautybooters.dk",
+  companyPhone: "+45 71 78 65 75",
+  companyAddress: "København, Danmark",
+  companyDescription: "Danmarks bedste makeup artister og stylister til alle anledninger.",
+  emailNotifications: true,
+  autoConfirmBookings: false,
+  allowOnlinePayments: true,
+  businessHours: {
+    weekdays: "09:00 - 18:00",
+    weekends: "10:00 - 16:00"
+  },
+  bookingPolicy: "Bookinger kan aflyses op til 24 timer før aftalt tid.",
+  cancellationFee: "25",
+  socialLinks: {
+    instagram: "@beautybooters",
+    facebook: "Beauty Boosters",
+    tiktok: "@beautybooters"
+  }
+};
 
 const AdminSettings = () => {
-  const [settings, setSettings] = useState({
-    companyName: "Beauty Boosters",
-    companyEmail: "hello@beautybooters.dk",
-    companyPhone: "+45 71 78 65 75",
-    companyAddress: "København, Danmark",
-    companyDescription: "Danmarks bedste makeup artister og stylister til alle anledninger.",
-    emailNotifications: true,
-    autoConfirmBookings: false,
-    allowOnlinePayments: true,
-    businessHours: {
-      weekdays: "09:00 - 18:00",
-      weekends: "10:00 - 16:00"
-    },
-    bookingPolicy: "Bookinger kan aflyses op til 24 timer før aftalt tid.",
-    cancellationFee: "25",
-    socialLinks: {
-      instagram: "@beautybooters",
-      facebook: "Beauty Boosters",
-      tiktok: "@beautybooters"
-    }
-  });
-
+  const [settings, setSettings] = useState(defaultSettings);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("admin_settings")
+        .select("key, value")
+        .eq("key", "general_settings")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data?.value) {
+        setSettings({ ...defaultSettings, ...(data.value as typeof defaultSettings) });
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Here you would normally save to database
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // First check if setting exists
+      const { data: existing } = await supabase
+        .from("admin_settings")
+        .select("id")
+        .eq("key", "general_settings")
+        .maybeSingle();
+
+      let error;
+      if (existing) {
+        // Update existing
+        const result = await supabase
+          .from("admin_settings")
+          .update({ value: JSON.parse(JSON.stringify(settings)) })
+          .eq("key", "general_settings");
+        error = result.error;
+      } else {
+        // Insert new
+        const result = await supabase
+          .from("admin_settings")
+          .insert([{ key: "general_settings", value: JSON.parse(JSON.stringify(settings)) }]);
+        error = result.error;
+      }
+
+      if (error) throw error;
       toast.success("Indstillinger gemt!");
     } catch (error) {
+      console.error("Error saving settings:", error);
       toast.error("Fejl ved gemning af indstillinger");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const updateSetting = (key: string, value: any) => {
     setSettings(prev => ({
