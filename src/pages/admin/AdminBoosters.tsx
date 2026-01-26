@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { BoosterProfileDialog } from "@/components/admin/BoosterProfileDialog";
 import { 
   Search, 
   MapPin, 
@@ -25,7 +26,8 @@ import {
   Pencil,
   Save,
   Phone,
-  Mail
+  Mail,
+  Eye
 } from "lucide-react";
 
 interface BoosterProfile {
@@ -88,6 +90,15 @@ const AdminBoosters = () => {
     employment_type: "freelancer"
   });
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Profile view state
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [viewingBooster, setViewingBooster] = useState<BoosterProfile | null>(null);
+
+  const openProfileDialog = (booster: BoosterProfile) => {
+    setViewingBooster(booster);
+    setProfileDialogOpen(true);
+  };
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -653,7 +664,7 @@ const AdminBoosters = () => {
             className={`cursor-pointer transition-all hover:shadow-md ${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}
           >
             <CardContent className="p-4">
-              {/* Header with checkbox and edit */}
+              {/* Header with checkbox and actions */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2" onClick={() => toggleBoosterSelection(booster.id)}>
                   <Checkbox 
@@ -664,26 +675,43 @@ const AdminBoosters = () => {
                     <CheckCircle className="h-4 w-4 text-primary" />
                   )}
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditDialog(booster);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openProfileDialog(booster);
+                    }}
+                    title="Se profil"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditDialog(booster);
+                    }}
+                    title="Rediger"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Profile section */}
-              <div className="flex flex-col items-center text-center mb-4" onClick={() => toggleBoosterSelection(booster.id)}>
+              {/* Profile section - click to view profile */}
+              <div 
+                className="flex flex-col items-center text-center mb-4" 
+                onClick={() => openProfileDialog(booster)}
+              >
                 <img
                   src={booster.portfolio_image_url || "/placeholder.svg"}
                   alt={booster.name}
-                  className="h-20 w-20 rounded-full object-cover mb-3"
+                  className="h-20 w-20 rounded-full object-cover mb-3 hover:ring-2 hover:ring-primary transition-all"
                 />
-                <h3 className="font-semibold text-foreground">{booster.name}</h3>
+                <h3 className="font-semibold text-foreground hover:text-primary transition-colors">{booster.name}</h3>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <MapPin className="h-3 w-3" />
                   <span>{booster.location}</span>
@@ -698,7 +726,7 @@ const AdminBoosters = () => {
               </div>
 
               {/* Stats */}
-              <div className="flex justify-center gap-4 text-sm mb-3" onClick={() => toggleBoosterSelection(booster.id)}>
+              <div className="flex justify-center gap-4 text-sm mb-3" onClick={() => openProfileDialog(booster)}>
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-500" />
                   <span className="text-foreground">{booster.rating}/5</span>
@@ -710,7 +738,7 @@ const AdminBoosters = () => {
               </div>
 
               {/* Specialties */}
-              <div className="flex flex-wrap gap-1 justify-center" onClick={() => toggleBoosterSelection(booster.id)}>
+              <div className="flex flex-wrap gap-1 justify-center" onClick={() => openProfileDialog(booster)}>
                 {booster.specialties.slice(0, 3).map((specialty, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
                     {specialty}
@@ -870,6 +898,13 @@ const AdminBoosters = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Profile View Dialog */}
+      <BoosterProfileDialog
+        booster={viewingBooster}
+        open={profileDialogOpen}
+        onOpenChange={setProfileDialogOpen}
+      />
 
       {filteredBoosters.length === 0 && !loading && (
         <Card>
