@@ -161,7 +161,7 @@ function DraggableBookingCard({
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 100,
+    zIndex: 1000,
   } : undefined;
 
   const duration = (timeToMinutes(booking.end_time) - timeToMinutes(booking.start_time)) / 30;
@@ -173,27 +173,29 @@ function DraggableBookingCard({
     <div
       ref={setNodeRef}
       style={{ ...style, height: `${Math.max(duration * 28 - 4, 24)}px` }}
+      {...listeners}
+      {...attributes}
       className={cn(
-        "absolute left-1 right-1 top-0 rounded-md p-1 overflow-hidden z-10 transition-shadow",
-        "border-l-4 group",
+        "absolute left-1 right-1 top-0 rounded-md p-1 overflow-hidden z-10 transition-all",
+        "border-l-4 group cursor-grab active:cursor-grabbing",
         isPrivate 
-          ? "bg-pink-50 border-l-pink-400 hover:shadow-md" 
-          : "bg-purple-50 border-l-purple-400 hover:shadow-md",
-        isDragging && "opacity-50 shadow-lg cursor-grabbing"
+          ? "bg-pink-50 border-l-pink-400 hover:shadow-md hover:ring-2 hover:ring-pink-300" 
+          : "bg-purple-50 border-l-purple-400 hover:shadow-md hover:ring-2 hover:ring-purple-300",
+        isDragging && "opacity-70 shadow-xl ring-2 ring-primary scale-105"
       )}
     >
       <div 
-        className="cursor-grab active:cursor-grabbing absolute top-1 left-1"
-        {...listeners}
-        {...attributes}
+        className="absolute top-1 left-1 opacity-50 group-hover:opacity-100 transition-opacity"
       >
         <GripVertical className="h-3 w-3 text-muted-foreground" />
       </div>
       <div 
-        className="pl-4 cursor-pointer"
+        className="pl-4"
         onClick={(e) => {
-          e.stopPropagation();
-          onClick();
+          if (!isDragging) {
+            e.stopPropagation();
+            onClick();
+          }
         }}
       >
         <div className="text-[9px] font-medium text-muted-foreground">
@@ -239,30 +241,40 @@ function DroppableSlot({
   onAddJob: (boosterId: string, timeSlot: string, date: Date) => void;
   hasBooking: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef, isOver, active } = useDroppable({
     id: `slot-${boosterId}-${timeSlot}`,
     data: { boosterId, timeSlot, date },
   });
 
   const [isHovered, setIsHovered] = useState(false);
+  const isDragging = !!active;
 
   return (
     <div 
       ref={setNodeRef}
       className={cn(
-        "h-7 relative transition-colors border-r border-b border-border/30",
-        isOver && "bg-primary/20 ring-2 ring-primary ring-inset",
-        !hasBooking && isHovered && "bg-primary/5"
+        "h-7 relative transition-all border-r border-b border-border/30",
+        isOver && !hasBooking && "bg-primary/30 ring-2 ring-primary ring-inset scale-[1.02]",
+        isOver && hasBooking && "bg-destructive/20 ring-2 ring-destructive ring-inset",
+        !hasBooking && !isDragging && isHovered && "bg-primary/5",
+        isDragging && !hasBooking && !isOver && "bg-primary/10"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => !hasBooking && onAddJob(boosterId, timeSlot, date)}
+      onClick={() => !hasBooking && !isDragging && onAddJob(boosterId, timeSlot, date)}
     >
       {children}
-      {!hasBooking && isHovered && (
+      {!hasBooking && !isDragging && isHovered && (
         <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
           <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
             <Plus className="h-3 w-3 text-primary" />
+          </div>
+        </div>
+      )}
+      {isOver && !hasBooking && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-[10px] font-medium text-primary bg-primary/20 px-2 py-0.5 rounded">
+            Slip her
           </div>
         </div>
       )}
