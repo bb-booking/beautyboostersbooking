@@ -11,7 +11,8 @@ import {
   CalendarDays,
   Tag,
   FileText,
-  UserCircle
+  UserCircle,
+  ClipboardList
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Månedsoverblik", url: "/admin/overview", icon: ClipboardList },
   { title: "Jobs", url: "/admin/jobs", icon: CalendarDays },
   { title: "Kunder", url: "/admin/customers", icon: UserCircle },
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
