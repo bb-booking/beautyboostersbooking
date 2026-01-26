@@ -10,7 +10,8 @@ import {
   DollarSign,
   CalendarDays,
   Tag,
-  FileText
+  FileText,
+  UserCircle
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Jobs", url: "/admin/jobs", icon: CalendarDays },
+  { title: "Kunder", url: "/admin/customers", icon: UserCircle },
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
   { title: "Booster Ansøgninger", url: "/admin/booster-applications", icon: Users },
   { title: "Kalender", url: "/admin/calendar", icon: Calendar },
