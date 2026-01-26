@@ -25,7 +25,13 @@ import {
   Clock,
   Edit,
   Trash2,
-  ArrowLeft
+  ArrowLeft,
+  Building2,
+  Users,
+  MessageCircle,
+  Navigation,
+  Copy,
+  HandHelping
 } from "lucide-react";
 import { MultiServiceJobDialog } from "@/components/admin/MultiServiceJobDialog";
 import { cn } from "@/lib/utils";
@@ -1249,22 +1255,23 @@ const AdminCalendar = () => {
         }}
       />
 
-      {/* View/Edit Booking Dialog */}
+      {/* View/Edit Booking Dialog - Booster Calendar Style */}
       <Dialog open={viewBookingOpen} onOpenChange={setViewBookingOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className={cn(
-                "w-3 h-6 rounded-sm",
-                selectedBooking?.job?.client_type !== 'virksomhed' ? "bg-pink-400" : "bg-purple-400"
-              )} />
-              {selectedBooking?.job?.title || 'Booking detaljer'}
-            </DialogTitle>
-          </DialogHeader>
-          
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           {selectedBooking && (() => {
             // Parse notes for team info
-            let notesData: { team_boosters?: string[]; service?: string } = {};
+            let notesData: { 
+              team_boosters?: string[]; 
+              service?: string; 
+              people_count?: number;
+              price?: number;
+              customer_name?: string;
+              customer_email?: string;
+              customer_phone?: string;
+              address?: string;
+              client_type?: string;
+              company_name?: string;
+            } = {};
             try {
               if (selectedBooking.booking.notes) {
                 notesData = JSON.parse(selectedBooking.booking.notes);
@@ -1272,123 +1279,247 @@ const AdminCalendar = () => {
             } catch (e) {
               // Notes is not JSON, ignore
             }
+            
+            // Build all team members (current booster + team_boosters)
             const teamBoosters = notesData.team_boosters || [];
-            const hasTeam = teamBoosters.length > 0;
+            const allTeamMembers = [selectedBooking.boosterName, ...teamBoosters];
+            const hasTeam = allTeamMembers.length > 1;
+            
+            // Get data from notes or job
+            const customerName = notesData.customer_name || selectedBooking.job?.client_name;
+            const customerEmail = notesData.customer_email || selectedBooking.job?.client_email;
+            const customerPhone = notesData.customer_phone || selectedBooking.job?.client_phone;
+            const address = notesData.address || selectedBooking.job?.location;
+            const clientType = notesData.client_type || selectedBooking.job?.client_type;
+            const companyName = notesData.company_name;
+            const service = notesData.service || selectedBooking.job?.service_type || 'Service';
+            const peopleCount = notesData.people_count || 1;
+            const price = notesData.price || 0;
+            const isVirksomhed = clientType === 'virksomhed';
 
             // Create Google Maps URL
-            const addressForMaps = selectedBooking.job?.location;
-            const googleMapsUrl = addressForMaps 
-              ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressForMaps)}`
+            const googleMapsUrl = address 
+              ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
               : null;
 
+            // Calculate duration
+            const startParts = selectedBooking.booking.start_time.split(':').map(Number);
+            const endParts = selectedBooking.booking.end_time.split(':').map(Number);
+            const durationMins = (endParts[0] * 60 + endParts[1]) - (startParts[0] * 60 + startParts[1]);
+            const hours = Math.floor(durationMins / 60);
+            const mins = durationMins % 60;
+            const durationStr = mins > 0 ? `${hours}t ${mins}m` : `${hours} timer`;
+
+            const copyToClipboard = (text: string, label: string) => {
+              navigator.clipboard.writeText(text);
+              toast.success(`${label} kopieret`);
+            };
+
+            const openGoogleMaps = () => {
+              if (googleMapsUrl) {
+                window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
+              }
+            };
+
+            const handleOpenChat = () => {
+              toast.info("Åbner chat...");
+              setViewBookingOpen(false);
+            };
+
+            const handleCreateGroupChat = () => {
+              toast.info("Gruppechat oprettes...");
+              setViewBookingOpen(false);
+            };
+
+            const handleReleaseJob = () => {
+              toast.info("Frigiver job...");
+              setViewBookingOpen(false);
+            };
+
             return (
-              <div className="space-y-4 py-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant={selectedBooking.job?.client_type === 'virksomhed' ? 'default' : 'secondary'}>
-                    {selectedBooking.job?.client_type === 'virksomhed' ? 'B2B' : 'Privat'}
-                  </Badge>
-                  <Badge variant="outline" className="text-foreground">{notesData.service || selectedBooking.job?.service_type || 'Service'}</Badge>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{selectedBooking.job?.client_name || 'Ikke angivet'}</span>
-                  </div>
-                  
-                  {selectedBooking.job?.client_email && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${selectedBooking.job.client_email}`} className="text-foreground hover:underline">
-                        {selectedBooking.job.client_email}
-                      </a>
-                    </div>
-                  )}
-                  
-                  {selectedBooking.job?.client_phone && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <a href={`tel:${selectedBooking.job.client_phone}`} className="text-foreground hover:underline">
-                        {selectedBooking.job.client_phone}
-                      </a>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-3 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-foreground">
-                      {format(new Date(selectedBooking.booking.date), 'd. MMM yyyy', { locale: da })} kl. {selectedBooking.booking.start_time.slice(0, 5)} - {selectedBooking.booking.end_time.slice(0, 5)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    {googleMapsUrl ? (
-                      <a 
-                        href={googleMapsUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-foreground hover:underline"
-                      >
-                        {selectedBooking.job?.location || 'Ikke angivet'}
-                      </a>
-                    ) : (
-                      <span className="text-foreground">{selectedBooking.job?.location || 'Ikke angivet'}</span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 text-sm pt-2 border-t">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-[10px]">
-                        {selectedBooking.boosterName.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-foreground">Tildelt: <span className="font-medium">{selectedBooking.boosterName}</span></span>
-                  </div>
-
-                  {/* Team Section */}
-                  {hasTeam && (
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-foreground bg-purple-50 border-purple-200">
-                          Team opgave
+              <>
+                <DialogHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <DialogTitle className="text-xl text-foreground">{selectedBooking.job?.title || service}</DialogTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={isVirksomhed ? "default" : "secondary"}>
+                          {isVirksomhed ? 'Virksomhed' : 'Privat'}
                         </Badge>
                       </div>
-                      <div className="text-sm text-foreground">
-                        <span className="font-medium">Andre på opgaven:</span>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {teamBoosters.map((name, idx) => (
-                            <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
-                              <Avatar className="h-5 w-5">
-                                <AvatarFallback className="text-[8px]">
-                                  {name.split(' ').map(n => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm text-foreground">{name}</span>
-                            </div>
+                    </div>
+                    {price > 0 && (
+                      <p className="text-2xl font-bold text-primary">
+                        {price.toLocaleString('da-DK')} kr
+                      </p>
+                    )}
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2">
+                  {/* Time & Date */}
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {selectedBooking.booking.start_time.slice(0, 5)} - {selectedBooking.booking.end_time.slice(0, 5)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(selectedBooking.booking.date), "EEEE d. MMMM", { locale: da })} • {durationStr}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Customer */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Kunde</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-foreground">{customerName || 'Ikke angivet'}</span>
+                      </div>
+                      
+                      {companyName && (
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-foreground">{companyName}</span>
+                        </div>
+                      )}
+                      
+                      {customerEmail && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <a href={`mailto:${customerEmail}`} className="text-foreground hover:underline">
+                            {customerEmail}
+                          </a>
+                        </div>
+                      )}
+
+                      {customerPhone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <a href={`tel:${customerPhone}`} className="text-foreground hover:underline">
+                            {customerPhone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Team Boosters */}
+                  {hasTeam && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                        Team ({allTeamMembers.length} boosters)
+                      </h4>
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-blue-800 dark:text-blue-200">Team opgave</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {allTeamMembers.map((name, idx) => (
+                            <Badge key={idx} variant={idx === 0 ? "secondary" : "outline"} className="bg-blue-100 dark:bg-blue-800 text-foreground">
+                              {name}
+                            </Badge>
                           ))}
                         </div>
                       </div>
                     </div>
                   )}
+
+                  {/* Single Booster (no team) */}
+                  {!hasTeam && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Tildelt</h4>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">
+                            {selectedBooking.boosterName.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-foreground">{selectedBooking.boosterName}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Address */}
+                  {address && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Lokation</h4>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
+                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <span className="break-words text-foreground">{address}</span>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8"
+                            onClick={() => copyToClipboard(address, 'Adresse')}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8"
+                            onClick={openGoogleMaps}
+                          >
+                            <Navigation className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Service Details */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Detaljer</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground">Service</p>
+                        <p className="font-medium text-foreground">{service}</p>
+                      </div>
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground">Personer</p>
+                        <p className="font-medium text-foreground">{peopleCount}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div className="flex gap-2">
+                      <Button variant="default" className="flex-1 gap-2" onClick={handleOpenChat}>
+                        <MessageCircle className="h-4 w-4" />
+                        Chat
+                      </Button>
+                      <Button variant="outline" className="flex-1 gap-2" onClick={openGoogleMaps}>
+                        <Navigation className="h-4 w-4" />
+                        Navigation
+                      </Button>
+                    </div>
+                    {hasTeam && (
+                      <Button variant="secondary" className="w-full gap-2" onClick={handleCreateGroupChat}>
+                        <Users className="h-4 w-4" />
+                        Opret gruppechat
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      className="w-full gap-2 text-destructive hover:text-destructive"
+                      onClick={handleReleaseJob}
+                    >
+                      <HandHelping className="h-4 w-4" />
+                      Frigiv job
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </>
             );
           })()}
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Slet
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleEditBooking}>
-              <Edit className="h-4 w-4 mr-1" />
-              Rediger
-            </Button>
-            <Button size="sm" onClick={() => setViewBookingOpen(false)}>
-              Luk
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DndContext>
