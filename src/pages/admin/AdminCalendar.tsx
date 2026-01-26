@@ -34,6 +34,7 @@ import {
   HandHelping
 } from "lucide-react";
 import { MultiServiceJobDialog } from "@/components/admin/MultiServiceJobDialog";
+import { AddServiceToBookingDialog } from "@/components/admin/AddServiceToBookingDialog";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { boosterImageOverrides } from "@/data/boosterImages";
@@ -271,6 +272,18 @@ const AdminCalendar = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTime, setEditTime] = useState({ start: '', end: '' });
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  
+  // Add service to booking dialog
+  const [addServiceDialogOpen, setAddServiceDialogOpen] = useState(false);
+  const [existingServicesForBooking, setExistingServicesForBooking] = useState<{
+    id: string;
+    service_id: string;
+    service_name: string;
+    service_price: number;
+    people_count: number;
+    booster_id?: string;
+    booster_name?: string;
+  }[]>([]);
 
   // Drag state
   const [activeBooking, setActiveBooking] = useState<{ booking: BoosterAvailability; job: Job | null } | null>(null);
@@ -1260,6 +1273,23 @@ const AdminCalendar = () => {
         }}
       />
 
+      {/* Add Service to Existing Booking Dialog */}
+      <AddServiceToBookingDialog
+        open={addServiceDialogOpen}
+        onOpenChange={setAddServiceDialogOpen}
+        existingServices={existingServicesForBooking}
+        boosters={filteredBoosters}
+        onSave={(updatedServices) => {
+          // Here you would save the updated services to the database
+          console.log('Updated services:', updatedServices);
+          toast.success("Services opdateret");
+          fetchAvailability();
+        }}
+        bookingDate={selectedBooking?.booking.date}
+        bookingTime={selectedBooking?.booking.start_time}
+        customerName={selectedBooking?.job?.client_name}
+      />
+
       {/* View/Edit Booking Dialog - Booster Calendar Style */}
       <Dialog open={viewBookingOpen} onOpenChange={(open) => {
         setViewBookingOpen(open);
@@ -1624,12 +1654,22 @@ const AdminCalendar = () => {
                           Rediger
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={() => {
-                          // Open the job dialog with prefilled data for adding services
-                          setViewBookingOpen(false);
-                          setNewJobBooster(selectedBooking.boosterId);
-                          setNewJobTime(selectedBooking.booking.start_time.slice(0, 5));
-                          setNewJobDate(new Date(selectedBooking.booking.date));
-                          setJobDialogOpen(true);
+                          // Parse existing services from notes
+                          let existingServices: typeof existingServicesForBooking = [];
+                          
+                          // Create initial service from current booking data
+                          existingServices.push({
+                            id: `service-${selectedBooking.booking.id}`,
+                            service_id: '', // Will be selected by user
+                            service_name: service,
+                            service_price: price,
+                            people_count: peopleCount,
+                            booster_id: selectedBooking.boosterId,
+                            booster_name: selectedBooking.boosterName
+                          });
+                          
+                          setExistingServicesForBooking(existingServices);
+                          setAddServiceDialogOpen(true);
                         }}>
                           <Plus className="h-4 w-4" />
                           Tilføj service
