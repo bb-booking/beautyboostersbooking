@@ -9,8 +9,11 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { 
+import {
   DollarSign, 
   TrendingUp, 
   TrendingDown,
@@ -29,7 +32,10 @@ import {
   CalendarClock,
   Wallet,
   FileSpreadsheet,
-  File
+  File,
+  ChevronRight,
+  Eye,
+  MapPin
 } from "lucide-react";
 import { format, differenceInDays, endOfMonth, addMonths, startOfWeek, endOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { da } from "date-fns/locale";
@@ -102,6 +108,62 @@ const AdminFinance = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  
+  // Booster detail state
+  const [selectedBooster, setSelectedBooster] = useState<{ name: string; earnings: number; jobs_completed: number } | null>(null);
+  const [showAllBoosters, setShowAllBoosters] = useState(false);
+
+  // Mock booster jobs data
+  const getBoosterJobs = (boosterName: string) => {
+    const jobsData: Record<string, Array<{ date: string; service: string; client: string; location: string; amount: number; status: string }>> = {
+      'Angelica': [
+        { date: '2024-12-20', service: 'Bryllup makeup', client: 'Maria Hansen', location: 'København', amount: 4500, status: 'completed' },
+        { date: '2024-12-18', service: 'Event makeup x4', client: 'DR Studios', location: 'Frederiksberg', amount: 12000, status: 'completed' },
+        { date: '2024-12-15', service: 'Brudestyling', client: 'Louise Berg', location: 'Hellerup', amount: 3800, status: 'completed' },
+        { date: '2024-12-12', service: 'Makeup session', client: 'Anna Nielsen', location: 'Amager', amount: 1200, status: 'completed' },
+        { date: '2024-12-10', service: 'Konfirmation x3', client: 'Familien Sørensen', location: 'Gentofte', amount: 3600, status: 'completed' },
+        { date: '2024-12-08', service: 'Beauty Bar event', client: 'Novo Nordisk', location: 'Bagsværd', amount: 8500, status: 'completed' },
+        { date: '2024-12-05', service: 'Makeup session', client: 'Mette Larsen', location: 'Østerbro', amount: 1200, status: 'completed' },
+        { date: '2024-12-03', service: 'Hårstyling', client: 'Emma Christensen', location: 'Vanløse', amount: 900, status: 'completed' },
+      ],
+      'Anna K.': [
+        { date: '2024-12-19', service: 'Bryllup makeup', client: 'Sofie Jensen', location: 'Roskilde', amount: 4500, status: 'completed' },
+        { date: '2024-12-16', service: 'Makeup session', client: 'Ida Petersen', location: 'Hvidovre', amount: 1200, status: 'completed' },
+        { date: '2024-12-14', service: 'Konfirmation x2', client: 'Familien Madsen', location: 'Glostrup', amount: 2400, status: 'completed' },
+        { date: '2024-12-11', service: 'Event makeup', client: 'TV2 Danmark', location: 'Odense', amount: 3500, status: 'completed' },
+        { date: '2024-12-09', service: 'Brudestyling', client: 'Katrine Holm', location: 'Valby', amount: 3800, status: 'completed' },
+        { date: '2024-12-06', service: 'Makeup session', client: 'Lise Andersen', location: 'Brønshøj', amount: 1200, status: 'completed' },
+      ],
+      'My Phung': [
+        { date: '2024-12-21', service: 'Spraytan x2', client: 'Fitness World', location: 'City', amount: 1600, status: 'completed' },
+        { date: '2024-12-17', service: 'Makeup session', client: 'Camilla Bruun', location: 'Nørrebro', amount: 1200, status: 'completed' },
+        { date: '2024-12-13', service: 'Beauty Bar', client: 'Bestseller', location: 'Brande', amount: 6500, status: 'completed' },
+        { date: '2024-12-10', service: 'Bryllup makeup', client: 'Tina Skov', location: 'Lyngby', amount: 4500, status: 'completed' },
+        { date: '2024-12-07', service: 'Makeup session', client: 'Julie Møller', location: 'Charlottenlund', amount: 1200, status: 'completed' },
+      ],
+      'Marie S.': [
+        { date: '2024-12-22', service: 'Konfirmation', client: 'Familien Nielsen', location: 'Nærum', amount: 1200, status: 'completed' },
+        { date: '2024-12-18', service: 'Makeup session', client: 'Helle Krogh', location: 'Søborg', amount: 1200, status: 'completed' },
+        { date: '2024-12-14', service: 'Brudestyling', client: 'Rikke Lund', location: 'Albertslund', amount: 3800, status: 'completed' },
+        { date: '2024-12-11', service: 'Spraytan', client: 'Sara Olsen', location: 'Taastrup', amount: 800, status: 'completed' },
+      ],
+    };
+    return jobsData[boosterName] || [];
+  };
+
+  // All boosters for "Vis alle" view
+  const allBoosters = [
+    { name: 'Angelica', earnings: 40320, jobs_completed: 14 },
+    { name: 'Anna K.', earnings: 34560, jobs_completed: 12 },
+    { name: 'My Phung', earnings: 31680, jobs_completed: 11 },
+    { name: 'Marie S.', earnings: 31680, jobs_completed: 11 },
+    { name: 'Louise B.', earnings: 24000, jobs_completed: 8 },
+    { name: 'Tenna', earnings: 21600, jobs_completed: 7 },
+    { name: 'Katrine J.', earnings: 18000, jobs_completed: 6 },
+    { name: 'Donna', earnings: 15600, jobs_completed: 5 },
+    { name: 'Gabriella', earnings: 12000, jobs_completed: 4 },
+    { name: 'Fay', earnings: 9600, jobs_completed: 3 },
+  ];
 
   // Days until end of month
   const daysUntilMonthEnd = differenceInDays(endOfMonth(new Date()), new Date());
@@ -792,13 +854,21 @@ const AdminFinance = () => {
 
             {/* Top Earning Boosters */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle>Top boosters</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setShowAllBoosters(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Vis alle
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {stats.topEarningBoosters.map((booster, index) => (
-                    <div key={index} className="flex items-center justify-between">
+                    <div 
+                      key={index} 
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                      onClick={() => setSelectedBooster(booster)}
+                    >
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium">#{index + 1}</span>
@@ -810,8 +880,11 @@ const AdminFinance = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(booster.earnings)}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="font-medium">{formatCurrency(booster.earnings)}</div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </div>
                   ))}
@@ -1234,6 +1307,109 @@ const AdminFinance = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Booster Jobs Detail Dialog */}
+      <Sheet open={!!selectedBooster} onOpenChange={() => setSelectedBooster(null)}>
+        <SheetContent className="sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div>{selectedBooster?.name}</div>
+                <div className="text-sm font-normal text-muted-foreground">
+                  {selectedBooster?.jobs_completed} jobs • {formatCurrency(selectedBooster?.earnings || 0)}
+                </div>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Jobs i perioden</h4>
+            <div className="space-y-3">
+              {selectedBooster && getBoosterJobs(selectedBooster.name).map((job, index) => (
+                <div key={index} className="p-3 rounded-lg border bg-muted/20">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium">{job.service}</div>
+                      <div className="text-sm text-muted-foreground">{job.client}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{formatCurrency(job.amount)}</div>
+                      <Badge variant="outline" className="text-xs">
+                        {job.status === 'completed' ? 'Afsluttet' : job.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(job.date), 'd. MMM yyyy', { locale: da })}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {job.location}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {selectedBooster && getBoosterJobs(selectedBooster.name).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Ingen jobs fundet for denne booster</p>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* All Boosters Dialog */}
+      <Dialog open={showAllBoosters} onOpenChange={setShowAllBoosters}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Alle boosters - rangeret efter indtjening</DialogTitle>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">#</TableHead>
+                <TableHead>Booster</TableHead>
+                <TableHead className="text-right">Jobs</TableHead>
+                <TableHead className="text-right">Indtjening</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allBoosters.map((booster, index) => (
+                <TableRow 
+                  key={index} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    setShowAllBoosters(false);
+                    setSelectedBooster(booster);
+                  }}
+                >
+                  <TableCell className="font-medium">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs",
+                      index === 0 ? "bg-yellow-100 text-yellow-800" :
+                      index === 1 ? "bg-gray-100 text-gray-700" :
+                      index === 2 ? "bg-orange-100 text-orange-700" :
+                      "bg-muted text-muted-foreground"
+                    )}>
+                      {index + 1}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">{booster.name}</TableCell>
+                  <TableCell className="text-right">{booster.jobs_completed}</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(booster.earnings)}</TableCell>
+                  <TableCell>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
