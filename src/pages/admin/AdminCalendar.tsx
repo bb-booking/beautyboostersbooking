@@ -287,9 +287,8 @@ const AdminCalendar = () => {
   const [selectedBooster, setSelectedBooster] = useState<BoosterProfile | null>(null);
   const [boosterViewMode, setBoosterViewMode] = useState<'day' | 'week' | 'month'>('day');
 
-  // Scroll refs
+  // Scroll ref
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
 
   // Create job dialog
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
@@ -493,19 +492,6 @@ const AdminCalendar = () => {
   };
 
   const weekNumber = format(selectedDate, 'w', { locale: da });
-
-  // Scroll handlers
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-    }
-  };
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -999,177 +985,149 @@ const AdminCalendar = () => {
 
         {/* Calendar Grid - Day or Week View */}
         {viewMode === 'day' ? (
-          // DAY VIEW
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            {/* Booster Header with scroll arrows */}
-            <div className="flex items-center border-b bg-muted/30 shrink-0">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-14 w-8 rounded-none border-r shrink-0"
-                onClick={scrollLeft}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <div className="w-12 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-14">
-                Uge {weekNumber}
-              </div>
-              
-              <div 
-                ref={scrollContainerRef}
-                className="flex-1 overflow-x-auto scrollbar-hide"
-                onScroll={(e) => setScrollPosition(e.currentTarget.scrollLeft)}
-              >
-                <div className="flex">
-                  {filteredBoosters.map(booster => (
-                    <div 
-                      key={booster.id} 
-                      className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => {
-                        setSelectedBooster(booster);
-                        setBoosterViewMode('day');
-                      }}
-                    >
-                      <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
-                        <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
-                        <AvatarFallback className="text-[10px] bg-primary/10">
-                          {booster.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-[10px] font-medium truncate max-w-full text-center">
-                        {booster.name.split(' ')[0]}
-                      </span>
-                    </div>
-                  ))}
+          // DAY VIEW - Single scroll container with sticky header and time column
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-auto min-h-0"
+          >
+            <div 
+              className="relative" 
+              style={{ minWidth: `${Math.max(filteredBoosters.length * 96 + 60, 400)}px` }}
+            >
+              {/* Sticky Header Row */}
+              <div className="sticky top-0 z-20 flex bg-muted/30 border-b">
+                {/* Corner cell - sticky both directions */}
+                <div className="sticky left-0 z-30 w-[60px] shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-14 bg-muted/30">
+                  Uge {weekNumber}
                 </div>
-              </div>
-
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-14 w-8 rounded-none border-l shrink-0"
-                onClick={scrollRight}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Time Grid - scrollable vertically, synced horizontally */}
-            <div className="flex-1 flex overflow-hidden min-h-0">
-              <div className="w-8 shrink-0" />
-              
-              <div className="w-12 shrink-0 overflow-y-auto scrollbar-hide border-r">
-                {timeSlots.map((timeSlot, idx) => (
+                
+                {/* Booster avatars */}
+                {filteredBoosters.map(booster => (
                   <div 
-                    key={timeSlot}
-                    className={cn(
-                      "h-7 flex items-start justify-end pr-1 text-[10px] text-muted-foreground",
-                      idx % 2 === 0 ? "bg-muted/20" : ""
-                    )}
+                    key={booster.id} 
+                    className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors bg-muted/30"
+                    onClick={() => {
+                      setSelectedBooster(booster);
+                      setBoosterViewMode('day');
+                    }}
                   >
-                    {idx % 2 === 0 ? timeSlot : ''}
+                    <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
+                      <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
+                      <AvatarFallback className="text-[10px] bg-primary/10">
+                        {booster.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-[10px] font-medium truncate max-w-full text-center">
+                      {booster.name.split(' ')[0]}
+                    </span>
                   </div>
                 ))}
               </div>
 
-              <div 
-                className="flex-1 overflow-auto"
-                onScroll={(e) => {
-                  if (scrollContainerRef.current) {
-                    scrollContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                  }
-                }}
-              >
-                <div className="flex" style={{ minWidth: `${filteredBoosters.length * 96}px` }}>
-                  {filteredBoosters.map(booster => (
-                    <div key={booster.id} className="w-24 shrink-0">
-                      {timeSlots.map((timeSlot, idx) => {
-                        const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
-                        const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
-                        const hasBookingStarting = bookingsStarting.length > 0;
-                        
-                        return (
-                          <DroppableSlot
-                            key={`${booster.id}-${timeSlot}`}
-                            boosterId={booster.id}
-                            timeSlot={timeSlot}
-                            date={selectedDate}
-                            onAddJob={handleAddJob}
-                            hasBooking={isOccupied}
-                          >
-                            {bookingsStarting.map(avail => {
-                              const job = getJobForAvailability(avail.job_id);
-                              const isPrivate = job?.client_type !== 'virksomhed';
-                              
-                              return (
-                                <DraggableBookingCard
-                                  key={avail.id}
-                                  booking={avail}
-                                  job={job}
-                                  isPrivate={isPrivate}
-                                  onClick={() => handleBookingClick(avail, job, booster.name, booster.id)}
-                                />
-                              );
-                            })}
-                            {isOccupied && !hasBookingStarting && (
-                              <div className="absolute inset-0 bg-muted/30" />
-                            )}
-                          </DroppableSlot>
-                        );
-                      })}
+              {/* Time Grid with sticky time column */}
+              <div className="flex">
+                {/* Sticky Time Column */}
+                <div className="sticky left-0 z-10 w-[60px] shrink-0 bg-background border-r">
+                  {timeSlots.map((timeSlot, idx) => (
+                    <div 
+                      key={timeSlot}
+                      className={cn(
+                        "h-7 flex items-start justify-end pr-2 text-[10px] text-muted-foreground",
+                        idx % 2 === 0 ? "bg-muted/20" : "bg-background"
+                      )}
+                    >
+                      {idx % 2 === 0 ? timeSlot : ''}
                     </div>
                   ))}
                 </div>
-              </div>
 
-              <div className="w-8 shrink-0" />
+                {/* Booster columns with bookings */}
+                {filteredBoosters.map(booster => (
+                  <div key={booster.id} className="w-24 shrink-0">
+                    {timeSlots.map((timeSlot, idx) => {
+                      const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
+                      const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
+                      const hasBookingStarting = bookingsStarting.length > 0;
+                      
+                      return (
+                        <DroppableSlot
+                          key={`${booster.id}-${timeSlot}`}
+                          boosterId={booster.id}
+                          timeSlot={timeSlot}
+                          date={selectedDate}
+                          onAddJob={handleAddJob}
+                          hasBooking={isOccupied}
+                        >
+                          {bookingsStarting.map(avail => {
+                            const job = getJobForAvailability(avail.job_id);
+                            const isPrivate = job?.client_type !== 'virksomhed';
+                            
+                            return (
+                              <DraggableBookingCard
+                                key={avail.id}
+                                booking={avail}
+                                job={job}
+                                isPrivate={isPrivate}
+                                onClick={() => handleBookingClick(avail, job, booster.name, booster.id)}
+                              />
+                            );
+                          })}
+                          {isOccupied && !hasBookingStarting && (
+                            <div className="absolute inset-0 bg-muted/30" />
+                          )}
+                        </DroppableSlot>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
-          // WEEK VIEW - Boosters in rows, days in columns
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            {/* Week Days Header */}
-            <div className="flex items-center border-b bg-muted/30 shrink-0">
-              <div className="w-32 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-12 px-2">
-                Uge {weekNumber}
-              </div>
-              {(() => {
-                const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-                return Array.from({ length: 7 }).map((_, i) => {
-                  const day = addDays(weekStart, i);
-                  const isToday = isSameDay(day, new Date());
-                  return (
-                    <div 
-                      key={i} 
-                      className={cn(
-                        "flex-1 text-center py-2 border-r text-xs",
-                        isToday && "bg-primary/10"
-                      )}
-                    >
-                      <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
-                      <div className={cn(
-                        "text-muted-foreground",
-                        isToday && "text-primary font-bold"
-                      )}>
-                        {format(day, 'd. MMM', { locale: da })}
+          // WEEK VIEW - Boosters in rows, days in columns - with sticky header and booster column
+          <div className="flex-1 overflow-auto min-h-0">
+            <div className="relative" style={{ minWidth: '800px' }}>
+              {/* Sticky Week Days Header */}
+              <div className="sticky top-0 z-20 flex items-center border-b bg-muted/30">
+                {/* Corner cell - sticky both */}
+                <div className="sticky left-0 z-30 w-32 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-12 px-2 bg-muted/30">
+                  Uge {weekNumber}
+                </div>
+                {(() => {
+                  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+                  return Array.from({ length: 7 }).map((_, i) => {
+                    const day = addDays(weekStart, i);
+                    const isToday = isSameDay(day, new Date());
+                    return (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "flex-1 min-w-[100px] text-center py-2 border-r text-xs",
+                          isToday ? "bg-primary/10" : "bg-muted/30"
+                        )}
+                      >
+                        <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
+                        <div className={cn(
+                          "text-muted-foreground",
+                          isToday && "text-primary font-bold"
+                        )}>
+                          {format(day, 'd. MMM', { locale: da })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
+                    );
+                  });
+                })()}
+              </div>
 
-            {/* Boosters Grid */}
-            <div className="flex-1 overflow-auto">
+              {/* Boosters Grid */}
               {filteredBoosters.map(booster => {
                 const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
                 
                 return (
                   <div key={booster.id} className="flex border-b">
-                    {/* Booster info column */}
+                    {/* Booster info column - sticky left */}
                     <div 
-                      className="w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-muted/10 cursor-pointer hover:bg-muted/30 transition-colors"
+                      className="sticky left-0 z-10 w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-muted/10 cursor-pointer hover:bg-muted/30 transition-colors"
                       onClick={() => {
                         setSelectedBooster(booster);
                         setBoosterViewMode('week');
@@ -1198,7 +1156,7 @@ const AdminCalendar = () => {
                         <div 
                           key={dayIdx}
                           className={cn(
-                            "flex-1 min-h-16 p-1 border-r relative",
+                            "flex-1 min-w-[100px] min-h-16 p-1 border-r relative",
                             isToday && "bg-primary/5"
                           )}
                           onClick={() => {
