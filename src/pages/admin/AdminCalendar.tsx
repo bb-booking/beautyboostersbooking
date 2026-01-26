@@ -985,7 +985,7 @@ const AdminCalendar = () => {
 
         {/* Calendar Grid - Day or Week View */}
         {viewMode === 'day' ? (
-          // DAY VIEW - Single scroll container with sticky header and time column
+          // DAY VIEW - Single scroll container with sticky time column only
           <div 
             ref={scrollContainerRef}
             className="flex-1 overflow-auto min-h-0"
@@ -994,18 +994,18 @@ const AdminCalendar = () => {
               className="relative" 
               style={{ minWidth: `${Math.max(filteredBoosters.length * 96 + 60, 400)}px` }}
             >
-              {/* Sticky Header Row */}
-              <div className="sticky top-0 z-20 flex bg-muted/30 border-b">
-                {/* Corner cell - sticky both directions */}
-                <div className="sticky left-0 z-30 w-[60px] shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-14 bg-muted/30">
+              {/* Booster Header Row - scrolls with content */}
+              <div className="flex border-b">
+                {/* Corner cell - sticky left */}
+                <div className="sticky left-0 z-20 w-[60px] shrink-0 flex items-center justify-center text-xs font-medium text-foreground border-r h-14 bg-card">
                   Uge {weekNumber}
                 </div>
                 
-                {/* Booster avatars */}
+                {/* Booster avatars - scroll horizontally */}
                 {filteredBoosters.map(booster => (
                   <div 
                     key={booster.id} 
-                    className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors bg-muted/30"
+                    className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors bg-card"
                     onClick={() => {
                       setSelectedBooster(booster);
                       setBoosterViewMode('day');
@@ -1017,7 +1017,7 @@ const AdminCalendar = () => {
                         {booster.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-[10px] font-medium truncate max-w-full text-center">
+                    <span className="text-[10px] font-medium text-foreground truncate max-w-full text-center">
                       {booster.name.split(' ')[0]}
                     </span>
                   </div>
@@ -1027,13 +1027,13 @@ const AdminCalendar = () => {
               {/* Time Grid with sticky time column */}
               <div className="flex">
                 {/* Sticky Time Column */}
-                <div className="sticky left-0 z-10 w-[60px] shrink-0 bg-background border-r">
+                <div className="sticky left-0 z-10 w-[60px] shrink-0 border-r bg-card">
                   {timeSlots.map((timeSlot, idx) => (
                     <div 
                       key={timeSlot}
                       className={cn(
-                        "h-7 flex items-start justify-end pr-2 text-[10px] text-muted-foreground",
-                        idx % 2 === 0 ? "bg-muted/20" : "bg-background"
+                        "h-7 flex items-start justify-end pr-2 text-[10px] font-medium text-foreground",
+                        idx % 2 === 0 ? "bg-muted/30" : "bg-card"
                       )}
                     >
                       {idx % 2 === 0 ? timeSlot : ''}
@@ -1084,13 +1084,13 @@ const AdminCalendar = () => {
             </div>
           </div>
         ) : (
-          // WEEK VIEW - Boosters in rows, days in columns - with sticky header and booster column
+          // WEEK VIEW - Boosters in rows, days in columns - sticky booster column only
           <div className="flex-1 overflow-auto min-h-0">
             <div className="relative" style={{ minWidth: '800px' }}>
-              {/* Sticky Week Days Header */}
-              <div className="sticky top-0 z-20 flex items-center border-b bg-muted/30">
-                {/* Corner cell - sticky both */}
-                <div className="sticky left-0 z-30 w-32 shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground border-r h-12 px-2 bg-muted/30">
+              {/* Week Days Header - scrolls with content */}
+              <div className="flex items-center border-b">
+                {/* Corner cell - sticky left */}
+                <div className="sticky left-0 z-20 w-32 shrink-0 flex items-center justify-center text-xs font-medium text-foreground border-r h-12 px-2 bg-card">
                   Uge {weekNumber}
                 </div>
                 {(() => {
@@ -1102,13 +1102,13 @@ const AdminCalendar = () => {
                       <div 
                         key={i} 
                         className={cn(
-                          "flex-1 min-w-[100px] text-center py-2 border-r text-xs",
-                          isToday ? "bg-primary/10" : "bg-muted/30"
+                          "flex-1 min-w-[100px] text-center py-2 border-r text-xs bg-card",
+                          isToday && "bg-primary/10"
                         )}
                       >
-                        <div className="font-medium">{format(day, 'EEE', { locale: da })}</div>
+                        <div className="font-medium text-foreground">{format(day, 'EEE', { locale: da })}</div>
                         <div className={cn(
-                          "text-muted-foreground",
+                          "text-foreground",
                           isToday && "text-primary font-bold"
                         )}>
                           {format(day, 'd. MMM', { locale: da })}
@@ -1127,7 +1127,7 @@ const AdminCalendar = () => {
                   <div key={booster.id} className="flex border-b">
                     {/* Booster info column - sticky left */}
                     <div 
-                      className="sticky left-0 z-10 w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-muted/10 cursor-pointer hover:bg-muted/30 transition-colors"
+                      className="sticky left-0 z-10 w-32 shrink-0 p-2 border-r flex items-center gap-2 bg-card cursor-pointer hover:bg-muted/30 transition-colors"
                       onClick={() => {
                         setSelectedBooster(booster);
                         setBoosterViewMode('week');
@@ -1140,8 +1140,8 @@ const AdminCalendar = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <div className="text-xs font-medium truncate">{booster.name.split(' ')[0]}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">{booster.location}</div>
+                        <div className="text-xs font-medium text-foreground truncate">{booster.name.split(' ')[0]}</div>
+                        <div className="text-[10px] text-foreground truncate">{booster.location}</div>
                       </div>
                     </div>
                     
@@ -1190,13 +1190,13 @@ const AdminCalendar = () => {
                                   handleBookingClick(avail, job, booster.name, booster.id);
                                 }}
                               >
-                                <div className="font-medium">{avail.start_time.slice(0, 5)}</div>
-                                <div className="truncate">{job?.client_name || 'Kunde'}</div>
+                                <div className="font-medium text-foreground">{avail.start_time.slice(0, 5)}</div>
+                                <div className="truncate text-foreground">{job?.client_name || 'Kunde'}</div>
                               </div>
                             );
                           })}
                           {bookings.length > 3 && (
-                            <div className="text-[9px] text-muted-foreground text-center">
+                            <div className="text-[9px] text-foreground text-center">
                               +{bookings.length - 3} mere
                             </div>
                           )}
