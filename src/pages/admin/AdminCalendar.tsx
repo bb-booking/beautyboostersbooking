@@ -1262,62 +1262,119 @@ const AdminCalendar = () => {
             </DialogTitle>
           </DialogHeader>
           
-          {selectedBooking && (
-            <div className="space-y-4 py-4">
-              <div className="flex items-center gap-2">
-                <Badge variant={selectedBooking.job?.client_type === 'virksomhed' ? 'default' : 'secondary'}>
-                  {selectedBooking.job?.client_type === 'virksomhed' ? 'B2B' : 'Privat'}
-                </Badge>
-                <Badge variant="outline">{selectedBooking.job?.service_type || 'Service'}</Badge>
-              </div>
+          {selectedBooking && (() => {
+            // Parse notes for team info
+            let notesData: { team_boosters?: string[]; service?: string } = {};
+            try {
+              if (selectedBooking.booking.notes) {
+                notesData = JSON.parse(selectedBooking.booking.notes);
+              }
+            } catch (e) {
+              // Notes is not JSON, ignore
+            }
+            const teamBoosters = notesData.team_boosters || [];
+            const hasTeam = teamBoosters.length > 0;
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{selectedBooking.job?.client_name || 'Ikke angivet'}</span>
-                </div>
-                
-                {selectedBooking.job?.client_email && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a href={`mailto:${selectedBooking.job.client_email}`} className="text-primary hover:underline">
-                      {selectedBooking.job.client_email}
-                    </a>
-                  </div>
-                )}
-                
-                {selectedBooking.job?.client_phone && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${selectedBooking.job.client_phone}`} className="text-primary hover:underline">
-                      {selectedBooking.job.client_phone}
-                    </a>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-3 text-sm">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    {format(new Date(selectedBooking.booking.date), 'd. MMM yyyy', { locale: da })} kl. {selectedBooking.booking.start_time.slice(0, 5)} - {selectedBooking.booking.end_time.slice(0, 5)}
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedBooking.job?.location || 'Ikke angivet'}</span>
+            // Create Google Maps URL
+            const addressForMaps = selectedBooking.job?.location;
+            const googleMapsUrl = addressForMaps 
+              ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressForMaps)}`
+              : null;
+
+            return (
+              <div className="space-y-4 py-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant={selectedBooking.job?.client_type === 'virksomhed' ? 'default' : 'secondary'}>
+                    {selectedBooking.job?.client_type === 'virksomhed' ? 'B2B' : 'Privat'}
+                  </Badge>
+                  <Badge variant="outline" className="text-foreground">{notesData.service || selectedBooking.job?.service_type || 'Service'}</Badge>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm pt-2 border-t">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-[10px]">
-                      {selectedBooking.boosterName.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-muted-foreground">Tildelt: <span className="text-foreground font-medium">{selectedBooking.boosterName}</span></span>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium text-foreground">{selectedBooking.job?.client_name || 'Ikke angivet'}</span>
+                  </div>
+                  
+                  {selectedBooking.job?.client_email && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a href={`mailto:${selectedBooking.job.client_email}`} className="text-foreground hover:underline">
+                        {selectedBooking.job.client_email}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {selectedBooking.job?.client_phone && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <a href={`tel:${selectedBooking.job.client_phone}`} className="text-foreground hover:underline">
+                        {selectedBooking.job.client_phone}
+                      </a>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-3 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">
+                      {format(new Date(selectedBooking.booking.date), 'd. MMM yyyy', { locale: da })} kl. {selectedBooking.booking.start_time.slice(0, 5)} - {selectedBooking.booking.end_time.slice(0, 5)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    {googleMapsUrl ? (
+                      <a 
+                        href={googleMapsUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-foreground hover:underline"
+                      >
+                        {selectedBooking.job?.location || 'Ikke angivet'}
+                      </a>
+                    ) : (
+                      <span className="text-foreground">{selectedBooking.job?.location || 'Ikke angivet'}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-sm pt-2 border-t">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px]">
+                        {selectedBooking.boosterName.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-foreground">Tildelt: <span className="font-medium">{selectedBooking.boosterName}</span></span>
+                  </div>
+
+                  {/* Team Section */}
+                  {hasTeam && (
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="text-foreground bg-purple-50 border-purple-200">
+                          Team opgave
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-foreground">
+                        <span className="font-medium">Andre på opgaven:</span>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {teamBoosters.map((name, idx) => (
+                            <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
+                              <Avatar className="h-5 w-5">
+                                <AvatarFallback className="text-[8px]">
+                                  {name.split(' ').map(n => n[0]).join('')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm text-foreground">{name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <DialogFooter className="gap-2">
             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
