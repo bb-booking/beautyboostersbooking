@@ -265,53 +265,18 @@ export const BoosterProfileDialog = ({
                 {isEditing ? "Rediger boosterens oplysninger" : "Se fuld profil, kompetencer og anmeldelser"}
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-2">
-              {!isEditing ? (
-                <>
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Rediger
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Slet
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Dette vil permanent slette {booster.name} fra systemet. Denne handling kan ikke fortrydes.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuller</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={handleDelete}
-                          disabled={isDeleting}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {isDeleting ? "Sletter..." : "Slet booster"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                    <X className="h-4 w-4 mr-1" />
-                    Annuller
-                  </Button>
-                  <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-1" />
-                    {isSaving ? "Gemmer..." : "Gem"}
-                  </Button>
-                </>
-              )}
-            </div>
+            {isEditing && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                  <X className="h-4 w-4 mr-1" />
+                  Annuller
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {isSaving ? "Gemmer..." : "Gem"}
+                </Button>
+              </div>
+            )}
           </div>
         </DialogHeader>
 
@@ -609,6 +574,45 @@ export const BoosterProfileDialog = ({
             )}
           </div>
         </div>
+
+        {/* Footer with action buttons */}
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+          <div className="flex w-full justify-between items-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Slet booster
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Dette vil permanent slette {booster.name} fra systemet. Denne handling kan ikke fortrydes.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuller</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? "Sletter..." : "Slet booster"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {!isEditing && (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Pencil className="h-4 w-4 mr-1" />
+                Rediger
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
