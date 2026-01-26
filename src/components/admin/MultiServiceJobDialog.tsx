@@ -362,8 +362,33 @@ export const MultiServiceJobDialog = ({
         console.error('Error creating booster assignments:', assignError);
       }
 
-      // Create availability entries for each booster
+      // Create availability entries for each booster with team info in notes
+      const boosterMap = new Map<string, string>();
+      validServices.forEach(s => {
+        if (s.boosterId && s.boosterName) {
+          boosterMap.set(s.boosterId, s.boosterName);
+        }
+      });
+
       for (const boosterId of uniqueBoosterIds) {
+        // Get list of other team boosters (not the current one)
+        const teamBoosters = Array.from(boosterMap.entries())
+          .filter(([id]) => id !== boosterId)
+          .map(([, name]) => name);
+
+        // Build notes JSON with job metadata
+        const notes = JSON.stringify({
+          service: validServices.map(s => s.serviceName).join(', '),
+          customer_name: clientName,
+          customer_email: clientEmail || undefined,
+          customer_phone: clientPhone || undefined,
+          address: location,
+          client_type: clientType,
+          people_count: validServices.reduce((sum, s) => sum + s.peopleCount, 0),
+          price: totalPrice,
+          team_boosters: teamBoosters
+        });
+
         const { error: availError } = await supabase
           .from('booster_availability')
           .insert({
@@ -371,8 +396,9 @@ export const MultiServiceJobDialog = ({
             date: format(jobDate, 'yyyy-MM-dd'),
             start_time: startTime,
             end_time: endTime,
-            status: 'busy',
+            status: 'booked',
             job_id: jobData.id,
+            notes: notes,
           });
 
         if (availError) {
