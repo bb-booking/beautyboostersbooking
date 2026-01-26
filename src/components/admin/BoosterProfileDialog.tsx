@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Star, MapPin, Calendar, Phone, Mail, Briefcase, Clock, Pencil, Trash2, Save, X, Upload, Plus, Heart, ExternalLink } from "lucide-react";
+import { Star, MapPin, Calendar, Phone, Mail, Briefcase, Pencil, Trash2, Save, X, Upload, Heart, ExternalLink } from "lucide-react";
+import { PortfolioImageManager, type PortfolioImage } from "@/components/portfolio/PortfolioImageManager";
 
 interface BoosterProfile {
   id: string;
@@ -67,6 +68,7 @@ export const BoosterProfileDialog = ({
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [portfolioImages, setPortfolioImages] = useState<PortfolioImage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -91,6 +93,7 @@ export const BoosterProfileDialog = ({
     if (booster && open) {
       fetchReviews(booster.id);
       fetchFavoritesCount(booster.id);
+      fetchPortfolioImages(booster.id);
       setEditForm({
         name: booster.name || "",
         email: booster.email || "",
@@ -107,6 +110,21 @@ export const BoosterProfileDialog = ({
       setIsEditing(false);
     }
   }, [booster, open]);
+
+  const fetchPortfolioImages = async (boosterId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('booster_portfolio_images')
+        .select('*')
+        .eq('booster_id', boosterId)
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      setPortfolioImages(data || []);
+    } catch (error) {
+      console.error('Error fetching portfolio images:', error);
+    }
+  };
 
   const fetchFavoritesCount = async (boosterId: string) => {
     try {
@@ -532,6 +550,15 @@ export const BoosterProfileDialog = ({
                 </>
               )}
             </div>
+
+            {/* Portfolio Section */}
+            <Separator />
+            <PortfolioImageManager
+              boosterId={booster.id}
+              images={portfolioImages}
+              onImagesChange={() => fetchPortfolioImages(booster.id)}
+              isAdmin={true}
+            />
 
             {/* Reviews - only show when not editing */}
             {!isEditing && (
