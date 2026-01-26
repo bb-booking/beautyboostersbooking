@@ -1280,14 +1280,16 @@ const AdminCalendar = () => {
         existingServices={existingServicesForBooking}
         boosters={filteredBoosters}
         onSave={(updatedServices) => {
-          // Here you would save the updated services to the database
           console.log('Updated services:', updatedServices);
-          toast.success("Services opdateret");
           fetchAvailability();
         }}
+        bookingId={selectedBooking?.booking.id}
         bookingDate={selectedBooking?.booking.date}
         bookingTime={selectedBooking?.booking.start_time}
         customerName={selectedBooking?.job?.client_name}
+        customerEmail={selectedBooking?.job?.client_email}
+        customerPhone={selectedBooking?.job?.client_phone}
+        address={selectedBooking?.job?.location}
       />
 
       {/* View/Edit Booking Dialog - Booster Calendar Style */}
@@ -1300,9 +1302,18 @@ const AdminCalendar = () => {
             // Parse notes for team info
             let notesData: { 
               team_boosters?: string[]; 
+              services?: Array<{
+                service_id?: string;
+                service_name: string;
+                service_price: number;
+                people_count: number;
+                booster_id?: string;
+                booster_name?: string;
+              }>;
               service?: string; 
               people_count?: number;
               price?: number;
+              total_price?: number;
               customer_name?: string;
               customer_email?: string;
               customer_phone?: string;
@@ -1536,19 +1547,50 @@ const AdminCalendar = () => {
                     </div>
                   )}
 
-                  {/* Service Details */}
+                  {/* Service Details - Show all services */}
                   <div className="space-y-2">
-                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Detaljer</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">Service</p>
-                        <p className="font-medium text-foreground">{service}</p>
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Services</h4>
+                    {notesData.services && notesData.services.length > 0 ? (
+                      <div className="space-y-2">
+                        {(notesData.services as Array<{service_name: string; service_price: number; people_count: number; booster_name?: string}>).map((svc, idx) => (
+                          <div key={idx} className="p-3 bg-muted rounded-lg flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {svc.booster_name && (
+                                <Avatar className="h-8 w-8">
+                                  {(() => {
+                                    const bp = boosters.find(b => b.name === svc.booster_name);
+                                    const imgUrl = bp ? (boosterImageOverrides[bp.name] || bp.portfolio_image_url) : null;
+                                    return imgUrl ? <AvatarImage src={imgUrl} alt={svc.booster_name} /> : null;
+                                  })()}
+                                  <AvatarFallback className="text-xs">
+                                    {svc.booster_name?.split(' ').map(n => n[0]).join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div>
+                                <p className="font-medium text-foreground">{svc.service_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {svc.people_count} {svc.people_count === 1 ? 'person' : 'personer'}
+                                  {svc.booster_name && ` • ${svc.booster_name}`}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="font-medium text-foreground">{svc.service_price?.toLocaleString('da-DK')} kr</span>
+                          </div>
+                        ))}
                       </div>
-                      <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">Personer</p>
-                        <p className="font-medium text-foreground">{peopleCount}</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Service</p>
+                          <p className="font-medium text-foreground">{service}</p>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Personer</p>
+                          <p className="font-medium text-foreground">{peopleCount}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Edit Mode Form */}
@@ -1654,19 +1696,31 @@ const AdminCalendar = () => {
                           Rediger
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={() => {
-                          // Parse existing services from notes
+                          // Parse existing services from notes if available
                           let existingServices: typeof existingServicesForBooking = [];
                           
-                          // Create initial service from current booking data
-                          existingServices.push({
-                            id: `service-${selectedBooking.booking.id}`,
-                            service_id: '', // Will be selected by user
-                            service_name: service,
-                            service_price: price,
-                            people_count: peopleCount,
-                            booster_id: selectedBooking.boosterId,
-                            booster_name: selectedBooking.boosterName
-                          });
+                          if (notesData.services && Array.isArray(notesData.services)) {
+                            existingServices = (notesData.services as Array<any>).map((svc: any, idx: number) => ({
+                              id: `service-${selectedBooking.booking.id}-${idx}`,
+                              service_id: svc.service_id || '',
+                              service_name: svc.service_name || service,
+                              service_price: svc.service_price || 0,
+                              people_count: svc.people_count || 1,
+                              booster_id: svc.booster_id || selectedBooking.boosterId,
+                              booster_name: svc.booster_name || selectedBooking.boosterName
+                            }));
+                          } else {
+                            // Create initial service from current booking data
+                            existingServices.push({
+                              id: `service-${selectedBooking.booking.id}`,
+                              service_id: '',
+                              service_name: service,
+                              service_price: price,
+                              people_count: peopleCount,
+                              booster_id: selectedBooking.boosterId,
+                              booster_name: selectedBooking.boosterName
+                            });
+                          }
                           
                           setExistingServicesForBooking(existingServices);
                           setAddServiceDialogOpen(true);
