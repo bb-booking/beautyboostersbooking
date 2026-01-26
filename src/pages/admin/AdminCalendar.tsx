@@ -985,7 +985,7 @@ const AdminCalendar = () => {
 
         {/* Calendar Grid - Day or Week View */}
         {viewMode === 'day' ? (
-          // DAY VIEW - Single scroll container with sticky time column only
+          // DAY VIEW - Scroll container with sticky header row AND sticky time column
           <div 
             ref={scrollContainerRef}
             className="flex-1 overflow-auto min-h-0"
@@ -994,14 +994,14 @@ const AdminCalendar = () => {
               className="relative" 
               style={{ minWidth: `${Math.max(filteredBoosters.length * 96 + 60, 400)}px` }}
             >
-              {/* Booster Header Row - scrolls with content */}
-              <div className="flex border-b">
-                {/* Corner cell - sticky left */}
-                <div className="sticky left-0 z-20 w-[60px] shrink-0 flex items-center justify-center text-xs font-medium text-foreground border-r h-14 bg-card">
+              {/* Booster Header Row - STICKY TOP so it stays when scrolling down */}
+              <div className="sticky top-0 z-20 flex border-b bg-card">
+                {/* Corner cell - sticky BOTH top and left */}
+                <div className="sticky left-0 z-30 w-[60px] shrink-0 flex items-center justify-center text-xs font-medium text-foreground border-r h-14 bg-card">
                   Uge {weekNumber}
                 </div>
                 
-                {/* Booster avatars - scroll horizontally */}
+                {/* Booster avatars - scroll horizontally, but stay at top */}
                 {filteredBoosters.map(booster => (
                   <div 
                     key={booster.id} 
@@ -1026,7 +1026,7 @@ const AdminCalendar = () => {
 
               {/* Time Grid with sticky time column */}
               <div className="flex">
-                {/* Sticky Time Column */}
+                {/* Sticky Time Column - stays visible when scrolling horizontally */}
                 <div className="sticky left-0 z-10 w-[60px] shrink-0 border-r bg-card">
                   {timeSlots.map((timeSlot, idx) => (
                     <div 
