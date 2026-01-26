@@ -224,12 +224,12 @@ const AdminCreateBooster = () => {
 
   const canProceedFromStep = (step: number) => {
     switch (step) {
-      case 1: return formData.skills.length > 0;
+      case 1: return formData.name && formData.email && formData.phone;
       case 2: return formData.businessType && (
         (formData.businessType === 'cvr' && formData.cvrNumber) ||
         (formData.businessType === 'cpr' && formData.cprNumber)
       );
-      case 3: return formData.name && formData.email && formData.phone;
+      case 3: return formData.skills.length > 0;
       case 4: return formData.address && formData.postalCode && formData.latitude !== null && formData.workRadius > 0;
       case 5: return formData.yearsExperience >= 0;
       default: return false;
@@ -265,20 +265,45 @@ const AdminCreateBooster = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold mb-2">Boosterens kompetencer</h2>
-              <p className="text-muted-foreground">Vælg de services boosteren tilbyder</p>
+              <h2 className="text-xl font-bold mb-2">Kontaktoplysninger</h2>
+              <p className="text-muted-foreground">Indtast boosterens oplysninger</p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {skillOptions.map((skill) => (
-                <Badge
-                  key={skill}
-                  variant={formData.skills.includes(skill) ? "default" : "outline"}
-                  className="cursor-pointer p-3 text-center justify-center hover:bg-primary/20"
-                  onClick={() => handleSkillToggle(skill)}
-                >
-                  {skill}
-                </Badge>
-              ))}
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Fulde navn *</Label>
+                <Input
+                  id="name"
+                  placeholder="Boosterens fulde navn"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="booster@email.dk"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Kontrakten sendes til denne email
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefon *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Telefonnummer"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
             </div>
           </div>
         );
@@ -349,45 +374,20 @@ const AdminCreateBooster = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold mb-2">Kontaktoplysninger</h2>
-              <p className="text-muted-foreground">Indtast boosterens oplysninger</p>
+              <h2 className="text-xl font-bold mb-2">Boosterens kompetencer</h2>
+              <p className="text-muted-foreground">Vælg de services boosteren tilbyder</p>
             </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Fulde navn *</Label>
-                <Input
-                  id="name"
-                  placeholder="Boosterens fulde navn"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="booster@email.dk"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Kontrakten sendes til denne email
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefon *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Telefonnummer"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {skillOptions.map((skill) => (
+                <Badge
+                  key={skill}
+                  variant={formData.skills.includes(skill) ? "default" : "outline"}
+                  className="cursor-pointer p-3 text-center justify-center hover:bg-primary/20"
+                  onClick={() => handleSkillToggle(skill)}
+                >
+                  {skill}
+                </Badge>
+              ))}
             </div>
           </div>
         );
