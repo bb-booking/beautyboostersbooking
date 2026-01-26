@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Plus, Trash2, User, Sparkles } from "lucide-react";
+import { Plus, Trash2, User, Sparkles, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { boosterImageOverrides } from "@/data/boosterImages";
@@ -21,9 +21,22 @@ interface BoosterProfile {
   portfolio_image_url?: string;
 }
 
+interface ServiceDefinition {
+  id: string;
+  name: string;
+  price: number;
+  clientType: 'privat' | 'virksomhed';
+  category: string;
+  durationMinutes: number;
+}
+
 interface ServiceEntry {
   id: string;
-  serviceType: string;
+  serviceId: string;
+  serviceName: string;
+  servicePrice: number;
+  serviceDuration: number;
+  peopleCount: number;
   boosterId: string;
   boosterName: string;
 }
@@ -38,8 +51,29 @@ interface MultiServiceJobDialogProps {
   onJobCreated: () => void;
 }
 
-const privateServices = ["Bryllup", "Makeup", "Hår", "Negle", "Spraytan", "Styling", "Bryn & Vipper"];
-const businessServices = ["Film/TV", "Teater", "Event", "Reklame", "Fotoshoot", "Fashion", "Messe"];
+// All available services with prices
+const allServiceDefinitions: ServiceDefinition[] = [
+  // Private services
+  { id: '1', name: 'Makeup Styling', price: 1999, clientType: 'privat', category: 'Makeup & Hår', durationMinutes: 60 },
+  { id: '2', name: 'Hårstyling / håropsætning', price: 1999, clientType: 'privat', category: 'Makeup & Hår', durationMinutes: 60 },
+  { id: '3', name: 'Makeup & Hårstyling', price: 2999, clientType: 'privat', category: 'Makeup & Hår', durationMinutes: 90 },
+  { id: '4', name: 'Spraytan', price: 499, clientType: 'privat', category: 'Spraytan', durationMinutes: 30 },
+  { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', price: 2999, clientType: 'privat', category: 'Konfirmation', durationMinutes: 90 },
+  { id: '6', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', price: 4999, clientType: 'privat', category: 'Bryllup', durationMinutes: 120 },
+  { id: '7', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', price: 6499, clientType: 'privat', category: 'Bryllup', durationMinutes: 180 },
+  { id: '8', name: '1:1 Makeup Session', price: 2499, clientType: 'privat', category: 'Makeup Kurser', durationMinutes: 120 },
+  { id: '9', name: 'The Beauty Bar (makeup kursus)', price: 4499, clientType: 'privat', category: 'Makeup Kurser', durationMinutes: 180 },
+  { id: '10', name: 'Makeup Artist til Touch Up (3 timer)', price: 4499, clientType: 'privat', category: 'Event', durationMinutes: 180 },
+  { id: '11', name: 'Ansigtsmaling til børn', price: 4499, clientType: 'privat', category: 'Børn', durationMinutes: 120 },
+  // Business services
+  { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', price: 4499, clientType: 'virksomhed', category: 'Shoot/reklame', durationMinutes: 180 },
+  { id: '21', name: 'Key Makeup Artist til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 480 },
+  { id: '22', name: 'Makeup Assistent til projekt', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 480 },
+  { id: '23', name: 'SFX Expert', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 240 },
+  { id: '24', name: 'Parykdesign', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 360 },
+  { id: '25', name: 'MUA til Film/TV', price: 0, clientType: 'virksomhed', category: 'Specialister til projekt', durationMinutes: 480 },
+  { id: '26', name: 'Event Makeup Services', price: 0, clientType: 'virksomhed', category: 'Makeup / styling til Event', durationMinutes: 240 }
+];
 
 export const MultiServiceJobDialog = ({
   open,
@@ -58,15 +92,30 @@ export const MultiServiceJobDialog = ({
   const [location, setLocation] = useState("");
   const [jobDate, setJobDate] = useState<Date>(initialDate);
   const [startTime, setStartTime] = useState(initialTime);
-  const [duration, setDuration] = useState("60");
-  const [price, setPrice] = useState("500");
   const [title, setTitle] = useState("");
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
 
   // Multi-service state
   const [services, setServices] = useState<ServiceEntry[]>([
-    { id: crypto.randomUUID(), serviceType: "", boosterId: initialBoosterId, boosterName: "" }
+    { id: crypto.randomUUID(), serviceId: "", serviceName: "", servicePrice: 0, serviceDuration: 0, peopleCount: 1, boosterId: initialBoosterId, boosterName: "" }
   ]);
+
+  // Filtered services based on client type
+  const availableServices = useMemo(() => 
+    allServiceDefinitions.filter(s => s.clientType === clientType),
+    [clientType]
+  );
+
+  // Calculate totals
+  const totalPrice = useMemo(() => 
+    services.reduce((sum, s) => sum + (s.servicePrice * s.peopleCount), 0),
+    [services]
+  );
+
+  const totalDuration = useMemo(() => 
+    services.reduce((sum, s) => sum + (s.serviceDuration * s.peopleCount), 0),
+    [services]
+  );
 
   // Customer autocomplete
   const [existingCustomers, setExistingCustomers] = useState<{ name: string; email: string | null; phone: string | null; location: string | null }[]>([]);
@@ -83,11 +132,9 @@ export const MultiServiceJobDialog = ({
       setLocation("");
       setJobDate(initialDate);
       setStartTime(initialTime);
-      setDuration("60");
-      setPrice("500");
       setTitle("");
       setServices([
-        { id: crypto.randomUUID(), serviceType: "", boosterId: initialBoosterId, boosterName: getBoosterName(initialBoosterId) }
+        { id: crypto.randomUUID(), serviceId: "", serviceName: "", servicePrice: 0, serviceDuration: 0, peopleCount: 1, boosterId: initialBoosterId, boosterName: getBoosterName(initialBoosterId) }
       ]);
       fetchExistingCustomers();
     }
@@ -153,11 +200,11 @@ export const MultiServiceJobDialog = ({
   };
 
   const generateJobTitle = async () => {
-    if (!clientName || services.filter(s => s.serviceType).length === 0) return;
+    if (!clientName || services.filter(s => s.serviceName).length === 0) return;
     
     setIsGeneratingTitle(true);
     try {
-      const servicesList = services.filter(s => s.serviceType).map(s => ({ service_name: s.serviceType }));
+      const servicesList = services.filter(s => s.serviceName).map(s => ({ service_name: s.serviceName }));
       
       const { data, error } = await supabase.functions.invoke('generate-job-title', {
         body: {
@@ -171,11 +218,11 @@ export const MultiServiceJobDialog = ({
         setTitle(data.title);
       } else {
         // Fallback: simple title
-        const serviceNames = services.filter(s => s.serviceType).map(s => s.serviceType).join(', ');
+        const serviceNames = services.filter(s => s.serviceName).map(s => s.serviceName).join(', ');
         setTitle(`${serviceNames} - ${clientName}`);
       }
     } catch (err) {
-      const serviceNames = services.filter(s => s.serviceType).map(s => s.serviceType).join(', ');
+      const serviceNames = services.filter(s => s.serviceName).map(s => s.serviceName).join(', ');
       setTitle(`${serviceNames} - ${clientName}`);
     } finally {
       setIsGeneratingTitle(false);
@@ -184,7 +231,7 @@ export const MultiServiceJobDialog = ({
 
   // Auto-generate title when services or client changes
   useEffect(() => {
-    if (clientName && services.some(s => s.serviceType) && open) {
+    if (clientName && services.some(s => s.serviceName) && open) {
       const timer = setTimeout(() => {
         generateJobTitle();
       }, 500);
@@ -195,7 +242,7 @@ export const MultiServiceJobDialog = ({
   const addService = () => {
     setServices(prev => [
       ...prev,
-      { id: crypto.randomUUID(), serviceType: "", boosterId: "", boosterName: "" }
+      { id: crypto.randomUUID(), serviceId: "", serviceName: "", servicePrice: 0, serviceDuration: 0, peopleCount: 1, boosterId: "", boosterName: "" }
     ]);
   };
 
@@ -204,13 +251,37 @@ export const MultiServiceJobDialog = ({
     setServices(prev => prev.filter(s => s.id !== id));
   };
 
-  const updateService = (id: string, field: keyof ServiceEntry, value: string) => {
+  const updateServiceSelection = (entryId: string, serviceDefId: string) => {
+    const serviceDef = allServiceDefinitions.find(s => s.id === serviceDefId);
+    if (!serviceDef) return;
+    
     setServices(prev => prev.map(s => {
-      if (s.id === id) {
-        if (field === 'boosterId') {
-          return { ...s, boosterId: value, boosterName: getBoosterName(value) };
-        }
-        return { ...s, [field]: value };
+      if (s.id === entryId) {
+        return { 
+          ...s, 
+          serviceId: serviceDef.id,
+          serviceName: serviceDef.name,
+          servicePrice: serviceDef.price,
+          serviceDuration: serviceDef.durationMinutes
+        };
+      }
+      return s;
+    }));
+  };
+
+  const updateBooster = (entryId: string, boosterId: string) => {
+    setServices(prev => prev.map(s => {
+      if (s.id === entryId) {
+        return { ...s, boosterId, boosterName: getBoosterName(boosterId) };
+      }
+      return s;
+    }));
+  };
+
+  const updatePeopleCount = (entryId: string, count: number) => {
+    setServices(prev => prev.map(s => {
+      if (s.id === entryId) {
+        return { ...s, peopleCount: Math.max(1, count) };
       }
       return s;
     }));
@@ -222,13 +293,13 @@ export const MultiServiceJobDialog = ({
       return;
     }
 
-    const validServices = services.filter(s => s.serviceType && s.boosterId);
+    const validServices = services.filter(s => s.serviceId && s.boosterId);
     if (validServices.length === 0) {
       toast.error('Tilføj mindst én service med en booster');
       return;
     }
 
-    const endMinutes = timeToMinutes(startTime) + parseInt(duration);
+    const endMinutes = timeToMinutes(startTime) + totalDuration;
     const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
 
     try {
@@ -240,12 +311,13 @@ export const MultiServiceJobDialog = ({
           client_name: clientName,
           client_email: clientEmail || null,
           client_phone: clientPhone || null,
-          service_type: validServices.map(s => s.serviceType).join(', '),
+          service_type: validServices.map(s => s.serviceName).join(', '),
           location: location,
           client_type: clientType,
           date_needed: format(jobDate, 'yyyy-MM-dd'),
           time_needed: startTime,
-          hourly_rate: parseInt(price) || 500,
+          hourly_rate: totalPrice,
+          duration_hours: Math.ceil(totalDuration / 60),
           status: 'assigned',
           assigned_booster_id: validServices[0].boosterId,
           boosters_needed: validServices.length,
@@ -258,10 +330,10 @@ export const MultiServiceJobDialog = ({
       // Create job_services entries for each service
       const jobServicesData = validServices.map(s => ({
         job_id: jobData.id,
-        service_id: s.serviceType.toLowerCase().replace(/\s+/g, '-'),
-        service_name: s.serviceType,
-        service_price: parseInt(price) / validServices.length,
-        people_count: 1
+        service_id: s.serviceId,
+        service_name: s.serviceName,
+        service_price: s.servicePrice,
+        people_count: s.peopleCount
       }));
 
       const { error: servicesError } = await supabase
@@ -321,7 +393,26 @@ export const MultiServiceJobDialog = ({
     return hours * 60 + minutes;
   }
 
-  const availableServices = clientType === 'privat' ? privateServices : businessServices;
+  // Group services by category for better UX
+  const groupedServices = useMemo(() => {
+    const groups: { [category: string]: ServiceDefinition[] } = {};
+    availableServices.forEach(s => {
+      if (!groups[s.category]) groups[s.category] = [];
+      groups[s.category].push(s);
+    });
+    return groups;
+  }, [availableServices]);
+
+  const formatPrice = (price: number) => {
+    return price.toLocaleString('da-DK') + ' kr';
+  };
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}t ${mins}m` : `${hours} time${hours > 1 ? 'r' : ''}`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -331,7 +422,7 @@ export const MultiServiceJobDialog = ({
         setCustomerSuggestions([]);
       }
     }}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader className="shrink-0">
           <DialogTitle>Opret job med flere services</DialogTitle>
         </DialogHeader>
@@ -347,7 +438,7 @@ export const MultiServiceJobDialog = ({
                   onValueChange={(v) => {
                     setClientType(v as 'privat' | 'virksomhed');
                     // Reset services when type changes
-                    setServices([{ id: crypto.randomUUID(), serviceType: "", boosterId: services[0]?.boosterId || "", boosterName: services[0]?.boosterName || "" }]);
+                    setServices([{ id: crypto.randomUUID(), serviceId: "", serviceName: "", servicePrice: 0, serviceDuration: 0, peopleCount: 1, boosterId: services[0]?.boosterId || "", boosterName: services[0]?.boosterName || "" }]);
                   }}
                 >
                   <SelectTrigger>
@@ -434,8 +525,8 @@ export const MultiServiceJobDialog = ({
               </div>
             </div>
 
-            {/* Date, Time, Duration, Price */}
-            <div className="grid grid-cols-4 gap-4">
+            {/* Date and Time */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Dato</Label>
                 <Input
@@ -451,33 +542,6 @@ export const MultiServiceJobDialog = ({
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Varighed</Label>
-                <Select value={duration} onValueChange={setDuration}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 min</SelectItem>
-                    <SelectItem value="60">1 time</SelectItem>
-                    <SelectItem value="90">1,5 time</SelectItem>
-                    <SelectItem value="120">2 timer</SelectItem>
-                    <SelectItem value="180">3 timer</SelectItem>
-                    <SelectItem value="240">4 timer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Pris (kr)</Label>
-                <Input
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="500"
                 />
               </div>
             </div>
@@ -508,6 +572,11 @@ export const MultiServiceJobDialog = ({
                       <Badge variant="outline" className="shrink-0">
                         Service {index + 1}
                       </Badge>
+                      {service.serviceName && (
+                        <Badge variant="secondary" className="text-xs">
+                          {formatPrice(service.servicePrice * service.peopleCount)}
+                        </Badge>
+                      )}
                       {services.length > 1 && (
                         <Button
                           type="button"
@@ -521,50 +590,102 @@ export const MultiServiceJobDialog = ({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label className="text-xs">Service type</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Service Selection */}
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-xs">Vælg service</Label>
                         <Select
-                          value={service.serviceType}
-                          onValueChange={(v) => updateService(service.id, 'serviceType', v)}
+                          value={service.serviceId}
+                          onValueChange={(v) => updateServiceSelection(service.id, v)}
                         >
                           <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Vælg service" />
+                            <SelectValue placeholder="Vælg service..." />
                           </SelectTrigger>
-                          <SelectContent>
-                            {availableServices.map(s => (
-                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                          <SelectContent className="max-h-[300px]">
+                            {Object.entries(groupedServices).map(([category, categoryServices]) => (
+                              <div key={category}>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                                  {category}
+                                </div>
+                                {categoryServices.map(s => (
+                                  <SelectItem key={s.id} value={s.id}>
+                                    <div className="flex items-center justify-between gap-2 w-full">
+                                      <span className="truncate">{s.name}</span>
+                                      <span className="text-xs text-muted-foreground shrink-0">
+                                        {s.price > 0 ? formatPrice(s.price) : 'Pris efter aftale'}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </div>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
 
+                      {/* People Count */}
                       <div className="space-y-2">
-                        <Label className="text-xs">Tildel booster</Label>
-                        <Select
-                          value={service.boosterId}
-                          onValueChange={(v) => updateService(service.id, 'boosterId', v)}
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Vælg booster" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {boosters.map(b => (
-                              <SelectItem key={b.id} value={b.id}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-5 w-5">
-                                    <AvatarImage src={getBoosterImage(b) || undefined} />
-                                    <AvatarFallback className="text-[8px]">
-                                      {b.name.split(' ').map(n => n[0]).join('')}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span>{b.name}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-xs flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Antal
+                        </Label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                            onClick={() => updatePeopleCount(service.id, service.peopleCount - 1)}
+                            disabled={service.peopleCount <= 1}
+                          >
+                            -
+                          </Button>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={service.peopleCount}
+                            onChange={(e) => updatePeopleCount(service.id, parseInt(e.target.value) || 1)}
+                            className="h-9 w-14 text-center"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                            onClick={() => updatePeopleCount(service.id, service.peopleCount + 1)}
+                          >
+                            +
+                          </Button>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Booster Selection */}
+                    <div className="mt-3 space-y-2">
+                      <Label className="text-xs">Tildel booster</Label>
+                      <Select
+                        value={service.boosterId}
+                        onValueChange={(v) => updateBooster(service.id, v)}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Vælg booster" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {boosters.map(b => (
+                            <SelectItem key={b.id} value={b.id}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={getBoosterImage(b) || undefined} />
+                                  <AvatarFallback className="text-[8px]">
+                                    {b.name.split(' ').map(n => n[0]).join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span>{b.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {service.boosterId && (
@@ -586,15 +707,22 @@ export const MultiServiceJobDialog = ({
               </div>
 
               {/* Summary */}
-              {services.filter(s => s.serviceType && s.boosterId).length > 0 && (
+              {services.filter(s => s.serviceId && s.boosterId).length > 0 && (
                 <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
                   <div className="text-sm font-medium mb-2">Oversigt</div>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    <div>Services: {services.filter(s => s.serviceType).map(s => s.serviceType).join(', ')}</div>
+                    <div>
+                      Services: {services.filter(s => s.serviceName).map(s => 
+                        s.peopleCount > 1 ? `${s.serviceName} (×${s.peopleCount})` : s.serviceName
+                      ).join(', ')}
+                    </div>
                     <div>
                       Boosters: {[...new Set(services.filter(s => s.boosterName).map(s => s.boosterName))].join(', ')}
                     </div>
-                    <div>Samlet pris: {price} kr</div>
+                    <div className="pt-1 border-t border-primary/10 mt-1">
+                      <span className="font-medium text-foreground">Samlet pris: {formatPrice(totalPrice)}</span>
+                      <span className="ml-2">• Varighed: {formatDuration(totalDuration)}</span>
+                    </div>
                   </div>
                 </div>
               )}
