@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { CalendarEnhanced } from "@/components/ui/calendar-enhanced";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -679,12 +679,10 @@ const AdminCalendar = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
+                <CalendarEnhanced
                   selected={selectedDate}
                   onSelect={(date) => date && setSelectedDate(date)}
                   initialFocus
-                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -946,12 +944,10 @@ const AdminCalendar = () => {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
-              <Calendar
-                mode="single"
+              <CalendarEnhanced
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
                 initialFocus
-                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
@@ -1696,12 +1692,10 @@ const AdminCalendar = () => {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
+                            <CalendarEnhanced
                               selected={editDate}
                               onSelect={setEditDate}
                               initialFocus
-                              className="p-3 pointer-events-auto"
                             />
                           </PopoverContent>
                         </Popover>
