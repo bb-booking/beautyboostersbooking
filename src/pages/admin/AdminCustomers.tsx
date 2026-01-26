@@ -103,17 +103,32 @@ export default function AdminCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const { data: bookings, error } = await supabase
-        .from("bookings")
-        .select("customer_email, customer_name, customer_phone, amount, booking_date, created_at")
-        .order("created_at", { ascending: false });
+      // Fetch all bookings (Supabase default limit is 1000, so we need to paginate)
+      let allBookings: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data: bookings, error } = await supabase
+          .from("bookings")
+          .select("customer_email, customer_name, customer_phone, amount, booking_date, created_at")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      if (error) throw error;
+        if (error) throw error;
+        
+        if (!bookings || bookings.length === 0) break;
+        
+        allBookings = [...allBookings, ...bookings];
+        
+        if (bookings.length < pageSize) break;
+        from += pageSize;
+      }
 
       // Aggregate customer data from bookings
       const customerMap = new Map<string, Customer>();
 
-      bookings?.forEach((booking) => {
+      allBookings.forEach((booking) => {
         const email = booking.customer_email;
         if (!email) return;
 
