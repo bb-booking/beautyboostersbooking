@@ -37,6 +37,7 @@ import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminBoosters from "./pages/admin/AdminBoosters";
 import AdminBoosterApplications from "./pages/admin/AdminBoosterApplications";
+import AdminCreateBooster from "./pages/admin/AdminCreateBooster";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminJobChats from "./pages/admin/AdminJobChats";
@@ -134,6 +135,7 @@ const AppContent = () => {
             <Route path="finance" element={<AdminFinance />} />
             <Route path="invoices" element={<AdminInvoicesPage />} />
             <Route path="boosters" element={<AdminBoosters />} />
+            <Route path="create-booster" element={<AdminCreateBooster />} />
             <Route path="booster-applications" element={<AdminBoosterApplications />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="job-chats" element={<AdminJobChats />} />

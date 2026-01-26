@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { 
   Search, 
   MapPin, 
@@ -18,7 +19,8 @@ import {
   Filter,
   Send,
   CheckCircle,
-  Calendar
+  Calendar,
+  UserPlus
 } from "lucide-react";
 
 interface BoosterProfile {
@@ -50,6 +52,7 @@ interface CompetenceTag {
 }
 
 const AdminBoosters = () => {
+  const navigate = useNavigate();
   const [boosters, setBoosters] = useState<BoosterProfile[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [competenceTags, setCompetenceTags] = useState<CompetenceTag[]>([]);
@@ -314,6 +317,14 @@ const AdminBoosters = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Booster Management</h2>
         <div className="flex flex-wrap items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/admin/create-booster")}
+            className="w-full sm:w-auto"
+          >
+            <UserPlus className="h-4 w-4 mr-2 shrink-0" />
+            Opret Booster
+          </Button>
           {selectedBoosters.length > 0 && (
             <>
               <Badge variant="outline" className="shrink-0">
