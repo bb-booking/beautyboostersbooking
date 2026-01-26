@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { CalendarEnhanced } from "@/components/ui/calendar-enhanced";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -519,13 +519,10 @@ export default function BoosterFinance() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
+              <CalendarEnhanced
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                locale={da}
-                className="p-3 pointer-events-auto"
+                showTodayButton
               />
             </PopoverContent>
           </Popover>

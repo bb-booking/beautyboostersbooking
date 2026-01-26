@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { CalendarEnhanced } from "@/components/ui/calendar-enhanced";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -622,15 +622,14 @@ const AdminFinance = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
+                  <CalendarEnhanced
                     selected={customStartDate}
                     onSelect={(date) => {
-                      setCustomStartDate(date);
+                      if (date) setCustomStartDate(date);
                       setShowStartPicker(false);
                     }}
                     initialFocus
-                    className="pointer-events-auto"
+                    showTodayButton
                   />
                 </PopoverContent>
               </Popover>
@@ -646,16 +645,15 @@ const AdminFinance = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
+                  <CalendarEnhanced
                     selected={customEndDate}
                     onSelect={(date) => {
-                      setCustomEndDate(date);
+                      if (date) setCustomEndDate(date);
                       setShowEndPicker(false);
                     }}
                     disabled={(date) => customStartDate ? date < customStartDate : false}
                     initialFocus
-                    className="pointer-events-auto"
+                    showTodayButton
                   />
                 </PopoverContent>
               </Popover>
