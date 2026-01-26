@@ -27,6 +27,7 @@ import {
   Trash2,
   ArrowLeft
 } from "lucide-react";
+import { MultiServiceJobDialog } from "@/components/admin/MultiServiceJobDialog";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { boosterImageOverrides } from "@/data/boosterImages";
@@ -255,21 +256,6 @@ const AdminCalendar = () => {
   const [newJobBooster, setNewJobBooster] = useState<string>("");
   const [newJobTime, setNewJobTime] = useState<string>("");
   const [newJobDate, setNewJobDate] = useState<Date>(new Date());
-  const [newJobTitle, setNewJobTitle] = useState("");
-  const [newJobClient, setNewJobClient] = useState("");
-  const [newJobService, setNewJobService] = useState("");
-  const [newJobLocation, setNewJobLocation] = useState("");
-  const [newJobClientType, setNewJobClientType] = useState<'privat' | 'virksomhed'>('privat');
-  const [newJobDuration, setNewJobDuration] = useState("60");
-  const [newJobPrice, setNewJobPrice] = useState<string>("500");
-  const [existingCustomers, setExistingCustomers] = useState<{ name: string; email: string | null; phone: string | null; location: string | null }[]>([]);
-  const [customerSuggestions, setCustomerSuggestions] = useState<typeof existingCustomers>([]);
-  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
-  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
-
-  // Service options based on client type
-  const privateServices = ["Bryllup", "Makeup", "Hår", "Negle", "Spraytan", "Styling", "Bryn & Vipper"];
-  const businessServices = ["Film/TV", "Teater", "Event", "Reklame", "Fotoshoot", "Fashion", "Messe"];
 
   // View/Edit booking dialog
   const [viewBookingOpen, setViewBookingOpen] = useState(false);
@@ -289,7 +275,6 @@ const AdminCalendar = () => {
   useEffect(() => {
     fetchBoosters();
     fetchJobs();
-    fetchExistingCustomers();
   }, []);
 
   useEffect(() => {
@@ -361,94 +346,6 @@ const AdminCalendar = () => {
       setJobs(MOCK_JOBS);
     }
   };
-
-  const fetchExistingCustomers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('client_name, client_email, client_phone, location')
-        .not('client_name', 'is', null);
-
-      if (error) throw error;
-
-      // Map to consistent interface and deduplicate by client_name
-      const mapped = (data || []).map(c => ({
-        name: c.client_name || '',
-        email: c.client_email,
-        phone: c.client_phone,
-        location: c.location
-      }));
-      
-      const uniqueCustomers = Array.from(
-        new Map(mapped.filter(c => c.name).map(c => [c.name, c])).values()
-      );
-
-      setExistingCustomers(uniqueCustomers);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-    }
-  };
-
-  const handleCustomerSearch = (searchValue: string) => {
-    setNewJobClient(searchValue);
-    if (searchValue.length >= 2) {
-      const filtered = existingCustomers.filter(c =>
-        c.name.toLowerCase().includes(searchValue.toLowerCase())
-      );
-      setCustomerSuggestions(filtered);
-      setShowCustomerSuggestions(true);
-    } else {
-      setCustomerSuggestions([]);
-      setShowCustomerSuggestions(false);
-    }
-  };
-
-  const selectCustomer = (customer: typeof existingCustomers[0]) => {
-    setNewJobClient(customer.name);
-    if (customer.location) setNewJobLocation(customer.location);
-    setShowCustomerSuggestions(false);
-    setCustomerSuggestions([]);
-    // Trigger title generation
-    generateJobTitle(newJobService, customer.name, newJobLocation || customer.location || '');
-  };
-
-  const generateJobTitle = async (service: string, clientName: string, location: string) => {
-    if (!service || !clientName) return;
-    
-    setIsGeneratingTitle(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-job-title', {
-        body: {
-          services: [{ service_name: service }],
-          location: location,
-          clientType: newJobClientType
-        }
-      });
-
-      if (!error && data?.title) {
-        setNewJobTitle(data.title);
-      } else {
-        // Fallback: simple title
-        setNewJobTitle(`${service} - ${clientName}`);
-      }
-    } catch (err) {
-      // Fallback on error
-      setNewJobTitle(`${service} - ${clientName}`);
-    } finally {
-      setIsGeneratingTitle(false);
-    }
-  };
-
-  // Auto-generate title when service or client changes
-  useEffect(() => {
-    if (newJobService && newJobClient && jobDialogOpen) {
-      const timer = setTimeout(() => {
-        generateJobTitle(newJobService, newJobClient, newJobLocation);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [newJobService, newJobClient, newJobLocation]);
-
   // Get all unique specialties
   const allSpecialties = useMemo(() => {
     const specs = new Set<string>();
@@ -614,15 +511,6 @@ const AdminCalendar = () => {
     setNewJobBooster(boosterId);
     setNewJobTime(timeSlot);
     setNewJobDate(date);
-    setNewJobTitle("");
-    setNewJobClient("");
-    setNewJobService("");
-    setNewJobLocation("");
-    setNewJobClientType('privat');
-    setNewJobDuration("60");
-    setNewJobPrice("500");
-    setCustomerSuggestions([]);
-    setShowCustomerSuggestions(false);
     setJobDialogOpen(true);
   };
 
@@ -635,76 +523,13 @@ const AdminCalendar = () => {
     if (!selectedBooking) return;
     
     // Pre-fill the job dialog with existing booking data
-    const { booking, job, boosterId } = selectedBooking;
+    const { booking, boosterId } = selectedBooking;
     setNewJobBooster(boosterId);
     setNewJobTime(booking.start_time.slice(0, 5));
     setNewJobDate(new Date(booking.date));
-    setNewJobTitle(job?.title || '');
-    setNewJobClient(job?.client_name || '');
-    setNewJobService(job?.service_type || '');
-    setNewJobLocation(job?.location || '');
-    setNewJobClientType((job?.client_type as 'privat' | 'virksomhed') || 'privat');
-    
-    // Calculate duration
-    const startMinutes = timeToMinutes(booking.start_time);
-    const endMinutes = timeToMinutes(booking.end_time);
-    setNewJobDuration(String(endMinutes - startMinutes));
-    setNewJobPrice("500");
     
     setViewBookingOpen(false);
     setJobDialogOpen(true);
-  };
-
-  const handleCreateJob = async () => {
-    if (!newJobTitle || !newJobClient) {
-      toast.error('Udfyld titel og kundenavn');
-      return;
-    }
-
-    const endMinutes = timeToMinutes(newJobTime) + parseInt(newJobDuration);
-    const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
-
-    try {
-      const { data: jobData, error: jobError } = await supabase
-        .from('jobs')
-        .insert({
-          title: newJobTitle,
-          client_name: newJobClient,
-          service_type: newJobService,
-          location: newJobLocation,
-          client_type: newJobClientType,
-          date_needed: format(newJobDate, 'yyyy-MM-dd'),
-          time_needed: newJobTime,
-          hourly_rate: parseInt(newJobPrice) || 500,
-          status: 'assigned',
-          assigned_booster_id: newJobBooster,
-        })
-        .select()
-        .single();
-
-      if (jobError) throw jobError;
-
-      const { error: availError } = await supabase
-        .from('booster_availability')
-        .insert({
-          booster_id: newJobBooster,
-          date: format(newJobDate, 'yyyy-MM-dd'),
-          start_time: newJobTime,
-          end_time: endTime,
-          status: 'busy',
-          job_id: jobData.id,
-        });
-
-      if (availError) throw availError;
-
-      toast.success('Job oprettet');
-      setJobDialogOpen(false);
-      fetchAvailability();
-      fetchJobs();
-    } catch (error) {
-      console.error('Error creating job:', error);
-      toast.error('Kunne ikke oprette job');
-    }
   };
 
   // Get booster's bookings for individual view
@@ -1410,192 +1235,19 @@ const AdminCalendar = () => {
         </DragOverlay>
       </div>
 
-      {/* Create Job Dialog */}
-      <Dialog open={jobDialogOpen} onOpenChange={(open) => {
-        setJobDialogOpen(open);
-        if (!open) {
-          setShowCustomerSuggestions(false);
-          setCustomerSuggestions([]);
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Opret job</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Booster</Label>
-                <Select value={newJobBooster} onValueChange={setNewJobBooster}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vælg booster" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredBoosters.map(b => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Kundetype</Label>
-                <Select 
-                  value={newJobClientType} 
-                  onValueChange={(v) => {
-                    setNewJobClientType(v as 'privat' | 'virksomhed');
-                    setNewJobService(""); // Reset service when type changes
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="privat">Privat</SelectItem>
-                    <SelectItem value="virksomhed">Virksomhed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                Titel
-                {isGeneratingTitle && (
-                  <span className="text-xs text-muted-foreground animate-pulse">Genererer...</span>
-                )}
-              </Label>
-              <Input
-                value={newJobTitle}
-                onChange={(e) => setNewJobTitle(e.target.value)}
-                placeholder="Auto-genereres ud fra kunde og service"
-              />
-            </div>
-
-            <div className="space-y-2 relative">
-              <Label>Kundenavn</Label>
-              <Input
-                value={newJobClient}
-                onChange={(e) => handleCustomerSearch(e.target.value)}
-                onFocus={() => {
-                  if (customerSuggestions.length > 0) setShowCustomerSuggestions(true);
-                }}
-                placeholder="Søg eksisterende eller indtast ny"
-              />
-              {showCustomerSuggestions && customerSuggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                  {customerSuggestions.map((customer, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
-                      onClick={() => selectCustomer(customer)}
-                    >
-                      <User className="h-3 w-3 text-muted-foreground" />
-                      <span>{customer.name}</span>
-                      {customer.location && (
-                        <span className="text-xs text-muted-foreground ml-auto truncate max-w-32">
-                          {customer.location}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {showCustomerSuggestions && customerSuggestions.length === 0 && newJobClient.length >= 2 && (
-                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg">
-                  <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
-                    <Plus className="h-3 w-3" />
-                    Opret ny kunde: "{newJobClient}"
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Service</Label>
-                <Select value={newJobService} onValueChange={setNewJobService}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vælg service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(newJobClientType === 'privat' ? privateServices : businessServices).map(service => (
-                      <SelectItem key={service} value={service}>{service}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Adresse</Label>
-                <Input
-                  value={newJobLocation}
-                  onChange={(e) => setNewJobLocation(e.target.value)}
-                  placeholder="F.eks. Vesterbrogade 1, 1620 København"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label>Dato</Label>
-                <Input
-                  type="date"
-                  value={format(newJobDate, 'yyyy-MM-dd')}
-                  onChange={(e) => setNewJobDate(new Date(e.target.value))}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Starttid</Label>
-                <Input
-                  type="time"
-                  value={newJobTime}
-                  onChange={(e) => setNewJobTime(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Varighed</Label>
-                <Select value={newJobDuration} onValueChange={setNewJobDuration}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 min</SelectItem>
-                    <SelectItem value="60">1 time</SelectItem>
-                    <SelectItem value="90">1,5 time</SelectItem>
-                    <SelectItem value="120">2 timer</SelectItem>
-                    <SelectItem value="180">3 timer</SelectItem>
-                    <SelectItem value="240">4 timer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Pris (kr)</Label>
-                <Input
-                  type="number"
-                  value={newJobPrice}
-                  onChange={(e) => setNewJobPrice(e.target.value)}
-                  placeholder="500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setJobDialogOpen(false)}>
-              Annuller
-            </Button>
-            <Button onClick={handleCreateJob}>
-              Opret job
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Create Job Dialog - Multi-service support */}
+      <MultiServiceJobDialog
+        open={jobDialogOpen}
+        onOpenChange={setJobDialogOpen}
+        boosters={filteredBoosters}
+        initialBoosterId={newJobBooster}
+        initialTime={newJobTime}
+        initialDate={newJobDate}
+        onJobCreated={() => {
+          fetchAvailability();
+          fetchJobs();
+        }}
+      />
 
       {/* View/Edit Booking Dialog */}
       <Dialog open={viewBookingOpen} onOpenChange={setViewBookingOpen}>
