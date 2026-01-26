@@ -6,12 +6,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   DollarSign, 
   TrendingUp, 
   TrendingDown,
   Calendar,
+  CalendarIcon,
   Users,
   Briefcase,
   Download,
@@ -23,11 +27,14 @@ import {
   ExternalLink,
   Send,
   CalendarClock,
-  Wallet
+  Wallet,
+  FileSpreadsheet,
+  File
 } from "lucide-react";
-import { format, differenceInDays, endOfMonth, addMonths } from "date-fns";
+import { format, differenceInDays, endOfMonth, addMonths, startOfWeek, endOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { da } from "date-fns/locale";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { cn } from "@/lib/utils";
 
 interface FinancialStats {
   totalRevenue: number;
@@ -89,6 +96,12 @@ const AdminFinance = () => {
   const [vatDeadlines, setVatDeadlines] = useState<VATDeadline[]>([]);
   const [salaryEntries, setSalaryEntries] = useState<SalaryEntry[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Custom date range state
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   // Days until end of month
   const daysUntilMonthEnd = differenceInDays(endOfMonth(new Date()), new Date());
@@ -97,7 +110,7 @@ const AdminFinance = () => {
     fetchFinancialStats();
     calculateVATDeadlines();
     fetchSalaryData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customStartDate, customEndDate]);
 
   const calculateVATDeadlines = () => {
     const now = new Date();
@@ -311,6 +324,172 @@ const AdminFinance = () => {
     );
   }
 
+  // Export functions
+  const getExportData = () => {
+    const periodLabel = selectedPeriod === 'custom' && customStartDate && customEndDate
+      ? `${format(customStartDate, 'dd-MM-yyyy')} til ${format(customEndDate, 'dd-MM-yyyy')}`
+      : selectedPeriod === 'day' ? 'I dag'
+      : selectedPeriod === 'week' ? 'Denne uge'
+      : selectedPeriod === 'month' ? 'Denne måned'
+      : selectedPeriod === 'quarter' ? 'Dette kvartal'
+      : 'I år';
+    
+    return {
+      periodLabel,
+      stats,
+      salaryEntries,
+      vatDeadlines
+    };
+  };
+
+  const exportToCSV = () => {
+    const data = getExportData();
+    const rows = [
+      ['Økonomisk Rapport - ' + data.periodLabel],
+      [''],
+      ['OVERSIGT'],
+      ['Metrik', 'Værdi'],
+      ['Total omsætning', data.stats.totalRevenue],
+      ['Booster løn (60%)', data.stats.totalSalaryCosts],
+      ['Afsluttede jobs', data.stats.completedJobs],
+      ['Gennemsnit per job', data.stats.averageJobValue],
+      ['Salgsmoms', data.stats.outputVAT],
+      ['Købsmoms', data.stats.inputVAT],
+      ['Forventet skyldig moms', data.stats.vatOwed],
+      ['Skat reserve', data.stats.taxReserve],
+      [''],
+      ['TOP BOOSTERS'],
+      ['Navn', 'Indtjening', 'Jobs'],
+      ...data.stats.topEarningBoosters.map(b => [b.name, b.earnings, b.jobs_completed]),
+      [''],
+      ['LØN ENTRIES'],
+      ['Navn', 'Periode', 'Brutto', 'Skat', 'Netto', 'Status', 'Type'],
+      ...data.salaryEntries.map(e => [e.boosterName, e.period, e.grossAmount, e.taxDeduction, e.netAmount, e.status, e.type])
+    ];
+    
+    const csvContent = '\ufeff' + rows.map(row => row.join(';')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `okonomi-rapport-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    // Excel-compatible CSV with BOM
+    const data = getExportData();
+    const rows = [
+      ['Økonomisk Rapport - ' + data.periodLabel],
+      ['Genereret:', format(new Date(), 'dd-MM-yyyy HH:mm', { locale: da })],
+      [''],
+      ['OVERSIGT'],
+      ['Metrik', 'Værdi (DKK)'],
+      ['Total omsætning', data.stats.totalRevenue],
+      ['Booster løn (60%)', data.stats.totalSalaryCosts],
+      ['Dækningsbidrag (40%)', Math.round((data.stats.totalRevenue / 1.25) * 0.4)],
+      ['Afsluttede jobs', data.stats.completedJobs],
+      ['Gennemsnit per job', data.stats.averageJobValue],
+      [''],
+      ['MOMS & SKAT'],
+      ['Salgsmoms (25%)', data.stats.outputVAT],
+      ['Købsmoms', data.stats.inputVAT],
+      ['Forventet skyldig moms', data.stats.vatOwed],
+      ['Skat reserve (22%)', data.stats.taxReserve],
+      [''],
+      ['TOP BOOSTERS'],
+      ['Navn', 'Indtjening (DKK)', 'Antal jobs'],
+      ...data.stats.topEarningBoosters.map(b => [b.name, b.earnings, b.jobs_completed]),
+      [''],
+      ['MÅNEDLIG OMSÆTNING'],
+      ['Måned', 'Omsætning (DKK)', 'Jobs'],
+      ...data.stats.revenueByMonth.map(m => [m.month, m.revenue, m.jobs]),
+      [''],
+      ['LØN OVERSIGT'],
+      ['Navn', 'Periode', 'Brutto (DKK)', 'Skat (DKK)', 'Netto (DKK)', 'Status', 'Type'],
+      ...data.salaryEntries.map(e => [e.boosterName, e.period, e.grossAmount, e.taxDeduction, e.netAmount, e.status, e.type])
+    ];
+    
+    const csvContent = '\ufeff' + rows.map(row => row.join('\t')).join('\n');
+    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `okonomi-rapport-${format(new Date(), 'yyyy-MM-dd')}.xls`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    const data = getExportData();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Økonomisk Rapport - ${data.periodLabel}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+          h1 { color: #8b5cf6; border-bottom: 2px solid #8b5cf6; padding-bottom: 10px; }
+          h2 { color: #666; margin-top: 30px; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+          th { background: #f5f5f5; }
+          .highlight { background: #f0e6ff; font-weight: bold; }
+          .footer { margin-top: 40px; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1>💄 Beauty Boosters ApS - Økonomisk Rapport</h1>
+        <p><strong>Periode:</strong> ${data.periodLabel}</p>
+        <p><strong>Genereret:</strong> ${format(new Date(), 'dd. MMMM yyyy, HH:mm', { locale: da })}</p>
+        
+        <h2>Oversigt</h2>
+        <table>
+          <tr><th>Metrik</th><th>Værdi</th></tr>
+          <tr class="highlight"><td>Total omsætning</td><td>${formatCurrency(data.stats.totalRevenue)}</td></tr>
+          <tr><td>Booster løn (60%)</td><td>${formatCurrency(data.stats.totalSalaryCosts)}</td></tr>
+          <tr><td>Dækningsbidrag (40%)</td><td>${formatCurrency(Math.round((data.stats.totalRevenue / 1.25) * 0.4))}</td></tr>
+          <tr><td>Afsluttede jobs</td><td>${data.stats.completedJobs}</td></tr>
+          <tr><td>Gennemsnit per job</td><td>${formatCurrency(data.stats.averageJobValue)}</td></tr>
+        </table>
+        
+        <h2>Moms & Skat</h2>
+        <table>
+          <tr><th>Type</th><th>Beløb</th></tr>
+          <tr><td>Salgsmoms (25%)</td><td>${formatCurrency(data.stats.outputVAT)}</td></tr>
+          <tr><td>Købsmoms</td><td>-${formatCurrency(data.stats.inputVAT)}</td></tr>
+          <tr class="highlight"><td>Forventet skyldig moms</td><td>${formatCurrency(data.stats.vatOwed)}</td></tr>
+          <tr><td>Skat reserve (22%)</td><td>${formatCurrency(data.stats.taxReserve)}</td></tr>
+        </table>
+        
+        <h2>Top Boosters</h2>
+        <table>
+          <tr><th>#</th><th>Navn</th><th>Indtjening</th><th>Jobs</th></tr>
+          ${data.stats.topEarningBoosters.map((b, i) => `<tr><td>${i+1}</td><td>${b.name}</td><td>${formatCurrency(b.earnings)}</td><td>${b.jobs_completed}</td></tr>`).join('')}
+        </table>
+        
+        <h2>Månedlig Omsætning</h2>
+        <table>
+          <tr><th>Måned</th><th>Omsætning</th><th>Jobs</th></tr>
+          ${data.stats.revenueByMonth.map(m => `<tr><td>${m.month}</td><td>${formatCurrency(m.revenue)}</td><td>${m.jobs}</td></tr>`).join('')}
+        </table>
+        
+        <div class="footer">
+          <p>Beauty Boosters ApS • CVR: 12345678</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -319,7 +498,13 @@ const AdminFinance = () => {
           <p className="text-muted-foreground">Beauty Boosters ApS • CVR: 12345678</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+          <Select value={selectedPeriod} onValueChange={(val) => {
+            setSelectedPeriod(val);
+            if (val !== 'custom') {
+              setCustomStartDate(undefined);
+              setCustomEndDate(undefined);
+            }
+          }}>
             <SelectTrigger className="w-full sm:w-40">
               <Filter className="h-4 w-4 mr-2 shrink-0" />
               <SelectValue />
@@ -330,12 +515,85 @@ const AdminFinance = () => {
               <SelectItem value="month">Denne måned</SelectItem>
               <SelectItem value="quarter">Dette kvartal</SelectItem>
               <SelectItem value="year">I år</SelectItem>
+              <SelectItem value="custom">Vælg periode...</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2 shrink-0" />
-            Eksporter
-          </Button>
+          
+          {selectedPeriod === 'custom' && (
+            <div className="flex gap-2">
+              <Popover open={showStartPicker} onOpenChange={setShowStartPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn(
+                    "w-[130px] justify-start text-left font-normal",
+                    !customStartDate && "text-muted-foreground"
+                  )}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customStartDate ? format(customStartDate, "dd/MM/yy") : "Fra dato"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={customStartDate}
+                    onSelect={(date) => {
+                      setCustomStartDate(date);
+                      setShowStartPicker(false);
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Popover open={showEndPicker} onOpenChange={setShowEndPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn(
+                    "w-[130px] justify-start text-left font-normal",
+                    !customEndDate && "text-muted-foreground"
+                  )}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customEndDate ? format(customEndDate, "dd/MM/yy") : "Til dato"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={customEndDate}
+                    onSelect={(date) => {
+                      setCustomEndDate(date);
+                      setShowEndPicker(false);
+                    }}
+                    disabled={(date) => customStartDate ? date < customStartDate : false}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Download className="h-4 w-4 mr-2 shrink-0" />
+                Eksporter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background">
+              <DropdownMenuItem onClick={exportToCSV}>
+                <FileText className="h-4 w-4 mr-2" />
+                Download som CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToExcel}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Download som Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF}>
+                <File className="h-4 w-4 mr-2" />
+                Print / PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
