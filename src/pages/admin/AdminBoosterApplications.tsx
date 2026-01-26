@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, MapPin, Mail, Phone, Briefcase } from "lucide-react";
+import { Check, X, MapPin, Briefcase, Forward, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -15,6 +15,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+interface AdminUser {
+  id: string;
+  email: string;
+  name?: string;
+}
 
 interface BoosterApplication {
   id: string;
@@ -29,6 +43,9 @@ interface BoosterApplication {
   created_at: string;
   education: any;
   business_type: string | null;
+  assigned_to_admin_id?: string | null;
+  assigned_at?: string | null;
+  assigned_by?: string | null;
 }
 
 // Mock data for demo
@@ -87,6 +104,13 @@ export default function AdminBoosterApplications() {
     applicationId: null,
   });
   const [rejectionReason, setRejectionReason] = useState("");
+  const [assignDialog, setAssignDialog] = useState<{ open: boolean; applicationId: string | null }>({
+    open: false,
+    applicationId: null,
+  });
+  const [selectedAdminId, setSelectedAdminId] = useState<string>("");
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const fetchApplications = async () => {
     try {
@@ -176,8 +200,90 @@ export default function AdminBoosterApplications() {
     }
   };
 
+  const fetchAdmins = async () => {
+    try {
+      // Get all users with admin role
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (rolesError) throw rolesError;
+
+      // Get booster profiles with matching user_ids for names
+      const adminUserIds = adminRoles?.map(r => r.user_id) || [];
+      const { data: boosterProfiles } = await supabase
+        .from('booster_profiles')
+        .select('id, name, email')
+        .in('id', adminUserIds);
+
+      const adminList: AdminUser[] = adminUserIds.map(userId => {
+        const profile = boosterProfiles?.find(p => p.id === userId);
+        return {
+          id: userId,
+          email: profile?.email || 'Admin',
+          name: profile?.name || undefined
+        };
+      });
+
+      setAdmins(adminList);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
+
+  const handleAssign = async () => {
+    if (!assignDialog.applicationId || !selectedAdminId) return;
+
+    setProcessingId(assignDialog.applicationId);
+    try {
+      const { error } = await supabase
+        .from('booster_applications')
+        .update({
+          assigned_to_admin_id: selectedAdminId,
+          assigned_at: new Date().toISOString(),
+          assigned_by: currentUserId
+        })
+        .eq('id', assignDialog.applicationId);
+
+      if (error) throw error;
+
+      const assignedAdmin = admins.find(a => a.id === selectedAdminId);
+      toast({
+        title: "Videresendt",
+        description: `Ansøgningen er videresendt til ${assignedAdmin?.name || assignedAdmin?.email || 'admin'}`,
+      });
+
+      setAssignDialog({ open: false, applicationId: null });
+      setSelectedAdminId("");
+      fetchApplications();
+    } catch (error) {
+      console.error('Error assigning application:', error);
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke videresende ansøgning",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const getAdminName = (adminId: string | null | undefined) => {
+    if (!adminId) return null;
+    const admin = admins.find(a => a.id === adminId);
+    return admin?.name || admin?.email || 'Admin';
+  };
+
   useEffect(() => {
     fetchApplications();
+    fetchAdmins();
+    fetchCurrentUser();
   }, []);
 
   if (loading) {
@@ -239,6 +345,12 @@ export default function AdminBoosterApplications() {
                             <div className="flex items-center gap-3 mb-2">
                               <span className="font-semibold text-foreground">{app.name}</span>
                               <Badge variant="outline" className="text-xs">Ny</Badge>
+                              {app.assigned_to_admin_id && (
+                                <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  Tildelt: {getAdminName(app.assigned_to_admin_id)}
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
@@ -288,6 +400,15 @@ export default function AdminBoosterApplications() {
                               disabled={processingId === app.id}
                             >
                               <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setAssignDialog({ open: true, applicationId: app.id })}
+                              disabled={processingId === app.id}
+                              title="Videresend til anden admin"
+                            >
+                              <Forward className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -438,6 +559,17 @@ export default function AdminBoosterApplications() {
                 <X className="h-4 w-4 mr-2" />
                 Afvis
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssignDialog({ open: true, applicationId: selectedApplication.id });
+                  setSelectedApplication(null);
+                }}
+                disabled={processingId === selectedApplication.id}
+              >
+                <Forward className="h-4 w-4 mr-2" />
+                Videresend
+              </Button>
             </DialogFooter>
           )}
         </DialogContent>
@@ -463,6 +595,61 @@ export default function AdminBoosterApplications() {
             </Button>
             <Button variant="destructive" onClick={handleReject} disabled={processingId !== null}>
               Afvis ansøgning
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign to Admin Dialog */}
+      <Dialog open={assignDialog.open} onOpenChange={(open) => {
+        setAssignDialog({ open, applicationId: open ? assignDialog.applicationId : null });
+        if (!open) setSelectedAdminId("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Videresend ansøgning</DialogTitle>
+            <DialogDescription>
+              Vælg hvilken admin der skal tage stilling til denne ansøgning.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Select value={selectedAdminId} onValueChange={setSelectedAdminId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Vælg en admin" />
+              </SelectTrigger>
+              <SelectContent>
+                {admins
+                  .filter(admin => admin.id !== currentUserId)
+                  .map((admin) => (
+                    <SelectItem key={admin.id} value={admin.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs">
+                            {(admin.name || admin.email).charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{admin.name || admin.email}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {admins.filter(a => a.id !== currentUserId).length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Der er ingen andre admins at videresende til.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog({ open: false, applicationId: null })}>
+              Annuller
+            </Button>
+            <Button 
+              onClick={handleAssign} 
+              disabled={!selectedAdminId || processingId !== null}
+            >
+              <Forward className="h-4 w-4 mr-2" />
+              Videresend
             </Button>
           </DialogFooter>
         </DialogContent>
