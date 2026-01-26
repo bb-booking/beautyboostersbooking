@@ -732,10 +732,19 @@ export default function Checkout() {
     return sum + (item.service?.price || service?.price || 0);
   }, 0);
   
+  // Check if this is a bridal booking (category = "Bryllup")
+  const isBridalBooking = service?.category === 'Bryllup' || 
+    allCartItems.some((item: any) => item.category === 'Bryllup' || item.service?.category === 'Bryllup');
+  const bridalDeposit = 1500; // Fixed deposit for bridal bookings
+  
   // Calculate VAT for business customers (25% moms on top)
   const subtotalAfterDiscount = Math.max(0, cartTotal - discount);
   const vatAmount = clientType === 'virksomhed' ? Math.round(subtotalAfterDiscount * 0.25) : 0;
-  const finalTotal = subtotalAfterDiscount + vatAmount;
+  const fullTotal = subtotalAfterDiscount + vatAmount;
+  
+  // For bridal bookings, only the deposit is paid at checkout
+  const finalTotal = isBridalBooking ? bridalDeposit : fullTotal;
+  const remainingAmount = isBridalBooking ? Math.max(0, fullTotal - bridalDeposit) : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -912,10 +921,34 @@ export default function Checkout() {
 
               <Separator />
 
-              <div className="flex justify-between items-center text-xl font-bold">
-                <span>Total {clientType === 'virksomhed' ? '(inkl. moms)' : 'at betale'}</span>
-                <span>{finalTotal} DKK</span>
-              </div>
+              {isBridalBooking ? (
+                <>
+                  <div className="flex justify-between items-center text-lg">
+                    <span>Fuld pris</span>
+                    <span>{fullTotal} DKK</span>
+                  </div>
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                    <div className="flex justify-between items-center text-xl font-bold text-primary">
+                      <span>Depositum at betale nu</span>
+                      <span>{bridalDeposit} DKK</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      For at bekræfte din booking og sikre din tid hos os, kræver vi et depositum på 1500 kr. 
+                      Dette depositum vil blive fratrukket den endelige pris for din styling. 
+                      Bemærk venligst, at depositummet er ikke-refunderbart i tilfælde af aflysning, medmindre andet er aftalt.
+                    </p>
+                    <div className="flex justify-between text-sm text-muted-foreground pt-2 border-t">
+                      <span>Resterende beløb (betales efter behandling)</span>
+                      <span>{remainingAmount} DKK</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between items-center text-xl font-bold">
+                  <span>Total {clientType === 'virksomhed' ? '(inkl. moms)' : 'at betale'}</span>
+                  <span>{finalTotal} DKK</span>
+                </div>
+              )}
 
               <Button className="w-full mt-4" size="lg" onClick={() => setCurrentStep(2)}>
                 Fortsæt til betaling
@@ -1130,10 +1163,26 @@ export default function Checkout() {
                     </div>
                   )}
                   <Separator />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total {clientType === 'virksomhed' ? '(inkl. moms)' : ''}</span>
-                    <span>{finalTotal} DKK</span>
-                  </div>
+                  {isBridalBooking ? (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>Fuld pris</span>
+                        <span>{fullTotal} DKK</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg text-primary">
+                        <span>Depositum at betale</span>
+                        <span>{finalTotal} DKK</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Resterende {remainingAmount} DKK betales efter behandling
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Total {clientType === 'virksomhed' ? '(inkl. moms)' : ''}</span>
+                      <span>{finalTotal} DKK</span>
+                    </div>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
                     <Pencil className="h-3 w-3 mr-1" /> Rediger ordre
                   </Button>
@@ -1185,6 +1234,19 @@ export default function Checkout() {
                   ) : (
                     // Private card payment flow
                     <>
+                      {isBridalBooking && (
+                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-4 space-y-2">
+                          <p className="text-sm font-medium text-foreground">
+                            Depositum: {bridalDeposit} DKK
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            For at bekræfte din booking og sikre din tid hos os, kræver vi et depositum på 1500 kr. 
+                            Dette depositum vil blive fratrukket den endelige pris for din styling. 
+                            Bemærk venligst, at depositummet er ikke-refunderbart i tilfælde af aflysning, medmindre andet er aftalt.
+                          </p>
+                        </div>
+                      )}
+                      
                       <div className="p-4 bg-muted/50 rounded-lg mb-4">
                         <p className="text-sm text-muted-foreground mb-3">Vi accepterer:</p>
                         <PaymentLogos />
@@ -1215,17 +1277,24 @@ export default function Checkout() {
                           disabled={isProcessing || !agreedToTerms || !customerInfo.name || !customerInfo.email || !customerInfo.phone}
                         >
                           <CreditCard className="mr-2 h-4 w-4" />
-                          {isProcessing ? 'Behandler...' : `Betal ${finalTotal} DKK`}
+                          {isProcessing ? 'Behandler...' : `Betal ${isBridalBooking ? 'depositum ' : ''}${finalTotal} DKK`}
                         </Button>
                       )}
 
                       <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
+                        {isBridalBooking ? (
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Depositum:</strong> Depositummet på {bridalDeposit} DKK trækkes nu. Resterende {remainingAmount} DKK betales efter behandling.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når behandlingen er udført.
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
-                          <strong>Reservation:</strong> Beløbet reserveres på dit kort og trækkes først når behandlingen er udført.
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          <strong>Afbestilling:</strong> Gratis afbestilling op til 24 timer før. Afbestilling 12-24 timer før: 25% gebyr. 
-                          Afbestilling 6-12 timer før: 50% gebyr. Afbestilling under 6 timer før eller udeblivelse: 100% af beløbet.
+                          <strong>Afbestilling:</strong> {isBridalBooking 
+                            ? 'Depositummet er ikke-refunderbart i tilfælde af aflysning, medmindre andet er aftalt.' 
+                            : 'Gratis afbestilling op til 24 timer før. Afbestilling 12-24 timer før: 25% gebyr. Afbestilling 6-12 timer før: 50% gebyr. Afbestilling under 6 timer før eller udeblivelse: 100% af beløbet.'}
                         </p>
                       </div>
                     </>
