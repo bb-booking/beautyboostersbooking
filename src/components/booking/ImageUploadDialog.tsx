@@ -1,10 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Upload, Camera } from "lucide-react";
+import { ImagePlus, X, Upload, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImageUploadDialogProps {
   open: boolean;
@@ -25,6 +24,34 @@ export function ImageUploadDialog({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setImages(existingImages);
+  }, [existingImages]);
+
+  const uploadToStorage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = bookingId ? `${bookingId}/${fileName}` : `temp/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('booking-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from('booking-images')
+      .getPublicUrl(data.path);
+
+    return publicUrl.publicUrl;
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -50,20 +77,21 @@ export function ImageUploadDialog({
           continue;
         }
         
-        // Convert to base64 for preview (in production, upload to storage)
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        // Upload to Supabase storage
+        const imageUrl = await uploadToStorage(file);
         
-        newImages.push(base64);
+        if (imageUrl) {
+          newImages.push(imageUrl);
+        } else {
+          toast.error(`Kunne ikke uploade ${file.name}`);
+        }
       }
       
-      const updatedImages = [...images, ...newImages];
-      setImages(updatedImages);
-      toast.success(`${newImages.length} billede(r) tilføjet`);
+      if (newImages.length > 0) {
+        const updatedImages = [...images, ...newImages];
+        setImages(updatedImages);
+        toast.success(`${newImages.length} billede(r) uploadet`);
+      }
     } catch (error) {
       console.error('Error uploading images:', error);
       toast.error('Kunne ikke uploade billeder');
@@ -90,13 +118,17 @@ export function ImageUploadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <ImagePlus className="h-5 w-5" />
-            Look billeder
+            Inspirationsbilleder
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Upload billeder af det look du ønsker, så din booster kan forberede sig.
+          </p>
+          
           {/* Upload buttons */}
           <div className="flex gap-2">
             <input
@@ -122,7 +154,7 @@ export function ImageUploadDialog({
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
             >
-              <Upload className="h-4 w-4" />
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Vælg billeder
             </Button>
             
@@ -144,7 +176,7 @@ export function ImageUploadDialog({
                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden border group">
                   <img 
                     src={img} 
-                    alt={`Look ${index + 1}`} 
+                    alt={`Inspiration ${index + 1}`} 
                     className="w-full h-full object-cover"
                   />
                   <button
@@ -159,15 +191,10 @@ export function ImageUploadDialog({
           ) : (
             <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
               <ImagePlus className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p>Ingen billeder tilføjet endnu</p>
-              <p className="text-sm">Upload look-inspiration eller resultater</p>
+              <p className="text-foreground">Ingen billeder tilføjet endnu</p>
+              <p className="text-sm">Upload inspirationsbilleder til din styling</p>
             </div>
           )}
-          
-          {/* Info text */}
-          <p className="text-xs text-muted-foreground">
-            Tilføj billeder af det ønskede look, inspirationsbilleder eller resultater fra behandlingen.
-          </p>
           
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
@@ -181,5 +208,127 @@ export function ImageUploadDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Inline image upload component for embedding in forms
+interface InlineImageUploadProps {
+  images: string[];
+  onImagesChange: (images: string[]) => void;
+  bookingId?: string;
+}
+
+export function InlineImageUpload({ images, onImagesChange, bookingId }: InlineImageUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadToStorage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = bookingId ? `${bookingId}/${fileName}` : `temp/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('booking-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from('booking-images')
+      .getPublicUrl(data.path);
+
+    return publicUrl.publicUrl;
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    setUploading(true);
+    
+    try {
+      const newImages: string[] = [];
+      
+      for (let i = 0; i < Math.min(files.length, 5); i++) {
+        const file = files[i];
+        
+        if (!file.type.startsWith('image/')) continue;
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} er for stor (max 5MB)`);
+          continue;
+        }
+        
+        const imageUrl = await uploadToStorage(file);
+        if (imageUrl) newImages.push(imageUrl);
+      }
+      
+      if (newImages.length > 0) {
+        onImagesChange([...images, ...newImages]);
+        toast.success(`${newImages.length} billede(r) uploadet`);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Kunne ikke uploade billeder');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    onImagesChange(images.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-foreground">Inspirationsbilleder (valgfrit)</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading || images.length >= 5}
+        >
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ImagePlus className="h-4 w-4 mr-2" />}
+          {uploading ? 'Uploader...' : 'Tilføj billeder'}
+        </Button>
+      </div>
+      
+      {images.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {images.map((img, index) => (
+            <div key={index} className="relative w-16 h-16 rounded-lg overflow-hidden border group">
+              <img src={img} alt={`Inspiration ${index + 1}`} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(index)}
+                className="absolute top-0.5 right-0.5 p-0.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <p className="text-xs text-muted-foreground">
+        Upload op til 5 billeder som inspiration til din booster (max 5MB pr. billede)
+      </p>
+    </div>
   );
 }

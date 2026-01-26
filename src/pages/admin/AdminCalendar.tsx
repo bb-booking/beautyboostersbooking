@@ -96,10 +96,43 @@ const MOCK_JOBS: Job[] = [
 const getMockBookings = (boosters: BoosterProfile[]): Omit<BoosterAvailability, 'id'>[] => {
   if (boosters.length === 0) return [];
   const today = new Date().toISOString().split('T')[0];
+  
+  // Sample mock notes with inspiration images
+  const mockNotes1 = JSON.stringify({
+    customer_name: 'Maria Jensen',
+    customer_email: 'maria@email.dk',
+    customer_phone: '+45 12 34 56 78',
+    address: 'Vesterbrogade 42, 1620 København V',
+    service: 'Bryllup makeup',
+    price: 3500,
+    people_count: 1,
+    client_type: 'privat',
+    inspiration_images: [
+      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400',
+      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400'
+    ]
+  });
+  
+  const mockNotes3 = JSON.stringify({
+    customer_name: 'Louise Nielsen',
+    customer_email: 'louise@gmail.com',
+    customer_phone: '+45 23 45 67 89',
+    address: 'Strøget 15, 8000 Aarhus C',
+    service: 'Hår styling',
+    price: 1500,
+    people_count: 1,
+    client_type: 'privat',
+    inspiration_images: [
+      'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400',
+      'https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?w=400',
+      'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400'
+    ]
+  });
+  
   return [
-    { booster_id: boosters[0]?.id || '', date: today, start_time: '09:00', end_time: '11:00', status: 'busy' as const, job_id: 'job-1', notes: '' },
+    { booster_id: boosters[0]?.id || '', date: today, start_time: '09:00', end_time: '11:00', status: 'busy' as const, job_id: 'job-1', notes: mockNotes1 },
     { booster_id: boosters[1]?.id || boosters[0]?.id || '', date: today, start_time: '10:30', end_time: '12:30', status: 'busy' as const, job_id: 'job-2', notes: '' },
-    { booster_id: boosters[2]?.id || boosters[0]?.id || '', date: today, start_time: '14:00', end_time: '16:00', status: 'busy' as const, job_id: 'job-3', notes: '' },
+    { booster_id: boosters[2]?.id || boosters[0]?.id || '', date: today, start_time: '14:00', end_time: '16:00', status: 'busy' as const, job_id: 'job-3', notes: mockNotes3 },
     { booster_id: boosters[3]?.id || boosters[0]?.id || '', date: today, start_time: '08:30', end_time: '10:00', status: 'busy' as const, job_id: 'job-4', notes: '' },
   ].filter(b => b.booster_id);
 };
@@ -1320,6 +1353,7 @@ const AdminCalendar = () => {
               address?: string;
               client_type?: string;
               company_name?: string;
+              inspiration_images?: string[];
             } = {};
             try {
               if (selectedBooking.booking.notes) {
@@ -1592,6 +1626,32 @@ const AdminCalendar = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Inspiration Images - Placeholder until linked to booking_images table */}
+                  {notesData.inspiration_images && (notesData.inspiration_images as string[]).length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                        Inspirationsbilleder
+                      </h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {(notesData.inspiration_images as string[]).map((img, idx) => (
+                          <a 
+                            key={idx} 
+                            href={img} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="aspect-square rounded-lg overflow-hidden border hover:ring-2 ring-primary transition-all"
+                          >
+                            <img 
+                              src={img} 
+                              alt={`Inspiration ${idx + 1}`} 
+                              className="w-full h-full object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Edit Mode Form */}
                   {isEditMode && (

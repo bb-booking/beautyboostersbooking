@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, Clock, MapPin, User, Star, CalendarIcon, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, MapPin, User, Star, CalendarIcon, Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { BoosterAssignment } from "@/components/booking/BoosterAssignment";
 import { LocationBubble } from "@/components/booking/LocationBubble";
 import { BookingSteps } from "@/components/booking/BookingSteps";
 import { UpsellServices } from "@/components/booking/UpsellServices";
+import { InlineImageUpload } from "@/components/booking/ImageUploadDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Service {
@@ -87,12 +88,15 @@ const Booking = () => {
   const [loading, setLoading] = useState(true);
   const [loadingBoosters, setLoadingBoosters] = useState(false);
   const [loadingSpecificBooster, setLoadingSpecificBooster] = useState(false);
-  const [boosterAssignments, setBoosterAssignments] = useState<Map<number, Booster[]>>(new Map());
+const [boosterAssignments, setBoosterAssignments] = useState<Map<number, Booster[]>>(new Map());
   
   // Availability state for booster-specific booking
   const [boosterAvailability, setBoosterAvailability] = useState<{date: string; start_time: string; end_time: string; status: string}[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [showAllTimes, setShowAllTimes] = useState(false);
+  
+  // Inspiration images
+  const [inspirationImages, setInspirationImages] = useState<string[]>([]);
   
   const isMobile = useIsMobile();
   const INITIAL_TIMES_TO_SHOW = isMobile ? 8 : 16;
@@ -457,7 +461,8 @@ const Booking = () => {
         bookingDetails,
         counts: { people: primaryService.people, boosters: cartItems.reduce((sum, item) => sum + item.boosters, 0) },
         cartItems,
-        extraBoosters: allAssignedBoosters.slice(1).map(b => ({ id: b.id, name: b.name, portfolio_image_url: b.portfolio_image_url, location: b.location }))
+        extraBoosters: allAssignedBoosters.slice(1).map(b => ({ id: b.id, name: b.name, portfolio_image_url: b.portfolio_image_url, location: b.location })),
+        inspirationImages
       }
     });
   };
@@ -960,6 +965,14 @@ const Booking = () => {
                   <span className="font-semibold">Total</span>
                   <span className="font-bold text-primary">{getTotalPrice()} kr</span>
                 </div>
+              </div>
+              
+              {/* Inspiration Images Upload */}
+              <div className="pt-4 border-t">
+                <InlineImageUpload 
+                  images={inspirationImages}
+                  onImagesChange={setInspirationImages}
+                />
               </div>
             </CardContent>
           </Card>
