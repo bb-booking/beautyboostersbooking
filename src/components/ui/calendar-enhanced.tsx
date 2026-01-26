@@ -50,7 +50,10 @@ function CalendarEnhanced({
   };
 
   const handlePrevYearRange = () => {
-    setCurrentMonth(setYear(currentMonth, yearRangeStart - 12));
+    const newYear = yearRangeStart - 12;
+    if (newYear >= 2026) {
+      setCurrentMonth(setYear(currentMonth, newYear));
+    }
   };
 
   const handleNextYearRange = () => {
@@ -58,15 +61,22 @@ function CalendarEnhanced({
   };
 
   const handlePrevYear = () => {
-    setCurrentMonth(setYear(currentMonth, currentYear - 1));
+    if (currentYear > 2026) {
+      setCurrentMonth(setYear(currentMonth, currentYear - 1));
+    }
   };
 
   const handleNextYear = () => {
     setCurrentMonth(setYear(currentMonth, currentYear + 1));
   };
 
+  const minYear = 2026;
+
   if (viewMode === "years") {
-    const years = Array.from({ length: 12 }, (_, i) => yearRangeStart + i);
+    // Always start from 2026 minimum
+    const startYear = Math.max(minYear, yearRangeStart);
+    const years = Array.from({ length: 12 }, (_, i) => startYear + i);
+    const canGoPrev = startYear > minYear;
     
     return (
       <div className={cn("p-3 pointer-events-auto", className)}>
@@ -74,15 +84,17 @@ function CalendarEnhanced({
           <button
             type="button"
             onClick={handlePrevYearRange}
+            disabled={!canGoPrev}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+              "h-7 w-7 bg-transparent p-0",
+              canGoPrev ? "opacity-50 hover:opacity-100" : "opacity-20 cursor-not-allowed"
             )}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <span className="text-sm font-medium">
-            {yearRangeStart} - {yearRangeStart + 11}
+            {startYear} - {startYear + 11}
           </span>
           <button
             type="button"
@@ -116,15 +128,19 @@ function CalendarEnhanced({
   }
 
   if (viewMode === "months") {
+    const canGoPrevYear = currentYear > minYear;
+    
     return (
       <div className={cn("p-3 pointer-events-auto", className)}>
         <div className="flex items-center justify-between mb-4">
           <button
             type="button"
             onClick={handlePrevYear}
+            disabled={!canGoPrevYear}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+              "h-7 w-7 bg-transparent p-0",
+              canGoPrevYear ? "opacity-50 hover:opacity-100" : "opacity-20 cursor-not-allowed"
             )}
           >
             <ChevronLeft className="h-4 w-4" />
