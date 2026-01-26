@@ -144,7 +144,8 @@ export const MultiServiceJobDialog = ({
     return boosters.find(b => b.id === boosterId)?.name || "";
   };
 
-  const getBoosterImage = (booster: BoosterProfile) => {
+  const getBoosterImage = (booster: BoosterProfile | undefined) => {
+    if (!booster) return undefined;
     if (booster.portfolio_image_url) return booster.portfolio_image_url;
     const nameLower = booster.name.toLowerCase();
     return boosterImageOverrides[nameLower] || boosterImageOverrides[nameLower.split(' ')[0]] || null;
@@ -691,7 +692,7 @@ export const MultiServiceJobDialog = ({
                     {service.boosterId && (
                       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                         <Avatar className="h-5 w-5 ring-1 ring-green-500">
-                          <AvatarImage src={getBoosterImage(boosters.find(b => b.id === service.boosterId)!) || undefined} />
+                          <AvatarImage src={getBoosterImage(boosters.find(b => b.id === service.boosterId)) || undefined} />
                           <AvatarFallback className="text-[8px]">
                             {service.boosterName.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
