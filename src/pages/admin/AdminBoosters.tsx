@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +21,11 @@ import {
   Send,
   CheckCircle,
   Calendar,
-  UserPlus
+  UserPlus,
+  Pencil,
+  Save,
+  Phone,
+  Mail
 } from "lucide-react";
 
 interface BoosterProfile {
@@ -35,6 +40,9 @@ interface BoosterProfile {
   is_available: boolean;
   bio?: string;
   portfolio_image_url?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  employment_type?: string | null;
 }
 
 interface Service {
@@ -63,6 +71,23 @@ const AdminBoosters = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState<string>("all");
   const [selectedBoosters, setSelectedBoosters] = useState<string[]>([]);
   const [showSendJobDialog, setShowSendJobDialog] = useState(false);
+  
+  // Edit booster state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingBooster, setEditingBooster] = useState<BoosterProfile | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    bio: "",
+    specialties: [] as string[],
+    years_experience: 0,
+    hourly_rate: 0,
+    is_available: true,
+    employment_type: "freelancer"
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -273,6 +298,73 @@ const AdminBoosters = () => {
 
   const clearSelection = () => {
     setSelectedBoosters([]);
+  };
+
+  const openEditDialog = (booster: BoosterProfile) => {
+    setEditingBooster(booster);
+    setEditForm({
+      name: booster.name || "",
+      email: booster.email || "",
+      phone: booster.phone || "",
+      location: booster.location || "",
+      bio: booster.bio || "",
+      specialties: booster.specialties || [],
+      years_experience: booster.years_experience || 0,
+      hourly_rate: booster.hourly_rate || 0,
+      is_available: booster.is_available ?? true,
+      employment_type: booster.employment_type || "freelancer"
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveBooster = async () => {
+    if (!editingBooster) return;
+    
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from('booster_profiles')
+        .update({
+          name: editForm.name,
+          email: editForm.email || null,
+          phone: editForm.phone || null,
+          location: editForm.location,
+          bio: editForm.bio || null,
+          specialties: editForm.specialties,
+          years_experience: editForm.years_experience,
+          hourly_rate: editForm.hourly_rate,
+          is_available: editForm.is_available,
+          employment_type: editForm.employment_type
+        })
+        .eq('id', editingBooster.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setBoosters(prev => prev.map(b => 
+        b.id === editingBooster.id 
+          ? { ...b, ...editForm }
+          : b
+      ));
+
+      toast.success("Booster profil opdateret");
+      setEditDialogOpen(false);
+      setEditingBooster(null);
+    } catch (error: any) {
+      console.error('Error updating booster:', error);
+      toast.error("Kunne ikke opdatere booster profil");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const toggleSpecialty = (specialty: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      specialties: prev.specialties.includes(specialty)
+        ? prev.specialties.filter(s => s !== specialty)
+        : [...prev.specialties, specialty]
+    }));
   };
 
   const filteredBoosters = boosters.filter(booster => {
@@ -553,75 +645,231 @@ const AdminBoosters = () => {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      {/* Grid layout - 3 columns on desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredBoosters.map((booster) => (
-          <Card key={booster.id} className={`cursor-pointer transition-all ${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
-            <CardContent className="p-6" onClick={() => toggleBoosterSelection(booster.id)}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-4 flex-1">
+          <Card 
+            key={booster.id} 
+            className={`cursor-pointer transition-all hover:shadow-md ${selectedBoosters.includes(booster.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+          >
+            <CardContent className="p-4">
+              {/* Header with checkbox and edit */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2" onClick={() => toggleBoosterSelection(booster.id)}>
                   <Checkbox 
                     checked={selectedBoosters.includes(booster.id)}
                     onChange={() => toggleBoosterSelection(booster.id)}
                   />
-                  <img
-                    src={booster.portfolio_image_url || "/placeholder.svg"}
-                    alt={booster.name}
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold">{booster.name}</h3>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                          {booster.is_available ? 'Tilgængelig' : 'Ikke tilgængelig'}
-                        </Badge>
-                        {selectedBoosters.includes(booster.id) && (
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span>{booster.location}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Star className="h-4 w-4 text-yellow-500" />
-                          <span>{booster.rating}/5</span>
-                          <span className="text-muted-foreground">({booster.review_count} anmeldelser)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>{booster.years_experience} års erfaring</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Specialer:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {booster.specialties.map((specialty, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {specialty}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {booster.bio && (
-                      <div className="mt-4">
-                        <p className="text-sm text-muted-foreground">{booster.bio}</p>
-                      </div>
-                    )}
-                  </div>
+                  {selectedBoosters.includes(booster.id) && (
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                  )}
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditDialog(booster);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Profile section */}
+              <div className="flex flex-col items-center text-center mb-4" onClick={() => toggleBoosterSelection(booster.id)}>
+                <img
+                  src={booster.portfolio_image_url || "/placeholder.svg"}
+                  alt={booster.name}
+                  className="h-20 w-20 rounded-full object-cover mb-3"
+                />
+                <h3 className="font-semibold text-foreground">{booster.name}</h3>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  <span>{booster.location}</span>
+                </div>
+              </div>
+
+              {/* Status badge */}
+              <div className="flex justify-center mb-3">
+                <Badge className={booster.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                  {booster.is_available ? 'Tilgængelig' : 'Ikke tilgængelig'}
+                </Badge>
+              </div>
+
+              {/* Stats */}
+              <div className="flex justify-center gap-4 text-sm mb-3" onClick={() => toggleBoosterSelection(booster.id)}>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  <span className="text-foreground">{booster.rating}/5</span>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>{booster.years_experience} år</span>
+                </div>
+              </div>
+
+              {/* Specialties */}
+              <div className="flex flex-wrap gap-1 justify-center" onClick={() => toggleBoosterSelection(booster.id)}>
+                {booster.specialties.slice(0, 3).map((specialty, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {specialty}
+                  </Badge>
+                ))}
+                {booster.specialties.length > 3 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{booster.specialties.length - 3}
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Edit Booster Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Rediger Booster: {editingBooster?.name}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Navn *</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Telefon</Label>
+                <Input
+                  id="edit-phone"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-location">Lokation *</Label>
+                <Select 
+                  value={editForm.location} 
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, location: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vælg lokation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map(location => (
+                      <SelectItem key={location} value={location}>{location}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-years">Års erfaring</Label>
+                <Input
+                  id="edit-years"
+                  type="number"
+                  min="0"
+                  value={editForm.years_experience}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, years_experience: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-rate">Timepris (DKK)</Label>
+                <Input
+                  id="edit-rate"
+                  type="number"
+                  min="0"
+                  value={editForm.hourly_rate}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, hourly_rate: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-employment">Ansættelsestype</Label>
+                <Select 
+                  value={editForm.employment_type} 
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, employment_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="freelancer">Freelancer (B-indkomst)</SelectItem>
+                    <SelectItem value="salaried">Lønmodtager</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-bio">Bio</Label>
+              <Textarea
+                id="edit-bio"
+                value={editForm.bio}
+                onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Specialer</Label>
+              <div className="flex flex-wrap gap-2">
+                {getUniqueSpecialties().map(specialty => (
+                  <Badge
+                    key={specialty}
+                    variant={editForm.specialties.includes(specialty) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleSpecialty(specialty)}
+                  >
+                    {specialty}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div>
+                <Label htmlFor="edit-available">Tilgængelig for jobs</Label>
+                <p className="text-sm text-muted-foreground">Kan modtage nye booking forespørgsler</p>
+              </div>
+              <Switch
+                id="edit-available"
+                checked={editForm.is_available}
+                onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, is_available: checked }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Annuller
+            </Button>
+            <Button onClick={handleSaveBooster} disabled={savingEdit}>
+              <Save className="h-4 w-4 mr-2" />
+              {savingEdit ? "Gemmer..." : "Gem ændringer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {filteredBoosters.length === 0 && !loading && (
         <Card>
