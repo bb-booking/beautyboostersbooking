@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -31,6 +32,8 @@ import {
   FileSpreadsheet,
   AlertCircle,
   CheckCircle,
+  Pencil,
+  Save,
 } from "lucide-react";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
@@ -80,6 +83,12 @@ export default function AdminCustomers() {
   const [customerBookings, setCustomerBookings] = useState<CustomerBooking[]>([]);
   const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
   
   // Import state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -137,7 +146,14 @@ export default function AdminCustomers() {
         }
       });
 
-      setCustomers(Array.from(customerMap.values()).sort((a, b) => b.totalBookings - a.totalBookings));
+      // Sort alphabetically by name (fallback to email if no name)
+      const sortedCustomers = Array.from(customerMap.values()).sort((a, b) => {
+        const nameA = (a.name || a.email).toLowerCase();
+        const nameB = (b.name || b.email).toLowerCase();
+        return nameA.localeCompare(nameB, 'da');
+      });
+
+      setCustomers(sortedCustomers);
     } catch (error) {
       console.error("Error fetching customers:", error);
     } finally {
@@ -147,6 +163,9 @@ export default function AdminCustomers() {
 
   const fetchCustomerDetails = async (customer: Customer) => {
     setSelectedCustomer(customer);
+    setEditName(customer.name || "");
+    setEditPhone(customer.phone || "");
+    setIsEditing(false);
     setDialogOpen(true);
 
     // Fetch bookings for this customer
@@ -157,17 +176,51 @@ export default function AdminCustomers() {
       .order("booking_date", { ascending: false });
 
     setCustomerBookings(bookings || []);
-
-    // Try to find user_id from auth to get addresses
-    // We'll search customer_addresses by checking if any match this email
-    // Since customer_addresses uses user_id, we need to find the user
-    const { data: addresses } = await supabase
-      .from("customer_addresses")
-      .select("*");
-
-    // For now, we can't directly link addresses without user_id mapping
-    // We'll show addresses if we can identify the user
     setCustomerAddresses([]);
+  };
+
+  const handleSaveContact = async () => {
+    if (!selectedCustomer) return;
+    
+    setSavingContact(true);
+    try {
+      // Update all bookings for this customer with the new contact info
+      const { error } = await supabase
+        .from("bookings")
+        .update({
+          customer_name: editName || null,
+          customer_phone: editPhone || null,
+        })
+        .eq("customer_email", selectedCustomer.email);
+
+      if (error) throw error;
+
+      // Update local state
+      setSelectedCustomer({
+        ...selectedCustomer,
+        name: editName || null,
+        phone: editPhone || null,
+      });
+
+      // Update customers list
+      setCustomers(prev => prev.map(c => 
+        c.email === selectedCustomer.email 
+          ? { ...c, name: editName || null, phone: editPhone || null }
+          : c
+      ).sort((a, b) => {
+        const nameA = (a.name || a.email).toLowerCase();
+        const nameB = (b.name || b.email).toLowerCase();
+        return nameA.localeCompare(nameB, 'da');
+      }));
+
+      setIsEditing(false);
+      toast.success("Kontaktoplysninger opdateret");
+    } catch (error: any) {
+      console.error("Error saving contact:", error);
+      toast.error("Kunne ikke gemme ændringer");
+    } finally {
+      setSavingContact(false);
+    }
   };
 
   // CSV/Numbers import functions
@@ -399,7 +452,11 @@ export default function AdminCustomers() {
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.email} className="cursor-pointer hover:bg-muted/50">
+                    <TableRow 
+                      key={customer.email} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => fetchCustomerDetails(customer)}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -419,16 +476,12 @@ export default function AdminCustomers() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-1 text-sm text-foreground">
                             <Mail className="h-3 w-3 text-muted-foreground" />
-                            <a href={`mailto:${customer.email}`} className="hover:underline">
-                              {customer.email}
-                            </a>
+                            <span>{customer.email}</span>
                           </div>
                           {customer.phone && (
                             <div className="flex items-center gap-1 text-sm text-foreground">
                               <Phone className="h-3 w-3 text-muted-foreground" />
-                              <a href={`tel:${customer.phone}`} className="hover:underline">
-                                {customer.phone}
-                              </a>
+                              <span>{customer.phone}</span>
                             </div>
                           )}
                         </div>
@@ -450,7 +503,10 @@ export default function AdminCustomers() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => fetchCustomerDetails(customer)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fetchCustomerDetails(customer);
+                          }}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
@@ -487,32 +543,94 @@ export default function AdminCustomers() {
             <div className="space-y-6 pr-4">
               {/* Contact Info */}
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2 text-foreground">
-                  <User className="h-4 w-4" />
-                  Kontaktoplysninger
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={`mailto:${selectedCustomer?.email}`}
-                      className="text-foreground hover:underline"
-                    >
-                      {selectedCustomer?.email}
-                    </a>
-                  </div>
-                  {selectedCustomer?.phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <a
-                        href={`tel:${selectedCustomer.phone}`}
-                        className="text-foreground hover:underline"
-                      >
-                        {selectedCustomer.phone}
-                      </a>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2 text-foreground">
+                    <User className="h-4 w-4" />
+                    Kontaktoplysninger
+                  </h3>
+                  {!isEditing ? (
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Rediger
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        setIsEditing(false);
+                        setEditName(selectedCustomer?.name || "");
+                        setEditPhone(selectedCustomer?.phone || "");
+                      }}>
+                        Annuller
+                      </Button>
+                      <Button size="sm" onClick={handleSaveContact} disabled={savingContact}>
+                        <Save className="h-4 w-4 mr-1" />
+                        {savingContact ? "Gemmer..." : "Gem"}
+                      </Button>
                     </div>
                   )}
                 </div>
+                
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name">Navn</Label>
+                      <Input
+                        id="edit-name"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Kundens navn"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-email">Email</Label>
+                      <Input
+                        id="edit-email"
+                        value={selectedCustomer?.email || ""}
+                        disabled
+                        className="bg-muted"
+                      />
+                      <p className="text-xs text-muted-foreground">Email kan ikke ændres</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-phone">Telefon</Label>
+                      <Input
+                        id="edit-phone"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        placeholder="Telefonnummer"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a
+                        href={`mailto:${selectedCustomer?.email}`}
+                        className="text-foreground hover:underline"
+                      >
+                        {selectedCustomer?.email}
+                      </a>
+                    </div>
+                    {selectedCustomer?.phone && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <a
+                          href={`tel:${selectedCustomer.phone}`}
+                          className="text-foreground hover:underline"
+                        >
+                          {selectedCustomer.phone}
+                        </a>
+                      </div>
+                    )}
+                    {!selectedCustomer?.phone && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>Intet telefonnummer</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <Separator />
