@@ -1489,32 +1489,69 @@ const AdminCalendar = () => {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col gap-2 pt-2">
-                    <div className="flex gap-2">
-                      <Button variant="default" className="flex-1 gap-2" onClick={handleOpenChat}>
+                  {/* Admin Action Buttons */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Handlinger</h4>
+                    
+                    {/* Primary Admin Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" className="gap-2" onClick={() => {
+                        toast.info("Rediger booking...");
+                        // TODO: Open edit dialog
+                      }}>
+                        <Edit className="h-4 w-4" />
+                        Rediger
+                      </Button>
+                      <Button variant="outline" className="gap-2" onClick={() => {
+                        toast.info("Tilføj service...");
+                        // TODO: Open add service dialog
+                      }}>
+                        <Plus className="h-4 w-4" />
+                        Tilføj service
+                      </Button>
+                    </div>
+
+                    {/* Communication Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="default" className="gap-2" onClick={handleOpenChat}>
                         <MessageCircle className="h-4 w-4" />
                         Chat
                       </Button>
-                      <Button variant="outline" className="flex-1 gap-2" onClick={openGoogleMaps}>
+                      <Button variant="outline" className="gap-2" onClick={openGoogleMaps}>
                         <Navigation className="h-4 w-4" />
                         Navigation
                       </Button>
                     </div>
+
                     {hasTeam && (
                       <Button variant="secondary" className="w-full gap-2" onClick={handleCreateGroupChat}>
                         <Users className="h-4 w-4" />
                         Opret gruppechat
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      className="w-full gap-2 text-destructive hover:text-destructive"
-                      onClick={handleReleaseJob}
-                    >
-                      <HandHelping className="h-4 w-4" />
-                      Frigiv job
-                    </Button>
+
+                    {/* Destructive Actions */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                      <Button 
+                        variant="outline" 
+                        className="gap-2"
+                        onClick={handleReleaseJob}
+                      >
+                        <HandHelping className="h-4 w-4" />
+                        Frigiv job
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          toast.info("Sletter booking...");
+                          // TODO: Implement delete
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Slet
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </>
