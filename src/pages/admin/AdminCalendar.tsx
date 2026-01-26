@@ -985,102 +985,95 @@ const AdminCalendar = () => {
 
         {/* Calendar Grid - Day or Week View */}
         {viewMode === 'day' ? (
-          // DAY VIEW - Scroll container with sticky header row AND sticky time column
+          // DAY VIEW - CSS Grid with proper sticky positioning
           <div 
             ref={scrollContainerRef}
             className="flex-1 overflow-auto min-h-0"
           >
             <div 
-              className="relative" 
-              style={{ minWidth: `${Math.max(filteredBoosters.length * 96 + 60, 400)}px` }}
+              className="grid"
+              style={{ 
+                gridTemplateColumns: `60px repeat(${filteredBoosters.length}, 96px)`,
+                gridTemplateRows: `56px repeat(${timeSlots.length}, 28px)`
+              }}
             >
-              {/* Booster Header Row - STICKY TOP so it stays when scrolling down */}
-              <div className="sticky top-0 z-20 flex border-b bg-card">
-                {/* Corner cell - sticky BOTH top and left */}
-                <div className="sticky left-0 z-30 w-[60px] shrink-0 flex items-center justify-center text-xs font-medium text-foreground border-r h-14 bg-card">
-                  Uge {weekNumber}
+              {/* Corner cell - STICKY BOTH top-0 AND left-0 */}
+              <div className="sticky top-0 left-0 z-30 flex items-center justify-center text-xs font-medium text-foreground border-r border-b bg-card">
+                Uge {weekNumber}
+              </div>
+              
+              {/* Booster header cells - STICKY TOP */}
+              {filteredBoosters.map(booster => (
+                <div 
+                  key={`header-${booster.id}`}
+                  className="sticky top-0 z-20 p-1.5 border-r border-b flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors bg-card"
+                  onClick={() => {
+                    setSelectedBooster(booster);
+                    setBoosterViewMode('day');
+                  }}
+                >
+                  <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
+                    <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
+                    <AvatarFallback className="text-[10px] bg-primary/10">
+                      {booster.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-[10px] font-medium text-foreground truncate max-w-full text-center">
+                    {booster.name.split(' ')[0]}
+                  </span>
                 </div>
-                
-                {/* Booster avatars - scroll horizontally, but stay at top */}
-                {filteredBoosters.map(booster => (
+              ))}
+              
+              {/* Time slots and booking cells */}
+              {timeSlots.map((timeSlot, slotIdx) => (
+                <React.Fragment key={timeSlot}>
+                  {/* Time cell - STICKY LEFT */}
                   <div 
-                    key={booster.id} 
-                    className="w-24 shrink-0 p-1.5 border-r flex flex-col items-center gap-0.5 cursor-pointer hover:bg-muted/50 transition-colors bg-card"
-                    onClick={() => {
-                      setSelectedBooster(booster);
-                      setBoosterViewMode('day');
-                    }}
+                    className={cn(
+                      "sticky left-0 z-10 flex items-start justify-end pr-2 text-[10px] font-medium text-foreground border-r border-b",
+                      slotIdx % 2 === 0 ? "bg-muted/50" : "bg-card"
+                    )}
                   >
-                    <Avatar className="h-7 w-7 ring-2 ring-green-500 ring-offset-1">
-                      <AvatarImage src={getBoosterImage(booster) || undefined} alt={booster.name} />
-                      <AvatarFallback className="text-[10px] bg-primary/10">
-                        {booster.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-[10px] font-medium text-foreground truncate max-w-full text-center">
-                      {booster.name.split(' ')[0]}
-                    </span>
+                    {slotIdx % 2 === 0 ? timeSlot : ''}
                   </div>
-                ))}
-              </div>
-
-              {/* Time Grid with sticky time column */}
-              <div className="flex">
-                {/* Sticky Time Column - stays visible when scrolling horizontally */}
-                <div className="sticky left-0 z-10 w-[60px] shrink-0 border-r bg-card">
-                  {timeSlots.map((timeSlot, idx) => (
-                    <div 
-                      key={timeSlot}
-                      className={cn(
-                        "h-7 flex items-start justify-end pr-2 text-[10px] font-medium text-foreground",
-                        idx % 2 === 0 ? "bg-muted/30" : "bg-card"
-                      )}
-                    >
-                      {idx % 2 === 0 ? timeSlot : ''}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Booster columns with bookings */}
-                {filteredBoosters.map(booster => (
-                  <div key={booster.id} className="w-24 shrink-0">
-                    {timeSlots.map((timeSlot, idx) => {
-                      const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
-                      const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
-                      const hasBookingStarting = bookingsStarting.length > 0;
-                      
-                      return (
-                        <DroppableSlot
-                          key={`${booster.id}-${timeSlot}`}
-                          boosterId={booster.id}
-                          timeSlot={timeSlot}
-                          date={selectedDate}
-                          onAddJob={handleAddJob}
-                          hasBooking={isOccupied}
-                        >
-                          {bookingsStarting.map(avail => {
-                            const job = getJobForAvailability(avail.job_id);
-                            const isPrivate = job?.client_type !== 'virksomhed';
-                            
-                            return (
-                              <DraggableBookingCard
-                                key={avail.id}
-                                booking={avail}
-                                job={job}
-                                isPrivate={isPrivate}
-                                onClick={() => handleBookingClick(avail, job, booster.name, booster.id)}
-                              />
-                            );
-                          })}
-                          {isOccupied && !hasBookingStarting && (
-                            <div className="absolute inset-0 bg-muted/30" />
-                          )}
-                        </DroppableSlot>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+                  
+                  {/* Booking cells for each booster */}
+                  {filteredBoosters.map(booster => {
+                    const bookingsStarting = getBookingsStartingAtTime(booster.id, selectedDate, timeSlot);
+                    const isOccupied = isSlotOccupied(booster.id, selectedDate, timeSlot);
+                    const hasBookingStarting = bookingsStarting.length > 0;
+                    
+                    return (
+                      <DroppableSlot
+                        key={`${booster.id}-${timeSlot}`}
+                        boosterId={booster.id}
+                        timeSlot={timeSlot}
+                        date={selectedDate}
+                        onAddJob={handleAddJob}
+                        hasBooking={isOccupied}
+                      >
+                        {bookingsStarting.map(avail => {
+                          const job = getJobForAvailability(avail.job_id);
+                          const isPrivate = job?.client_type !== 'virksomhed';
+                          
+                          return (
+                            <DraggableBookingCard
+                              key={avail.id}
+                              booking={avail}
+                              job={job}
+                              isPrivate={isPrivate}
+                              onClick={() => handleBookingClick(avail, job, booster.name, booster.id)}
+                            />
+                          );
+                        })}
+                        {isOccupied && !hasBookingStarting && (
+                          <div className="absolute inset-0 bg-muted/30" />
+                        )}
+                      </DroppableSlot>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
             </div>
           </div>
         ) : (
