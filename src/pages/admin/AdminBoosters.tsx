@@ -904,6 +904,8 @@ const AdminBoosters = () => {
         booster={viewingBooster}
         open={profileDialogOpen}
         onOpenChange={setProfileDialogOpen}
+        onBoosterUpdated={fetchBoosters}
+        onBoosterDeleted={fetchBoosters}
       />
 
       {filteredBoosters.length === 0 && !loading && (
