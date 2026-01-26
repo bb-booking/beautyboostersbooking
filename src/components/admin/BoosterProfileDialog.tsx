@@ -403,30 +403,20 @@ export const BoosterProfileDialog = ({
                         />
                       </div>
                       <div>
-                        <Label htmlFor="rate">Timepris (DKK)</Label>
-                        <Input
-                          id="rate"
-                          type="number"
-                          min="0"
-                          value={editForm.hourly_rate}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, hourly_rate: parseInt(e.target.value) || 0 }))}
-                        />
+                        <Label htmlFor="employment">Ansættelsestype</Label>
+                        <Select
+                          value={editForm.employment_type}
+                          onValueChange={(value) => setEditForm(prev => ({ ...prev, employment_type: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="freelancer">Freelancer (B-lønnet)</SelectItem>
+                            <SelectItem value="cvr">CVR-lønnet</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="employment">Ansættelsestype</Label>
-                      <Select
-                        value={editForm.employment_type}
-                        onValueChange={(value) => setEditForm(prev => ({ ...prev, employment_type: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="freelancer">Freelancer (B-indkomst)</SelectItem>
-                          <SelectItem value="salaried">Lønmodtager</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                 ) : (
@@ -480,14 +470,8 @@ export const BoosterProfileDialog = ({
                     <div className="flex flex-wrap gap-2 text-sm">
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Briefcase className="h-4 w-4" />
-                        <span>{booster.employment_type === 'salaried' ? 'Lønmodtager' : 'Freelancer (B-indkomst)'}</span>
+                        <span>{booster.employment_type === 'cvr' ? 'CVR-lønnet' : 'Freelancer (B-lønnet)'}</span>
                       </div>
-                      {booster.hourly_rate > 0 && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>{booster.hourly_rate} DKK/time</span>
-                        </div>
-                      )}
                     </div>
                   </>
                 )}
