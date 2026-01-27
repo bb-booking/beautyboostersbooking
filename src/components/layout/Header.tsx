@@ -179,7 +179,9 @@ const Header = () => {
                 </Link>
               )}
               {loggedIn && (
-                <Link to="/customer/dashboard"><DropdownMenuItem><User className="mr-2 h-4 w-4" /> Min konto</DropdownMenuItem></Link>
+                <Link to={userRole === 'admin' ? '/admin/dashboard' : userRole === 'booster' ? '/booster/dashboard' : '/customer/dashboard'}>
+                  <DropdownMenuItem><User className="mr-2 h-4 w-4" /> Min konto</DropdownMenuItem>
+                </Link>
               )}
               <Link to="/stylists"><DropdownMenuItem><Users className="mr-2 h-4 w-4" /> Vores Boosters</DropdownMenuItem></Link>
               <Link to="/giftcards"><DropdownMenuItem><Gift className="mr-2 h-4 w-4" /> Køb gavekort</DropdownMenuItem></Link>
@@ -233,7 +235,12 @@ const Header = () => {
                     </Link>
                   )}
                   {loggedIn && (
-                    <Link to="/customer/dashboard" className="text-foreground hover:underline">Min konto</Link>
+                    <Link 
+                      to={userRole === 'admin' ? '/admin/dashboard' : userRole === 'booster' ? '/booster/dashboard' : '/customer/dashboard'} 
+                      className="text-foreground hover:underline"
+                    >
+                      Min konto
+                    </Link>
                   )}
                   <Link to="/stylists" className="text-foreground hover:underline">Vores Boosters</Link>
                   <Link to="/giftcards" className="text-foreground hover:underline">Køb gavekort</Link>
@@ -288,7 +295,7 @@ const Header = () => {
                 variant="ghost"
                 size="sm"
                 className="text-primary-foreground hover:text-background hover:bg-background/10"
-                onClick={() => navigate("/customer/dashboard")}
+                onClick={() => navigate(userRole === 'admin' ? '/admin/dashboard' : userRole === 'booster' ? '/booster/dashboard' : '/customer/dashboard')}
               >
                 <User className="h-4 w-4 mr-2" />
                 Min konto
