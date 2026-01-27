@@ -30,7 +30,7 @@ import {
   Percent,
   Banknote
 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays, addMonths, getDay, subDays, getMonth, getYear } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays, addMonths, getDay, subDays, getMonth, getYear, startOfYear, startOfDay } from "date-fns";
 import { da } from "date-fns/locale";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,8 +187,12 @@ const BEAUTYBOOSTERS_CUT_PERCENT = 40;
 const VAT_RATE = 0.25; // 25% Danish VAT
 
 export default function BoosterFinance() {
-  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
+  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year' | 'ytd' | 'custom'>('month');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [earningsData, setEarningsData] = useState<EarningsData[]>([]);
   const [recentJobs, setRecentJobs] = useState<JobEarning[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -447,13 +451,58 @@ export default function BoosterFinance() {
     setVatSavingsAmount(currentMonthGross * 0.20);
   }, [boosterProfile.vatPeriod]);
 
-  const currentEarnings = earningsData.find(data => {
-    if (selectedPeriod === 'day') return data.period === 'I dag';
-    if (selectedPeriod === 'week') return data.period === 'Denne uge';
-    if (selectedPeriod === 'month') return data.period === 'Denne måned';
-    if (selectedPeriod === 'year') return data.period === 'Dette år';
-    return data;
-  }) || earningsData[0];
+  const getPeriodLabel = () => {
+    switch (selectedPeriod) {
+      case 'day': return 'dag';
+      case 'week': return 'uge';
+      case 'month': return 'måned';
+      case 'year': return 'år';
+      case 'ytd': return 'år til dato';
+      case 'custom': return 'periode';
+    }
+  };
+
+  // Calculate period-specific earnings based on selection
+  const getFilteredEarnings = () => {
+    const today = new Date();
+    
+    if (selectedPeriod === 'custom' && customStartDate && customEndDate) {
+      const daysDiff = differenceInDays(customEndDate, customStartDate) + 1;
+      // Scale based on monthly data (assuming ~30 days = 24 jobs, 96 hours, 57600 gross)
+      const scaleFactor = daysDiff / 30;
+      const jobs = Math.round(24 * scaleFactor);
+      const hours = Math.round(96 * scaleFactor);
+      const gross = Math.round(57600 * scaleFactor);
+      const tax = Math.round(gross * 0.25);
+      const net = gross - tax;
+      return { period: 'Valgt periode', jobs, hours, gross, tax, net };
+    }
+
+    if (selectedPeriod === 'ytd') {
+      const startOfYearDate = startOfYear(today);
+      const daysSoFar = differenceInDays(today, startOfYearDate) + 1;
+      const scaleFactor = daysSoFar / 365;
+      const jobs = Math.round(156 * scaleFactor);
+      const hours = Math.round(624 * scaleFactor);
+      const gross = Math.round(374400 * scaleFactor);
+      const tax = Math.round(gross * 0.25);
+      const net = gross - tax;
+      return { period: 'År til dato', jobs, hours, gross, tax, net };
+    }
+
+    // Fall back to existing logic for standard periods
+    const found = earningsData.find(data => {
+      if (selectedPeriod === 'day') return data.period === 'I dag';
+      if (selectedPeriod === 'week') return data.period === 'Denne uge';
+      if (selectedPeriod === 'month') return data.period === 'Denne måned';
+      if (selectedPeriod === 'year') return data.period === 'Dette år';
+      return false;
+    });
+    return found || earningsData[0];
+  };
+
+  // Use the filtered earnings function
+  const currentEarnings = getFilteredEarnings();
 
   const getStatusColor = (status: JobEarning['status']) => {
     switch (status) {
@@ -488,15 +537,6 @@ export default function BoosterFinance() {
       case 'processing': return 'Behandles';
       case 'pending': return 'Afventer';
       default: return status;
-    }
-  };
-
-  const getPeriodLabel = () => {
-    switch (selectedPeriod) {
-      case 'day': return 'Dag';
-      case 'week': return 'Uge';
-      case 'month': return 'Måned';
-      case 'year': return 'År';
     }
   };
 
@@ -565,8 +605,14 @@ export default function BoosterFinance() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
-            <SelectTrigger className="w-24 sm:w-32">
+          <Select value={selectedPeriod} onValueChange={(value: any) => {
+            setSelectedPeriod(value);
+            if (value !== 'custom') {
+              setCustomStartDate(undefined);
+              setCustomEndDate(undefined);
+            }
+          }}>
+            <SelectTrigger className="w-28 sm:w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -574,24 +620,73 @@ export default function BoosterFinance() {
               <SelectItem value="week">Uge</SelectItem>
               <SelectItem value="month">Måned</SelectItem>
               <SelectItem value="year">År</SelectItem>
+              <SelectItem value="ytd">År til dato</SelectItem>
+              <SelectItem value="custom">Periode</SelectItem>
             </SelectContent>
           </Select>
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-                <CalendarIcon className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{format(selectedDate, "d. MMM", { locale: da })}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarEnhanced
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                showTodayButton
-              />
-            </PopoverContent>
-          </Popover>
+          {selectedPeriod !== 'custom' && selectedPeriod !== 'ytd' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                  <CalendarIcon className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{format(selectedDate, "d. MMM", { locale: da })}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarEnhanced
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  showTodayButton
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {selectedPeriod === 'custom' && (
+            <>
+              <Popover open={showStartPicker} onOpenChange={setShowStartPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                    <CalendarIcon className="h-4 w-4 sm:mr-2" />
+                    <span>{customStartDate ? format(customStartDate, "d. MMM", { locale: da }) : 'Fra'}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarEnhanced
+                    selected={customStartDate}
+                    onSelect={(date) => {
+                      setCustomStartDate(date || undefined);
+                      setShowStartPicker(false);
+                    }}
+                    showTodayButton
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span className="text-muted-foreground text-sm">–</span>
+
+              <Popover open={showEndPicker} onOpenChange={setShowEndPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                    <CalendarIcon className="h-4 w-4 sm:mr-2" />
+                    <span>{customEndDate ? format(customEndDate, "d. MMM", { locale: da }) : 'Til'}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <CalendarEnhanced
+                    selected={customEndDate}
+                    onSelect={(date) => {
+                      setCustomEndDate(date || undefined);
+                      setShowEndPicker(false);
+                    }}
+                    showTodayButton
+                    disabled={(date) => customStartDate ? date < customStartDate : false}
+                  />
+                </PopoverContent>
+              </Popover>
+            </>
+          )}
         </div>
       </div>
 
