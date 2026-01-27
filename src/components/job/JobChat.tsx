@@ -140,21 +140,46 @@ const JobChat = ({ jobId, userType, userName = 'Admin', readOnly = false }: JobC
       return;
     }
 
+    const messageText = newMessage;
+    
+    // Optimistic update - add message immediately to UI
+    const optimisticMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      sender_type: userType,
+      message_text: messageText || undefined,
+      image_url: imageUrl || undefined,
+      created_at: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage("");
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('job_communications')
         .insert([{
           job_id: jobId,
           sender_type: userType,
-          message_text: newMessage || null,
+          message_text: messageText || null,
           image_url: imageUrl || null
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
-      setNewMessage("");
+      
+      // Replace optimistic message with real one from DB
+      if (data) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === optimisticMessage.id 
+            ? { ...data, sender_type: data.sender_type as 'customer' | 'booster' | 'admin' }
+            : msg
+        ));
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Fejl ved afsendelse af besked');
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
     }
   };
 
