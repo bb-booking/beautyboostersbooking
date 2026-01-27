@@ -91,7 +91,7 @@ export default function AdminMessages() {
         console.error('Error loading admins:', error);
         return;
       }
-      setAdmins(data?.users || []);
+      setAdmins(data?.admins || []);
     } catch (err) {
       console.error('Failed to load admins:', err);
     }
