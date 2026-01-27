@@ -442,7 +442,7 @@ export const BoosterProfileDialog = ({
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold text-foreground">{displayData.name}</h2>
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/stylists/${booster.id}`} target="_blank">
+                        <Link to={`/stylist/${booster.id}`} target="_blank">
                           <ExternalLink className="h-4 w-4 mr-1" />
                           Gå til profil
                         </Link>
