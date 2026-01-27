@@ -112,6 +112,13 @@ const AdminFinance = () => {
   // Booster detail state
   const [selectedBooster, setSelectedBooster] = useState<{ name: string; earnings: number; jobs_completed: number } | null>(null);
   const [showAllBoosters, setShowAllBoosters] = useState(false);
+  
+  // Top-level finance tabs - MUST be before any early returns
+  const [financeTab, setFinanceTab] = useState<'overview' | 'monthly' | 'invoices'>('overview');
+  
+  // Lazy import components for tabs - MUST be before any early returns
+  const MonthlyOverviewContent = lazy(() => import('./AdminMonthlyOverview'));
+  const InvoicesContent = lazy(() => import('./AdminInvoices'));
 
   // Mock booster jobs data
   const getBoosterJobs = (boosterName: string) => {
@@ -579,13 +586,6 @@ const AdminFinance = () => {
     printWindow.document.close();
     printWindow.print();
   };
-
-  // Top-level finance tabs
-  const [financeTab, setFinanceTab] = useState<'overview' | 'monthly' | 'invoices'>('overview');
-
-  // Lazy import components for tabs
-  const MonthlyOverviewContent = lazy(() => import('./AdminMonthlyOverview'));
-  const InvoicesContent = lazy(() => import('./AdminInvoices'));
 
   return (
     <div className="space-y-6 max-w-6xl">
