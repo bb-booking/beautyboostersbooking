@@ -158,15 +158,16 @@ async function syncOutlookToLovable(
   const calendarData = await calendarResponse.json();
   const events = calendarData.value || [];
   
-  // Delete existing synced availability entries (not booked ones from Lovable)
+  // Delete existing Outlook-synced availability entries (identified by notes prefix)
   await supabase
     .from('booster_availability')
     .delete()
     .eq('booster_id', boosterId)
-    .eq('status', 'synced');
+    .like('notes', 'Outlook:%');
   
   // Insert new availability blocks from calendar events (only private Outlook events)
   // Filter out events that we created ourselves (they have "BeautyBoosters" in subject)
+  // Use 'busy' status as it's an allowed value in the database check constraint
   const availabilityEntries = events
     .filter((event: any) => 
       (event.showAs === 'busy' || event.showAs === 'tentative') &&
@@ -181,7 +182,7 @@ async function syncOutlookToLovable(
         date: startDate.toISOString().split('T')[0],
         start_time: startDate.toTimeString().slice(0, 5),
         end_time: endDate.toTimeString().slice(0, 5),
-        status: 'synced',
+        status: 'busy',
         notes: `Outlook: ${event.subject || 'Optaget'}`,
       };
     });

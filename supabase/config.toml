@@ -126,3 +126,9 @@ verify_jwt = false
 
 [functions.sync-outlook-calendar]
 verify_jwt = false
+
+[functions.push-to-outlook]
+verify_jwt = false
+
+[functions.create-test-job]
+verify_jwt = false
