@@ -253,31 +253,45 @@ async function syncLovableToOutlook(
   
   for (const job of jobs || []) {
     try {
-      // Build event data
-      const startTime = job.time_needed || '09:00';
-      const startDateTime = `${job.date_needed}T${startTime}`;
+      // Build event data - handle time format (could be HH:MM or HH:MM:SS)
+      const rawTime = job.time_needed || '09:00:00';
+      const startTime = rawTime.slice(0, 5); // Get HH:MM part only
       const durationHours = job.duration_hours || 2;
-      const endDate = new Date(`${startDateTime}:00`);
-      endDate.setHours(endDate.getHours() + durationHours);
-      const endDateTime = endDate.toISOString().slice(0, 16);
+      
+      // Format for Microsoft Graph API: YYYY-MM-DDTHH:MM:SS (no Z, since we use timeZone)
+      const startDateTime = `${job.date_needed}T${startTime}:00`;
+      
+      // Calculate end time
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      const endHour = startHour + durationHours;
+      const endTime = `${String(endHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
+      const endDateTime = `${job.date_needed}T${endTime}:00`;
+      
+      console.log(`Creating event for job ${job.id}: ${startDateTime} - ${endDateTime}`);
       
       // Get services for this job
       const services = job.job_services?.map((s: any) => s.service_name).join(', ') || job.service_type;
       
+      // Build simple event body without special characters
+      const bodyContent = [
+        'Job fra BeautyBoosters',
+        '',
+        'Kunde: ' + (job.client_name || 'Ikke angivet'),
+        'Email: ' + (job.client_email || 'Ikke angivet'),
+        'Telefon: ' + (job.client_phone || 'Ikke angivet'),
+        'Services: ' + services,
+        'Timepris: ' + job.hourly_rate + ' DKK',
+        'Varighed: ' + durationHours + ' timer'
+      ].join('\n');
+      
+      // Sanitize location to remove special characters
+      const safeLocation = (job.location || 'Kundens adresse').replace(/[^\w\s,.-]/g, '');
+      
       const eventData = {
-        subject: `BeautyBoosters: ${job.title}`,
+        subject: 'BeautyBoosters: ' + job.title,
         body: {
-          contentType: 'HTML',
-          content: `
-            <p><strong>Job fra BeautyBoosters</strong></p>
-            <p><strong>Kunde:</strong> ${job.client_name || 'Ikke angivet'}</p>
-            <p><strong>Email:</strong> ${job.client_email || 'Ikke angivet'}</p>
-            <p><strong>Telefon:</strong> ${job.client_phone || 'Ikke angivet'}</p>
-            <p><strong>Services:</strong> ${services}</p>
-            <p><strong>Timepris:</strong> ${job.hourly_rate} DKK</p>
-            <p><strong>Varighed:</strong> ${durationHours} timer</p>
-            ${job.description ? `<p><strong>Beskrivelse:</strong> ${job.description}</p>` : ''}
-          `
+          contentType: 'text',
+          content: bodyContent
         },
         start: {
           dateTime: startDateTime,
@@ -288,11 +302,11 @@ async function syncLovableToOutlook(
           timeZone: 'Europe/Copenhagen'
         },
         location: {
-          displayName: job.location || 'Kundens adresse'
-        },
-        showAs: 'busy',
-        reminderMinuteBeforeStart: 60
+          displayName: safeLocation
+        }
       };
+      
+      console.log('Event data:', JSON.stringify(eventData));
       
       const existingEventId = existingSyncedEventIds[job.id];
       
@@ -362,24 +376,29 @@ async function syncLovableToOutlook(
 }
 
 async function createOutlookEvent(accessToken: string, eventData: any): Promise<{ id?: string }> {
+  console.log('Creating Outlook event with access token length:', accessToken?.length);
+  
   const createResponse = await fetch(
     `${GRAPH_API_URL}/me/events`,
     {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify(eventData),
     }
   );
   
+  console.log('Outlook API response status:', createResponse.status);
+  
   if (createResponse.ok) {
     const createdEvent = await createResponse.json();
+    console.log('Event created successfully:', createdEvent.id);
     return { id: createdEvent.id };
   } else {
     const errorText = await createResponse.text();
-    console.error('Failed to create Outlook event:', errorText);
+    console.error('Failed to create Outlook event. Status:', createResponse.status, 'Error:', errorText);
     return {};
   }
 }
