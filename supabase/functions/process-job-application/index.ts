@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface JobApplicationRequest {
   job_id: string;
-  booster_id: string;
+  booster_id: string; // This is the user's auth.uid()
   message?: string;
 }
 
@@ -36,19 +36,35 @@ Deno.serve(async (req) => {
 
     const { job_id, booster_id, message }: JobApplicationRequest = await req.json();
 
-    console.log('🎯 Processing job application:', { job_id, booster_id });
+    console.log('🎯 Processing job application:', { job_id, user_id: booster_id });
 
     // Verify the booster_id matches the authenticated user
     if (booster_id !== user.id) {
       throw new Error('Cannot apply for jobs on behalf of another booster');
     }
 
-    // Check if already applied
+    // Get booster profile with skills - lookup by user_id to get the profile ID
+    const { data: booster, error: boosterError } = await supabase
+      .from('booster_profiles')
+      .select('id, specialties, name')
+      .eq('user_id', booster_id)
+      .maybeSingle();
+
+    if (boosterError || !booster) {
+      console.error('Booster profile not found for user_id:', booster_id);
+      throw new Error('Booster profile not found - har du en aktiv booster profil?');
+    }
+    
+    // Use the actual booster profile ID for the application
+    const actualBoosterId = booster.id;
+    console.log('📋 Found booster profile:', { profileId: actualBoosterId, name: booster.name });
+
+    // Check if already applied using the profile ID
     const { data: existingApp } = await supabase
       .from('job_applications')
       .select('id, status')
       .eq('job_id', job_id)
-      .eq('booster_id', booster_id)
+      .eq('booster_id', actualBoosterId)
       .maybeSingle();
 
     if (existingApp) {
@@ -80,25 +96,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get booster profile with skills
-    const { data: booster, error: boosterError } = await supabase
-      .from('booster_profiles')
-      .select('specialties, name')
-      .eq('id', booster_id)
-      .single();
-
-    if (boosterError || !booster) {
-      throw new Error('Booster profile not found');
-    }
-
     console.log('🔍 Checking skills match:', {
       required: job.required_skills,
       booster: booster.specialties
     });
 
     // Check if booster's specialties match job's required skills
-    const hasMatchingSkills = job.required_skills.length === 0 || 
-      job.required_skills.some((skill: string) => booster.specialties.includes(skill));
+    const requiredSkills = job.required_skills || [];
+    const boosterSpecialties = booster.specialties || [];
+    const hasMatchingSkills = requiredSkills.length === 0 || 
+      requiredSkills.some((skill: string) => boosterSpecialties.includes(skill));
 
     // Count current assigned boosters
     const { data: assignments } = await supabase
@@ -129,12 +136,12 @@ Deno.serve(async (req) => {
       console.log('⏳ Application pending admin approval');
     }
 
-    // Create application
+    // Create application using the booster profile ID
     const { data: application, error: appError } = await supabase
       .from('job_applications')
       .insert({
         job_id,
-        booster_id,
+        booster_id: actualBoosterId, // Use profile ID, not auth user ID
         message: message || 'Jeg er interesseret i dette job',
         status: applicationStatus
       })
@@ -151,7 +158,7 @@ Deno.serve(async (req) => {
       await supabase
         .from('jobs')
         .update({ 
-          assigned_booster_id: booster_id,
+          assigned_booster_id: actualBoosterId, // Use profile ID
           status: currentAssignments + 1 >= (job.boosters_needed || 1) ? 'assigned' : 'open'
         })
         .eq('id', job_id);
@@ -162,7 +169,7 @@ Deno.serve(async (req) => {
     // Create notification for booster if auto-assigned
     if (autoAssigned) {
       await supabase.from('notifications').insert({
-        recipient_id: booster_id,
+        recipient_id: actualBoosterId, // Use profile ID
         title: 'Job tildelt!',
         message: `Du er blevet automatisk tildelt jobbet: ${job.title}`,
         type: 'job_assignment',

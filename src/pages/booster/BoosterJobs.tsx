@@ -416,6 +416,12 @@ export default function BoosterJobs() {
   };
 
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'reject') => {
+    // Check if this is mock data - don't process mock IDs
+    if (requestId.startsWith('mock-')) {
+      toast.info('Dette er demo-data. Log ind og modtag rigtige booking-anmodninger.');
+      return;
+    }
+    
     setProcessing(requestId);
     try {
       const status = action === 'accept' ? 'accepted' : 'rejected';
@@ -446,6 +452,12 @@ export default function BoosterJobs() {
   };
 
   const handleApplyForJob = async (jobId: string) => {
+    // Check if this is mock data - don't process mock IDs
+    if (jobId.startsWith('mock-')) {
+      toast.info('Dette er demo-data. Log ind og ansøg om rigtige jobs.');
+      return;
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
