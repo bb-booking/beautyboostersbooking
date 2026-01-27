@@ -198,7 +198,7 @@ async function syncOutlookToLovable(
   };
 }
 
-// ===== Sync Lovable bookings to Outlook (create calendar events) =====
+// ===== Sync Lovable jobs to Outlook (create calendar events) =====
 async function syncLovableToOutlook(
   supabase: ReturnType<typeof createClient>,
   boosterId: string,
@@ -210,47 +210,73 @@ async function syncLovableToOutlook(
   const existingSyncedEventIds = tokenData.synced_event_ids || {};
   const newSyncedEventIds: Record<string, string> = {};
   
-  // Get all confirmed bookings for this booster in the next 60 days
+  // Get all jobs assigned to this booster in the next 60 days
   const now = new Date();
   const sixtyDaysFromNow = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
   
-  const { data: bookings, error: bookingsError } = await supabase
-    .from('bookings')
-    .select('*')
-    .eq('booster_id', boosterId)
-    .in('status', ['confirmed', 'pending'])
-    .gte('booking_date', now.toISOString().split('T')[0])
-    .lte('booking_date', sixtyDaysFromNow.toISOString().split('T')[0]);
+  // First get job assignments for this booster
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from('job_booster_assignments')
+    .select('job_id')
+    .eq('booster_id', boosterId);
   
-  if (bookingsError) {
-    console.error('Error fetching bookings:', bookingsError);
+  if (assignmentsError) {
+    console.error('Error fetching job assignments:', assignmentsError);
     return { bookingsProcessed: 0, eventsCreated: 0, eventsUpdated: 0, syncedEventIds: existingSyncedEventIds };
   }
+  
+  const jobIds = (assignments || []).map(a => a.job_id);
+  
+  if (jobIds.length === 0) {
+    console.log(`No job assignments found for booster ${boosterId}`);
+    return { bookingsProcessed: 0, eventsCreated: 0, eventsUpdated: 0, syncedEventIds: {} };
+  }
+  
+  // Get the actual jobs with details
+  const { data: jobs, error: jobsError } = await supabase
+    .from('jobs')
+    .select('*, job_services(*)')
+    .in('id', jobIds)
+    .in('status', ['assigned', 'confirmed', 'pending', 'open'])
+    .gte('date_needed', now.toISOString().split('T')[0])
+    .lte('date_needed', sixtyDaysFromNow.toISOString().split('T')[0]);
+  
+  if (jobsError) {
+    console.error('Error fetching jobs:', jobsError);
+    return { bookingsProcessed: 0, eventsCreated: 0, eventsUpdated: 0, syncedEventIds: existingSyncedEventIds };
+  }
+  
+  console.log(`Found ${jobs?.length || 0} jobs to sync for booster ${boosterId}`);
   
   let eventsCreated = 0;
   let eventsUpdated = 0;
   
-  for (const booking of bookings || []) {
+  for (const job of jobs || []) {
     try {
       // Build event data
-      const startDateTime = `${booking.booking_date}T${booking.booking_time}`;
-      const durationHours = booking.duration_hours || 2;
+      const startTime = job.time_needed || '09:00';
+      const startDateTime = `${job.date_needed}T${startTime}`;
+      const durationHours = job.duration_hours || 2;
       const endDate = new Date(`${startDateTime}:00`);
       endDate.setHours(endDate.getHours() + durationHours);
       const endDateTime = endDate.toISOString().slice(0, 16);
       
+      // Get services for this job
+      const services = job.job_services?.map((s: any) => s.service_name).join(', ') || job.service_type;
+      
       const eventData = {
-        subject: `BeautyBoosters: ${booking.service_name}`,
+        subject: `BeautyBoosters: ${job.title}`,
         body: {
           contentType: 'HTML',
           content: `
-            <p><strong>Booking fra BeautyBoosters</strong></p>
-            <p><strong>Kunde:</strong> ${booking.customer_name || 'Ikke angivet'}</p>
-            <p><strong>Email:</strong> ${booking.customer_email}</p>
-            <p><strong>Telefon:</strong> ${booking.customer_phone || 'Ikke angivet'}</p>
-            <p><strong>Service:</strong> ${booking.service_name}</p>
-            <p><strong>Beløb:</strong> ${booking.amount} DKK</p>
-            ${booking.special_requests ? `<p><strong>Særlige ønsker:</strong> ${booking.special_requests}</p>` : ''}
+            <p><strong>Job fra BeautyBoosters</strong></p>
+            <p><strong>Kunde:</strong> ${job.client_name || 'Ikke angivet'}</p>
+            <p><strong>Email:</strong> ${job.client_email || 'Ikke angivet'}</p>
+            <p><strong>Telefon:</strong> ${job.client_phone || 'Ikke angivet'}</p>
+            <p><strong>Services:</strong> ${services}</p>
+            <p><strong>Timepris:</strong> ${job.hourly_rate} DKK</p>
+            <p><strong>Varighed:</strong> ${durationHours} timer</p>
+            ${job.description ? `<p><strong>Beskrivelse:</strong> ${job.description}</p>` : ''}
           `
         },
         start: {
@@ -262,13 +288,13 @@ async function syncLovableToOutlook(
           timeZone: 'Europe/Copenhagen'
         },
         location: {
-          displayName: booking.location || 'Kundens adresse'
+          displayName: job.location || 'Kundens adresse'
         },
         showAs: 'busy',
         reminderMinuteBeforeStart: 60
       };
       
-      const existingEventId = existingSyncedEventIds[booking.id];
+      const existingEventId = existingSyncedEventIds[job.id];
       
       if (existingEventId) {
         // Update existing event
@@ -285,13 +311,13 @@ async function syncLovableToOutlook(
         );
         
         if (updateResponse.ok) {
-          newSyncedEventIds[booking.id] = existingEventId;
+          newSyncedEventIds[job.id] = existingEventId;
           eventsUpdated++;
         } else if (updateResponse.status === 404) {
           // Event was deleted in Outlook, recreate it
           const createResult = await createOutlookEvent(accessToken, eventData);
           if (createResult.id) {
-            newSyncedEventIds[booking.id] = createResult.id;
+            newSyncedEventIds[job.id] = createResult.id;
             eventsCreated++;
           }
         }
@@ -299,21 +325,20 @@ async function syncLovableToOutlook(
         // Create new event
         const createResult = await createOutlookEvent(accessToken, eventData);
         if (createResult.id) {
-          newSyncedEventIds[booking.id] = createResult.id;
+          newSyncedEventIds[job.id] = createResult.id;
           eventsCreated++;
         }
       }
     } catch (err) {
-      console.error(`Error syncing booking ${booking.id} to Outlook:`, err);
+      console.error(`Error syncing job ${job.id} to Outlook:`, err);
     }
   }
   
-  // Optionally: delete Outlook events for cancelled/completed bookings
-  // (events that exist in syncedEventIds but not in current bookings)
-  const currentBookingIds = new Set((bookings || []).map(b => b.id));
-  for (const [bookingId, eventId] of Object.entries(existingSyncedEventIds)) {
-    if (!currentBookingIds.has(bookingId)) {
-      // Booking no longer active, delete the Outlook event
+  // Delete Outlook events for jobs no longer assigned to this booster
+  const currentJobIds = new Set((jobs || []).map(j => j.id));
+  for (const [jobId, eventId] of Object.entries(existingSyncedEventIds)) {
+    if (!currentJobIds.has(jobId)) {
+      // Job no longer active, delete the Outlook event
       try {
         await fetch(`${GRAPH_API_URL}/me/events/${eventId}`, {
           method: 'DELETE',
@@ -321,7 +346,7 @@ async function syncLovableToOutlook(
             'Authorization': `Bearer ${accessToken}`,
           },
         });
-        console.log(`Deleted Outlook event ${eventId} for removed booking ${bookingId}`);
+        console.log(`Deleted Outlook event ${eventId} for removed job ${jobId}`);
       } catch (err) {
         console.error(`Error deleting Outlook event ${eventId}:`, err);
       }
@@ -329,7 +354,7 @@ async function syncLovableToOutlook(
   }
   
   return {
-    bookingsProcessed: bookings?.length || 0,
+    bookingsProcessed: jobs?.length || 0,
     eventsCreated,
     eventsUpdated,
     syncedEventIds: newSyncedEventIds
