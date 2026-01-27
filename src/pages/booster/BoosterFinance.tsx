@@ -30,7 +30,7 @@ import {
   Percent,
   Banknote
 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays, addMonths } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays, addMonths, getDay, subDays, getMonth, getYear } from "date-fns";
 import { da } from "date-fns/locale";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,6 +100,72 @@ interface MonthlyInvoice {
   status: 'draft' | 'pending' | 'sent' | 'paid';
   generatedAt?: Date;
 }
+
+// Danish public holidays (fixed dates and Easter-based)
+const getDanishHolidays = (year: number): Date[] => {
+  const holidays: Date[] = [];
+  
+  // Fixed holidays
+  holidays.push(new Date(year, 0, 1));   // Nytårsdag
+  holidays.push(new Date(year, 5, 5));   // Grundlovsdag
+  holidays.push(new Date(year, 11, 24)); // Juleaften
+  holidays.push(new Date(year, 11, 25)); // 1. Juledag
+  holidays.push(new Date(year, 11, 26)); // 2. Juledag
+  holidays.push(new Date(year, 11, 31)); // Nytårsaften
+  
+  // Calculate Easter Sunday (using Anonymous Gregorian algorithm)
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  const easterSunday = new Date(year, month, day);
+  
+  // Easter-based holidays
+  holidays.push(subDays(easterSunday, 3));  // Skærtorsdag
+  holidays.push(subDays(easterSunday, 2));  // Langfredag
+  holidays.push(easterSunday);               // Påskedag
+  holidays.push(new Date(easterSunday.getTime() + 24 * 60 * 60 * 1000)); // 2. Påskedag
+  holidays.push(new Date(easterSunday.getTime() + 26 * 24 * 60 * 60 * 1000)); // Store Bededag (moved to 4th Friday after Easter)
+  holidays.push(new Date(easterSunday.getTime() + 39 * 24 * 60 * 60 * 1000)); // Kristi Himmelfartsdag
+  holidays.push(new Date(easterSunday.getTime() + 49 * 24 * 60 * 60 * 1000)); // Pinsedag
+  holidays.push(new Date(easterSunday.getTime() + 50 * 24 * 60 * 60 * 1000)); // 2. Pinsedag
+  
+  return holidays;
+};
+
+// Calculate the last business day of a given month
+const getLastBusinessDay = (date: Date): Date => {
+  const year = getYear(date);
+  const month = getMonth(date);
+  let lastDay = endOfMonth(new Date(year, month, 1));
+  const holidays = getDanishHolidays(year);
+  
+  // Helper to check if a date is a holiday
+  const isHoliday = (d: Date): boolean => {
+    return holidays.some(h => 
+      h.getDate() === d.getDate() && 
+      h.getMonth() === d.getMonth() && 
+      h.getFullYear() === d.getFullYear()
+    );
+  };
+  
+  // Move back until we find a business day (not weekend, not holiday)
+  while (getDay(lastDay) === 0 || getDay(lastDay) === 6 || isHoliday(lastDay)) {
+    lastDay = subDays(lastDay, 1);
+  }
+  
+  return lastDay;
+};
 
 // Determine VAT period based on annual revenue (Danish rules)
 const determineVATPeriod = (annualRevenue: number): 'monthly' | 'quarterly' | 'semi-annual' => {
@@ -551,7 +617,7 @@ export default function BoosterFinance() {
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Næste lønudbetaling</p>
-                <p className="font-medium text-lg">Ultimo måneden</p>
+                <p className="font-medium text-lg">{format(getLastBusinessDay(new Date()), "d. MMMM", { locale: da })}</p>
                 <p className="text-xs text-muted-foreground">via Danløn</p>
               </div>
             </div>
