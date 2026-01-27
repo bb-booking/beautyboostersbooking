@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MessageSquare, Send, Users, UserCircle, Filter, Plus, Archive, Star, AlertCircle, Edit2, Trash2, Check, X } from "lucide-react";
+import { MessageSquare, Send, Users, UserCircle, Plus, Archive, AlertCircle, Edit2, Trash2, Check, X, Shield } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Conversation {
   id: string;
@@ -20,7 +20,7 @@ interface Conversation {
   status: string;
   last_message_at: string | null;
   unread_admin_count: number;
-  type: 'customer' | 'booster' | 'group';
+  type: 'customer' | 'booster' | 'group' | 'admin';
   group_name: string | null;
   priority: 'low' | 'normal' | 'high' | 'urgent';
   tags: string[];
@@ -31,6 +31,12 @@ interface Conversation {
 interface Booster {
   id: string;
   name: string;
+}
+
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
 }
 
 interface ConversationMessage {
@@ -46,18 +52,21 @@ interface ConversationMessage {
 
 export default function AdminMessages() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [reply, setReply] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const [filter, setFilter] = useState<'all' | 'customer' | 'booster' | 'group'>('all');
+  const [filter, setFilter] = useState<'all' | 'customer' | 'booster' | 'group' | 'admin'>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [boosters, setBoosters] = useState<Booster[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [showNewConversation, setShowNewConversation] = useState(false);
-  const [newConvType, setNewConvType] = useState<'booster' | 'group'>('booster');
+  const [newConvType, setNewConvType] = useState<'booster' | 'group' | 'admin'>('booster');
   const [selectedBoosters, setSelectedBoosters] = useState<string[]>([]);
+  const [selectedAdmins, setSelectedAdmins] = useState<string[]>([]);
   const [groupName, setGroupName] = useState("");
   const [showManageGroup, setShowManageGroup] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -73,6 +82,19 @@ export default function AdminMessages() {
       return;
     }
     setBoosters(data || []);
+  };
+
+  const loadAdmins = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-admin-users');
+      if (error) {
+        console.error('Error loading admins:', error);
+        return;
+      }
+      setAdmins(data?.users || []);
+    } catch (err) {
+      console.error('Failed to load admins:', err);
+    }
   };
 
   const loadConversations = async () => {
@@ -114,6 +136,7 @@ export default function AdminMessages() {
 
   useEffect(() => {
     loadBoosters();
+    loadAdmins();
   }, []);
 
   useEffect(() => {
@@ -168,17 +191,31 @@ export default function AdminMessages() {
       toast({ title: "Vælg én booster", variant: "destructive" });
       return;
     }
-    if (newConvType === 'group' && (selectedBoosters.length < 2 || !groupName.trim())) {
-      toast({ title: "Indtast gruppenavn og vælg mindst 2 boosters", variant: "destructive" });
+    if (newConvType === 'admin' && selectedAdmins.length < 1) {
+      toast({ title: "Vælg mindst én admin", variant: "destructive" });
       return;
+    }
+    if (newConvType === 'group' && ((selectedBoosters.length + selectedAdmins.length) < 2 || !groupName.trim())) {
+      toast({ title: "Indtast gruppenavn og vælg mindst 2 deltagere", variant: "destructive" });
+      return;
+    }
+
+    // Combine participants based on type
+    let participants: string[] = [];
+    if (newConvType === 'admin') {
+      participants = selectedAdmins;
+    } else if (newConvType === 'group') {
+      participants = [...selectedBoosters, ...selectedAdmins];
+    } else {
+      participants = selectedBoosters;
     }
 
     const { data, error } = await supabase
       .from("conversations")
       .insert([{
         type: newConvType,
-        group_name: newConvType === 'group' ? groupName : null,
-        participants: selectedBoosters,
+        group_name: newConvType === 'group' ? groupName : (newConvType === 'admin' ? 'Admin Chat' : null),
+        participants: participants,
         status: 'open'
       }])
       .select()
@@ -192,6 +229,7 @@ export default function AdminMessages() {
 
     setShowNewConversation(false);
     setSelectedBoosters([]);
+    setSelectedAdmins([]);
     setGroupName("");
     await loadConversations();
     setSelectedId(data.id);
@@ -239,12 +277,19 @@ export default function AdminMessages() {
       const booster = boosters.find(b => conv.participants?.includes(b.id));
       return booster?.name || 'Booster';
     }
+    if (conv.type === 'admin') {
+      const adminNames = admins
+        .filter(a => conv.participants?.includes(a.id))
+        .map(a => a.name);
+      return adminNames.length > 0 ? adminNames.join(', ') : 'Admin Chat';
+    }
     return conv.name || conv.email || 'Kunde';
   };
 
   const getConversationIcon = (type: string) => {
     if (type === 'group') return <Users className="h-4 w-4" />;
     if (type === 'booster') return <UserCircle className="h-4 w-4" />;
+    if (type === 'admin') return <Shield className="h-4 w-4" />;
     return <MessageSquare className="h-4 w-4" />;
   };
 
@@ -345,42 +390,73 @@ export default function AdminMessages() {
               <div className="space-y-4">
                 <div>
                   <Label>Type</Label>
-                  <Select value={newConvType} onValueChange={(v: any) => setNewConvType(v)}>
+                  <Select value={newConvType} onValueChange={(v: any) => {
+                    setNewConvType(v);
+                    setSelectedBoosters([]);
+                    setSelectedAdmins([]);
+                  }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="admin">Admin-til-admin chat</SelectItem>
                       <SelectItem value="booster">Direkte besked til booster</SelectItem>
-                      <SelectItem value="group">Gruppechat</SelectItem>
+                      <SelectItem value="group">Gruppechat (mix af alle)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {newConvType === 'group' && (
                   <div>
                     <Label>Gruppenavn</Label>
-                    <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="F.eks. Alle makeup artister" />
+                    <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="F.eks. Team Makeup" />
                   </div>
                 )}
-                <div>
-                  <Label>Vælg boosters</Label>
-                  <div className="border rounded-md p-3 max-h-60 overflow-auto space-y-2">
-                    {boosters.map((b) => (
-                      <div key={b.id} className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selectedBoosters.includes(b.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedBoosters([...selectedBoosters, b.id]);
-                            } else {
-                              setSelectedBoosters(selectedBoosters.filter(id => id !== b.id));
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{b.name}</span>
-                      </div>
-                    ))}
+                {(newConvType === 'admin' || newConvType === 'group') && (
+                  <div>
+                    <Label>Vælg admins</Label>
+                    <div className="border rounded-md p-3 max-h-40 overflow-auto space-y-2">
+                      {admins.map((a) => (
+                        <div key={a.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedAdmins.includes(a.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedAdmins([...selectedAdmins, a.id]);
+                              } else {
+                                setSelectedAdmins(selectedAdmins.filter(id => id !== a.id));
+                              }
+                            }}
+                          />
+                          <Shield className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{a.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+                {(newConvType === 'booster' || newConvType === 'group') && (
+                  <div>
+                    <Label>Vælg boosters</Label>
+                    <div className="border rounded-md p-3 max-h-40 overflow-auto space-y-2">
+                      {boosters.map((b) => (
+                        <div key={b.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedBoosters.includes(b.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedBoosters([...selectedBoosters, b.id]);
+                              } else {
+                                setSelectedBoosters(selectedBoosters.filter(id => id !== b.id));
+                              }
+                            }}
+                          />
+                          <UserCircle className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{b.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowNewConversation(false)}>Annuller</Button>
@@ -394,14 +470,18 @@ export default function AdminMessages() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-4 md:col-span-1">
           <div className="space-y-3 mb-3">
-            <Tabs value={filter} onValueChange={(v: any) => setFilter(v)} className="w-full">
-              <TabsList className="flex w-full h-auto p-1 gap-0.5">
-                <TabsTrigger value="all" className="flex-1 text-xs px-1 py-1.5 min-w-0">Alle</TabsTrigger>
-                <TabsTrigger value="customer" className="flex-1 text-xs px-1 py-1.5 min-w-0">Kunder</TabsTrigger>
-                <TabsTrigger value="booster" className="flex-1 text-xs px-1 py-1.5 min-w-0">Boosters</TabsTrigger>
-                <TabsTrigger value="group" className="flex-1 text-xs px-1 py-1.5 min-w-0">Grupper</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
+              <SelectTrigger className="w-full h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle samtaler</SelectItem>
+                <SelectItem value="customer">Kunder</SelectItem>
+                <SelectItem value="booster">Boosters</SelectItem>
+                <SelectItem value="admin">Admins</SelectItem>
+                <SelectItem value="group">Grupper</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="flex items-center justify-between">
               <Button variant="outline" size="sm" onClick={loadConversations}>Opdater</Button>
               <Button variant="ghost" size="sm" onClick={() => setShowArchived(!showArchived)}>
