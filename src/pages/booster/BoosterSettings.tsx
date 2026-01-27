@@ -73,7 +73,7 @@ export default function BoosterSettings() {
   const [loading, setLoading] = useState(true);
   const [boosterProfileId, setBoosterProfileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Fetch existing profile data from database
+  // Fetch existing profile data and calendar status from database
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -113,6 +113,20 @@ export default function BoosterSettings() {
             phone: profile.phone || '',
             profileImage: profile.portfolio_image_url || null,
           }));
+
+          // Check Outlook calendar connection status
+          if (profile.calendar_provider === 'outlook' && profile.calendar_sync_token) {
+            try {
+              const tokenData = JSON.parse(profile.calendar_sync_token);
+              setOutlookCalendarConnected(true);
+              setOutlookCalendarEmail(tokenData.email || null);
+              if (tokenData.last_sync) {
+                setLastSyncTime(new Date(tokenData.last_sync).toLocaleString('da-DK'));
+              }
+            } catch {
+              setOutlookCalendarConnected(false);
+            }
+          }
         } else {
           // No profile exists, use auth user email
           setSettings(prev => ({
@@ -128,6 +142,26 @@ export default function BoosterSettings() {
     };
 
     fetchProfile();
+
+    // Listen for OAuth callback messages
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'outlook-calendar-connected' && event.data.success) {
+        setOutlookCalendarConnected(true);
+        // Extract email from message if available
+        const emailMatch = event.data.message?.match(/Forbundet til (.+)/);
+        if (emailMatch) {
+          setOutlookCalendarEmail(emailMatch[1]);
+        }
+        setLastSyncTime(new Date().toLocaleString('da-DK'));
+        toast({
+          title: "Outlook Kalender forbundet",
+          description: "Din kalender synkroniseres nu automatisk.",
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const handleSave = async () => {
