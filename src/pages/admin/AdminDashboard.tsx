@@ -580,109 +580,126 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Link to="/admin/jobs">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Seneste bookings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentBookings.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen bookings endnu</p>
-                ) : (
-                  recentBookings.map((booking) => (
-                    <div key={booking.id} className="flex justify-between items-start border-b pb-2 last:border-0">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{booking.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">{booking.service_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(booking.booking_date), 'd. MMM', { locale: da })}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold">{booking.amount.toLocaleString('da-DK')} kr</p>
-                        <Badge variant={getStatusBadge(booking.status).variant} className="text-xs mt-1">
-                          {getStatusBadge(booking.status).label}
-                        </Badge>
-                      </div>
+      {/* Recent Jobs - Prioritized by action needed */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg">Seneste jobs</CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/admin/jobs")}>
+            Se alle
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Jobs requiring action first */}
+            {[
+              ...recentJobs.filter(j => j.status === 'open'),
+              ...recentJobs.filter(j => j.status !== 'open')
+            ].slice(0, 6).length === 0 && recentBookings.length === 0 ? (
+              <p className="text-sm text-muted-foreground col-span-full">Ingen jobs endnu</p>
+            ) : (
+              [...recentJobs.filter(j => j.status === 'open').map(job => ({
+                id: job.id,
+                type: 'job' as const,
+                title: job.title,
+                subtitle: `${job.boosters_needed > 1 ? `${job.boosters_needed} boosters søges` : '1 booster'}`,
+                date: job.date_needed,
+                status: job.status,
+                urgent: true
+              })),
+              ...recentJobs.filter(j => j.status !== 'open').map(job => ({
+                id: job.id,
+                type: 'job' as const,
+                title: job.title,
+                subtitle: `${job.boosters_needed > 1 ? `${job.boosters_needed} boosters` : '1 booster'}`,
+                date: job.date_needed,
+                status: job.status,
+                urgent: false
+              })),
+              ...recentBookings.filter(b => b.status === 'pending_payment' || b.status === 'confirmed').map(booking => ({
+                id: booking.id,
+                type: 'booking' as const,
+                title: booking.customer_name || 'Kunde',
+                subtitle: booking.service_name,
+                date: booking.booking_date,
+                status: booking.status,
+                amount: booking.amount,
+                urgent: booking.status === 'pending_payment'
+              }))
+              ].slice(0, 6).map((item) => (
+                <div 
+                  key={item.id} 
+                  className={`p-3 rounded-lg border ${
+                    item.urgent 
+                      ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' 
+                      : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                     </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+                    <Badge 
+                      variant={getStatusBadge(item.status).variant} 
+                      className={`text-xs ml-2 shrink-0 ${item.urgent ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ''}`}
+                    >
+                      {item.urgent ? 'Kræver handling' : getStatusBadge(item.status).label}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>{format(new Date(item.date), 'd. MMM yyyy', { locale: da })}</span>
+                    {'amount' in item && item.amount && (
+                      <span className="font-medium text-foreground">{item.amount.toLocaleString('da-DK')} kr</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Link to="/admin/jobs">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Seneste jobs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentJobs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen jobs endnu</p>
-                ) : (
-                  recentJobs.map((job) => (
-                    <div key={job.id} className="border-b pb-2 last:border-0">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{job.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(job.date_needed), 'd. MMM', { locale: da })}
-                          </p>
-                        </div>
-                        <Badge variant={getStatusBadge(job.status).variant} className="text-xs">
-                          {getStatusBadge(job.status).label}
-                        </Badge>
-                      </div>
-                      {job.boosters_needed > 1 && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {job.boosters_needed} boosters søges
-                        </p>
-                      )}
+      {/* Recent Inquiries */}
+      {recentInquiries.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg">Seneste forespørgsler</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/jobs")}>
+              Se alle
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {recentInquiries.slice(0, 3).map((inquiry) => (
+                <div 
+                  key={inquiry.id} 
+                  className={`p-3 rounded-lg border ${
+                    inquiry.status === 'new' 
+                      ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' 
+                      : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{inquiry.navn}</p>
+                      <p className="text-xs text-muted-foreground truncate">{inquiry.service_id}</p>
                     </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/admin/jobs">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Seneste forespørgsler</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentInquiries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen forespørgsler endnu</p>
-                ) : (
-                  recentInquiries.map((inquiry) => (
-                    <div key={inquiry.id} className="border-b pb-2 last:border-0">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{inquiry.navn}</p>
-                          <p className="text-xs text-muted-foreground">{inquiry.service_id}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(inquiry.created_at), 'd. MMM', { locale: da })}
-                          </p>
-                        </div>
-                        <Badge variant={getStatusBadge(inquiry.status).variant} className="text-xs">
-                          {getStatusBadge(inquiry.status).label}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
+                    <Badge 
+                      variant={getStatusBadge(inquiry.status).variant} 
+                      className={`text-xs ml-2 shrink-0 ${inquiry.status === 'new' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ''}`}
+                    >
+                      {inquiry.status === 'new' ? 'Ny' : getStatusBadge(inquiry.status).label}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(inquiry.created_at), 'd. MMM yyyy', { locale: da })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action Items - Legacy block */}
       {(stats.pendingBookings > 0 || stats.newInquiries > 0 || stats.unpaidInvoices > 0) && (
