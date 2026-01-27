@@ -54,7 +54,59 @@ const parseNotes = (e: BoosterEvent): EventMeta => {
   catch { return {}; } 
 };
 
-// Mock events removed - only real database events are used
+// Mock events for demo - these should appear in calendar
+const MOCK_EVENTS: BoosterEvent[] = [
+  {
+    id: 'mock-1',
+    date: format(addDays(new Date(), 2), 'yyyy-MM-dd'),
+    start_time: '10:00:00',
+    end_time: '14:00:00',
+    status: 'booked',
+    notes: JSON.stringify({
+      service: 'Bryllupsmakeup',
+      customer_name: 'Louise Hansen',
+      customer_phone: '+45 12 34 56 78',
+      customer_email: 'louise@example.dk',
+      address: 'Østerbrogade 45, 2100 København Ø',
+      client_type: 'privat',
+      price: 2400
+    })
+  },
+  {
+    id: 'mock-2',
+    date: format(addDays(new Date(), 5), 'yyyy-MM-dd'),
+    start_time: '08:00:00',
+    end_time: '16:00:00',
+    status: 'booked',
+    notes: JSON.stringify({
+      service: 'Film/TV Produktion',
+      customer_name: 'TV2 Danmark',
+      customer_phone: '+45 87 65 43 21',
+      customer_email: 'produktion@tv2.dk',
+      address: 'Teglholmsgade 26, 2450 København SV',
+      client_type: 'b2b',
+      company_name: 'TV2 Danmark',
+      price: 4800
+    })
+  },
+  {
+    id: 'mock-3',
+    date: format(addDays(new Date(), 8), 'yyyy-MM-dd'),
+    start_time: '14:00:00',
+    end_time: '17:00:00',
+    status: 'booked',
+    notes: JSON.stringify({
+      service: 'Mode Shoot',
+      customer_name: 'ELLE Magazine',
+      customer_phone: '+45 33 44 55 66',
+      customer_email: 'photo@elle.dk',
+      address: 'Amagertorv 1, 1160 København K',
+      client_type: 'b2b',
+      company_name: 'ELLE Magazine',
+      price: 3600
+    })
+  }
+];
 
 export default function BoosterCalendar() {
   const navigate = useNavigate();
@@ -107,7 +159,7 @@ export default function BoosterCalendar() {
       end = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
     }
     
-const { data, error } = await supabase
+    const { data, error } = await supabase
       .from("booster_availability")
       .select("id,date,start_time,end_time,status,notes")
       .eq("booster_id", uid)
@@ -117,8 +169,20 @@ const { data, error } = await supabase
       .order("start_time");
       
     if (!error && data) {
-      // Only use real database events - no mock data
-      setEvents(data as BoosterEvent[]);
+      // Combine real database events with mock data for demonstration
+      const dbEvents = data as BoosterEvent[];
+      const mockEventsInRange = MOCK_EVENTS.filter(e => {
+        const eventDate = new Date(e.date);
+        return eventDate >= start && eventDate <= end;
+      });
+      setEvents([...dbEvents, ...mockEventsInRange]);
+    } else {
+      // If error, at least show mock data
+      const mockEventsInRange = MOCK_EVENTS.filter(e => {
+        const eventDate = new Date(e.date);
+        return eventDate >= start && eventDate <= end;
+      });
+      setEvents(mockEventsInRange);
     }
   };
 
