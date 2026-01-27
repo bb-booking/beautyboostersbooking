@@ -461,14 +461,24 @@ export default function BoosterJobs() {
         }
       });
 
-      if (error) throw error;
+      // Handle edge function error responses (they return data even on 400 status)
+      if (error) {
+        // Try to parse the error context for the actual message
+        const errorData = (error as any).context;
+        if (errorData?.message) {
+          toast.info(errorData.message);
+        } else {
+          toast.error("Kunne ikke sende ansøgning");
+        }
+        return;
+      }
 
-      if (data.success) {
+      if (data?.success) {
         toast.success(data.auto_assigned ? "🎉 Job tildelt!" : "Ansøgning sendt", {
           description: data.message
         });
         fetchAvailableJobs();
-      } else {
+      } else if (data?.message) {
         toast.info(data.message);
       }
     } catch (error) {
