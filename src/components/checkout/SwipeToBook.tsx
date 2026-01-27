@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Check, ChevronRight, CreditCard } from 'lucide-react';
+import { Check, ChevronRight, CreditCard, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
 
 interface SwipeToBookProps {
   onComplete: () => void;
@@ -13,11 +15,12 @@ interface SwipeToBookProps {
 }
 
 const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBookProps) => {
+  const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
-  const buttonWidth = 64; // w-16 = 64px
+  const buttonWidth = 64;
 
   const getMaxPosition = useCallback(() => {
     if (!trackRef.current) return 0;
@@ -53,7 +56,6 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
     setIsDragging(false);
   }, [isCompleted, position, getMaxPosition, onComplete]);
 
-  // Use document-level event listeners for reliable drag tracking
   useEffect(() => {
     if (!isDragging) return;
 
@@ -94,13 +96,54 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
     setIsDragging(true);
   };
 
+  const handleButtonClick = () => {
+    if (isCompleted || isProcessing) return;
+    setIsCompleted(true);
+    onComplete();
+  };
+
   const progress = trackRef.current 
     ? position / (trackRef.current.getBoundingClientRect().width - buttonWidth - 8) 
     : 0;
 
+  // Desktop: Show a simple button
+  if (!isMobile) {
+    return (
+      <div className="space-y-3">
+        {savedCard && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center">
+            <CreditCard className="h-4 w-4" />
+            <span>Betaler med {savedCard.brand} •••• {savedCard.last4}</span>
+          </div>
+        )}
+        
+        <Button
+          onClick={handleButtonClick}
+          disabled={isProcessing || isCompleted}
+          size="lg"
+          className="w-full h-14 text-lg font-medium"
+        >
+          {isCompleted ? (
+            <>
+              <Check className="h-5 w-5 mr-2" />
+              Booking bekræftet!
+            </>
+          ) : isProcessing ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Behandler...
+            </>
+          ) : (
+            <>Bekræft og betal {amount} DKK</>
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // Mobile: Show swipe interface
   return (
     <div className="space-y-3">
-      {/* Saved card info */}
       {savedCard && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center">
           <CreditCard className="h-4 w-4" />
@@ -108,7 +151,6 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
         </div>
       )}
       
-      {/* Swipe track */}
       <div
         ref={trackRef}
         className={cn(
@@ -118,7 +160,6 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
           isCompleted && "bg-green-500/20 border-green-500/50"
         )}
       >
-        {/* Progress fill */}
         <div 
           className={cn(
             "absolute inset-y-0 left-0 rounded-full transition-colors",
@@ -130,7 +171,6 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
           }}
         />
         
-        {/* Text label */}
         <div 
           className={cn(
             "absolute inset-0 flex items-center justify-center",
@@ -159,7 +199,6 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
           )}
         </div>
         
-        {/* Draggable button */}
         <div
           className={cn(
             "absolute top-1 bottom-1 w-14 rounded-full",
@@ -186,7 +225,6 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
         </div>
       </div>
       
-      {/* Helper text */}
       {!isCompleted && !isProcessing && (
         <p className="text-xs text-center text-muted-foreground">
           Swipe til højre for at bekræfte din booking
