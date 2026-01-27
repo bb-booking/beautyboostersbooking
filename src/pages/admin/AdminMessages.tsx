@@ -395,11 +395,11 @@ export default function AdminMessages() {
         <Card className="p-4 md:col-span-1">
           <div className="space-y-3 mb-3">
             <Tabs value={filter} onValueChange={(v: any) => setFilter(v)} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-auto text-xs">
-                <TabsTrigger value="all" className="text-xs px-1">Alle</TabsTrigger>
-                <TabsTrigger value="customer" className="text-xs px-1">Kunder</TabsTrigger>
-                <TabsTrigger value="booster" className="text-xs px-1">Boosters</TabsTrigger>
-                <TabsTrigger value="group" className="text-xs px-1">Grupper</TabsTrigger>
+              <TabsList className="flex w-full h-auto p-1 gap-0.5">
+                <TabsTrigger value="all" className="flex-1 text-xs px-1 py-1.5 min-w-0">Alle</TabsTrigger>
+                <TabsTrigger value="customer" className="flex-1 text-xs px-1 py-1.5 min-w-0">Kunder</TabsTrigger>
+                <TabsTrigger value="booster" className="flex-1 text-xs px-1 py-1.5 min-w-0">Boosters</TabsTrigger>
+                <TabsTrigger value="group" className="flex-1 text-xs px-1 py-1.5 min-w-0">Grupper</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="flex items-center justify-between">
@@ -463,13 +463,13 @@ export default function AdminMessages() {
             </div>
           ) : (
             <div className="flex flex-col h-[calc(100vh-200px)]">
-              <div className="flex items-center justify-between pb-3">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2 pb-3">
+                <div className="flex items-center gap-2 min-w-0">
                   {getConversationIcon(selectedConversation.type)}
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{getConversationTitle(selectedConversation)}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm truncate">{getConversationTitle(selectedConversation)}</h3>
                     {selectedConversation.type === 'customer' && selectedConversation.email && (
-                      <div className="text-xs text-muted-foreground">{selectedConversation.email}</div>
+                      <div className="text-xs text-muted-foreground truncate">{selectedConversation.email}</div>
                     )}
                     {selectedConversation.type === 'group' && (
                       <div className="text-xs text-muted-foreground">
@@ -478,19 +478,20 @@ export default function AdminMessages() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 flex-wrap">
                   {selectedConversation.type === 'group' && (
                     <Dialog open={showManageGroup} onOpenChange={setShowManageGroup}>
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-7 text-xs px-2"
                           onClick={() => {
                             setSelectedBoosters((selectedConversation.participants as any[]) || []);
                           }}
                         >
-                          <Users className="h-4 w-4 mr-2" />
-                          Håndter medlemmer
+                          <Users className="h-3 w-3 mr-1" />
+                          Medlemmer
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -527,7 +528,7 @@ export default function AdminMessages() {
                     value={selectedConversation.priority}
                     onValueChange={(v) => updatePriority(selectedConversation.id, v)}
                   >
-                    <SelectTrigger className="w-32 h-8">
+                    <SelectTrigger className="w-24 h-7 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
