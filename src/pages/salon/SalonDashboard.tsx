@@ -5,7 +5,7 @@ import { Helmet } from "react-helmet-async";
 
 export default function SalonDashboard() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <Helmet>
         <title>Salon dashboard – Beauty Boosters</title>
         <meta name="description" content="Overblik for salon-ejere på Beauty Boosters: status, udbetalinger, services og åbningstider." />

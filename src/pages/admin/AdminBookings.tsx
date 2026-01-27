@@ -115,7 +115,7 @@ const AdminBookings = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Bookinger</h2>
         <Badge variant="outline" className="w-fit">

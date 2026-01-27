@@ -341,7 +341,7 @@ const BoosterDashboard = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-1 sm:px-0">
+    <div className="space-y-4 sm:space-y-6 px-1 sm:px-0 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
         <h2 className="text-xl sm:text-2xl font-bold">Mit Dashboard</h2>
         <p className="text-sm text-muted-foreground hidden sm:block">

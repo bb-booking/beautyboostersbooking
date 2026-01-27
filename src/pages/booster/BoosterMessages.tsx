@@ -499,7 +499,7 @@ export default function BoosterMessages() {
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Beskeder</h1>
         <p className="text-sm text-muted-foreground">Kommuniker med kunder, admin og team</p>

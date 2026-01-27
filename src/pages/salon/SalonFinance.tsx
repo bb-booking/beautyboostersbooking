@@ -198,7 +198,7 @@ export default function SalonFinance() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <Helmet>
         <title>Økonomi – Beauty Boosters</title>
         <meta name="description" content="Overblik over indtjening, kunder og bookinger." />

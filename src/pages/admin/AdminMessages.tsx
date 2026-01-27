@@ -372,7 +372,7 @@ export default function AdminMessages() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-6xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-6 w-6" />

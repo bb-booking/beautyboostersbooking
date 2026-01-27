@@ -314,7 +314,7 @@ export default function AdminBoosterApplications() {
   const processedApplications = applications.filter(app => app.status !== 'pending');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Booster Ansøgninger</h1>
         <p className="text-muted-foreground">

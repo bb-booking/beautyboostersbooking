@@ -43,7 +43,7 @@ export default function SalonTeam() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <Helmet>
         <title>Team – Beauty Boosters</title>
         <meta name="description" content="Administrer salonens team, arbejdstider og rettigheder." />

@@ -57,7 +57,7 @@ export default function SalonServices() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <Helmet>
         <title>Services – Beauty Boosters</title>
         <meta name="description" content="Opret og administrer salonens services og underkategorier." />
