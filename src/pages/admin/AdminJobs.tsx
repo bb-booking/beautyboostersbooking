@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -962,6 +962,7 @@ Eksempel på notifikation som booster vil modtage.`;
               <SelectItem value="b2c">B2C Privat ({jobs.filter(j => j.client_type === 'privat').length})</SelectItem>
               <SelectItem value="b2b">B2B Virksomhed ({jobs.filter(j => j.client_type === 'virksomhed').length})</SelectItem>
               <SelectItem value="inquiries">Forespørgsler ({inquiries.filter(i => i.status === "new").length})</SelectItem>
+              <SelectItem value="chats">Job Chats</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -993,9 +994,18 @@ Eksempel på notifikation som booster vil modtage.`;
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="chats">
+            Job Chats
+          </TabsTrigger>
         </TabsList>
 
-        {activeTab !== "inquiries" && (
+        {activeTab === "chats" && (
+          <Suspense fallback={<div className="animate-pulse h-96 bg-muted rounded" />}>
+            {React.createElement(lazy(() => import('./AdminJobChats')))}
+          </Suspense>
+        )}
+
+        {activeTab !== "inquiries" && activeTab !== "chats" && (
           <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <Dialog open={showCreateDialog || !!selectedJobForEdit} onOpenChange={(open) => {
