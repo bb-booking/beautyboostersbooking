@@ -202,14 +202,15 @@ async function syncCalendarEvents(
     const calendarData = await calendarResponse.json();
     const events = calendarData.value || [];
     
-    // Delete existing synced availability entries for this booster
+    // Delete existing synced availability entries for this booster (marked with Outlook prefix in notes)
     await supabase
       .from('booster_availability')
       .delete()
       .eq('booster_id', profile.id)
-      .eq('status', 'synced');
+      .like('notes', 'Outlook:%');
     
     // Insert new availability blocks from calendar events
+    // Use 'busy' status as it's an allowed value in the database check constraint
     const availabilityEntries = events
       .filter((event: any) => event.showAs === 'busy' || event.showAs === 'tentative')
       .map((event: any) => {
@@ -221,7 +222,7 @@ async function syncCalendarEvents(
           date: startDate.toISOString().split('T')[0],
           start_time: startDate.toTimeString().slice(0, 5),
           end_time: endDate.toTimeString().slice(0, 5),
-          status: 'synced',
+          status: 'busy',
           notes: `Outlook: ${event.subject || 'Optaget'}`,
         };
       });
