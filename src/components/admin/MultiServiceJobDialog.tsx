@@ -396,7 +396,7 @@ export const MultiServiceJobDialog = ({
             date: format(jobDate, 'yyyy-MM-dd'),
             start_time: startTime,
             end_time: endTime,
-            status: 'booked',
+            status: 'busy',
             job_id: jobData.id,
             notes: notes,
           });
