@@ -105,14 +105,40 @@ Deno.serve(async (req) => {
       last_sync: null,
     };
     
-    const { error: updateError } = await supabase
+    // Check if booster profile exists
+    const { data: existingProfile } = await supabase
       .from('booster_profiles')
-      .update({
-        calendar_provider: 'outlook',
-        calendar_sync_token: JSON.stringify(tokenData),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', targetUserId);
+      .select('id')
+      .eq('user_id', targetUserId)
+      .single();
+    
+    let updateError;
+    
+    if (existingProfile) {
+      // Update existing profile
+      const { error } = await supabase
+        .from('booster_profiles')
+        .update({
+          calendar_provider: 'outlook',
+          calendar_sync_token: JSON.stringify(tokenData),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', targetUserId);
+      updateError = error;
+    } else {
+      // Create new profile with calendar data
+      const { error } = await supabase
+        .from('booster_profiles')
+        .insert({
+          user_id: targetUserId,
+          name: userInfo.displayName || email.split('@')[0],
+          email: email,
+          location: 'København',
+          calendar_provider: 'outlook',
+          calendar_sync_token: JSON.stringify(tokenData),
+        });
+      updateError = error;
+    }
     
     if (updateError) {
       console.error('Error storing tokens:', updateError);
