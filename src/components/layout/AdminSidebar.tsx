@@ -149,10 +149,11 @@ export function AdminSidebar() {
           <SidebarGroupLabel>Beauty Boosters Admin</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => {
+            {adminItems.map((item) => {
                 let badge = 0;
                 if (item.title === "Beskeder") badge = counts.messages;
-                else if (item.title === "Jobs") badge = counts.jobs + counts.inquiries + counts.jobChats;
+                // Jobs badge: only show inquiries + unread chats (things requiring action)
+                else if (item.title === "Jobs") badge = counts.inquiries + counts.jobChats;
                 else if (item.title === "Boosters") badge = counts.applications;
                 
                 return (
