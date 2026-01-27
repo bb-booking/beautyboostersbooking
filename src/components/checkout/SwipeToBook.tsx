@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Check, ChevronRight, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,29 +19,26 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
   const trackRef = useRef<HTMLDivElement>(null);
   const buttonWidth = 64; // w-16 = 64px
 
-  const handleStart = (clientX: number) => {
-    if (isCompleted || isProcessing) return;
-    setIsDragging(true);
-  };
+  const getMaxPosition = useCallback(() => {
+    if (!trackRef.current) return 0;
+    return trackRef.current.getBoundingClientRect().width - buttonWidth - 8;
+  }, []);
 
-  const handleMove = (clientX: number) => {
-    if (!isDragging || !trackRef.current || isCompleted) return;
+  const handleMove = useCallback((clientX: number) => {
+    if (!trackRef.current || isCompleted) return;
     
     const track = trackRef.current;
     const trackRect = track.getBoundingClientRect();
-    const maxPosition = trackRect.width - buttonWidth - 8; // 8px padding
+    const maxPosition = getMaxPosition();
     
     const newPosition = Math.max(0, Math.min(clientX - trackRect.left - buttonWidth / 2, maxPosition));
     setPosition(newPosition);
-  };
+  }, [isCompleted, getMaxPosition]);
 
-  const handleEnd = () => {
-    if (!isDragging || !trackRef.current || isCompleted) return;
-    setIsDragging(false);
+  const handleEnd = useCallback(() => {
+    if (isCompleted) return;
     
-    const track = trackRef.current;
-    const trackRect = track.getBoundingClientRect();
-    const maxPosition = trackRect.width - buttonWidth - 8;
+    const maxPosition = getMaxPosition();
     const threshold = maxPosition * 0.85;
     
     if (position >= threshold) {
@@ -53,20 +50,49 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
     } else {
       setPosition(0);
     }
-  };
+    setIsDragging(false);
+  }, [isCompleted, position, getMaxPosition, onComplete]);
 
-  // Mouse events
-  const handleMouseDown = (e: React.MouseEvent) => handleStart(e.clientX);
-  const handleMouseMove = (e: React.MouseEvent) => handleMove(e.clientX);
-  const handleMouseUp = () => handleEnd();
-  const handleMouseLeave = () => {
-    if (isDragging) handleEnd();
-  };
+  // Use document-level event listeners for reliable drag tracking
+  useEffect(() => {
+    if (!isDragging) return;
 
-  // Touch events
-  const handleTouchStart = (e: React.TouchEvent) => handleStart(e.touches[0].clientX);
-  const handleTouchMove = (e: React.TouchEvent) => handleMove(e.touches[0].clientX);
-  const handleTouchEnd = () => handleEnd();
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      handleMove(e.clientX);
+    };
+
+    const handleMouseUp = () => {
+      handleEnd();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      handleMove(e.touches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+      handleEnd();
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, handleMove, handleEnd]);
+
+  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isCompleted || isProcessing) return;
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   const progress = trackRef.current 
     ? position / (trackRef.current.getBoundingClientRect().width - buttonWidth - 8) 
@@ -86,14 +112,11 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
       <div
         ref={trackRef}
         className={cn(
-          "relative h-16 rounded-full overflow-hidden cursor-pointer select-none",
+          "relative h-16 rounded-full overflow-hidden select-none",
           "bg-gradient-to-r from-primary/20 to-primary/40",
           "border-2 border-primary/30",
           isCompleted && "bg-green-500/20 border-green-500/50"
         )}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
       >
         {/* Progress fill */}
         <div 
@@ -111,7 +134,7 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
         <div 
           className={cn(
             "absolute inset-0 flex items-center justify-center",
-            "text-sm font-medium transition-opacity",
+            "text-sm font-medium transition-opacity pointer-events-none",
             isCompleted ? "text-green-700 dark:text-green-300" : "text-primary"
           )}
           style={{ 
@@ -141,7 +164,7 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
           className={cn(
             "absolute top-1 bottom-1 w-14 rounded-full",
             "flex items-center justify-center",
-            "shadow-lg cursor-grab active:cursor-grabbing",
+            "shadow-lg cursor-grab active:cursor-grabbing touch-none",
             "transition-all",
             isCompleted 
               ? "bg-green-500 text-white" 
@@ -152,10 +175,8 @@ const SwipeToBook = ({ onComplete, amount, isProcessing, savedCard }: SwipeToBoo
             left: `${position + 4}px`,
             transition: isDragging ? 'none' : 'left 0.3s ease-out, transform 0.1s, background-color 0.3s'
           }}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleStart}
+          onTouchStart={handleStart}
         >
           {isCompleted ? (
             <Check className="h-6 w-6" />
