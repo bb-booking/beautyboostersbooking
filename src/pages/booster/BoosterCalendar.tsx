@@ -54,33 +54,7 @@ const parseNotes = (e: BoosterEvent): EventMeta => {
   catch { return {}; } 
 };
 
-const MOCK_EVENTS: Omit<BoosterEvent, 'id'>[] = [
-  // Monday (start of week)
-  { date: format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 0), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Emma Larsen', customer_phone: '+45 23456789', customer_email: 'emma@email.dk', address: 'Østerbrogade 55, København', client_type: 'privat', people_count: 2, price: 1899, team_boosters: [] }) },
-  { date: format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 0), 'yyyy-MM-dd'), start_time: '13:00:00', end_time: '15:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Laura Nielsen', customer_phone: '+45 34567890', customer_email: 'laura@email.dk', address: 'Frederiksberg Allé 12', client_type: 'privat', people_count: 1, price: 799, team_boosters: [] }) },
-  
-  // Tuesday
-  { date: format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 1), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Film-produktion', customer_name: 'Zentropa', customer_phone: '+45 44556677', customer_email: 'booking@zentropa.dk', address: 'Filmbyen, Hvidovre', client_type: 'virksomhed', company_name: 'Zentropa Productions', people_count: 6, price: 9500, team_boosters: ['Katrine J.', 'Fay'] }) },
-  { date: format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 1), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Hårstyling', customer_name: 'Sofie Hansen', customer_phone: '+45 55667788', customer_email: 'sofie@email.dk', address: 'Amagerbrogade 200', client_type: 'privat', people_count: 1, price: 649, team_boosters: [] }) },
-  
-  // Wednesday
-  { date: format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 2), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '13:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Novo Nordisk', customer_phone: '+45 66778899', customer_email: 'events@novo.dk', address: 'Novo Nordisk Park, Bagsværd', client_type: 'virksomhed', company_name: 'Novo Nordisk A/S', people_count: 12, price: 15000, team_boosters: ['Josephine O.', 'Nanna', 'Tenna'] }) },
-  
-  // Thursday (today if it's Thursday, or upcoming)
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '09:00:00', end_time: '11:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Sarah Jensen', customer_phone: '+45 12345678', customer_email: 'sarah@email.dk', address: 'Vesterbrogade 45, København', client_type: 'privat', people_count: 3, price: 2499, team_boosters: [] }) },
-  { date: format(new Date(), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Event makeup', customer_name: 'Copenhagen Events', customer_phone: '+45 33221100', customer_email: 'kontakt@cphevents.dk', address: 'Bella Center, København', client_type: 'virksomhed', company_name: 'Copenhagen Events ApS', people_count: 8, price: 12500, team_boosters: ['Josephine O.', 'Katrine J.'] }) },
-  
-  // Friday
-  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '10:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'Makeup styling', customer_name: 'Marie Andersen', customer_phone: '+45 87654321', customer_email: 'marie@email.dk', address: 'Nørrebrogade 100, København', client_type: 'privat', people_count: 1, price: 899, team_boosters: [] }) },
-  { date: format(addDays(new Date(), 1), 'yyyy-MM-dd'), start_time: '15:00:00', end_time: '17:00:00', status: 'booked', notes: JSON.stringify({ service: 'Teater makeup', customer_name: 'Det Kongelige Teater', customer_phone: '+45 77889900', customer_email: 'makeup@kglteater.dk', address: 'Kongens Nytorv 1', client_type: 'virksomhed', company_name: 'Det Kongelige Teater', people_count: 4, price: 5200, team_boosters: ['Fay'] }) },
-  
-  // Saturday
-  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '08:00:00', end_time: '12:00:00', status: 'booked', notes: JSON.stringify({ service: 'TV-produktion', customer_name: 'DR Studios', customer_phone: '+45 11223344', customer_email: 'booking@dr.dk', address: 'DR Byen, Emil Holms Kanal 20', client_type: 'virksomhed', company_name: 'Danmarks Radio', people_count: 5, price: 8500, team_boosters: ['Fay', 'Nanna'] }) },
-  { date: format(addDays(new Date(), 2), 'yyyy-MM-dd'), start_time: '14:00:00', end_time: '16:00:00', status: 'booked', notes: JSON.stringify({ service: 'Bryllup makeup', customer_name: 'Anna Christensen', customer_phone: '+45 99887766', customer_email: 'anna@email.dk', address: 'Dyrehaven, Klampenborg', client_type: 'privat', people_count: 4, price: 3299, team_boosters: ['Katrine J.'] }) },
-  
-  // Sunday - blocked
-  { date: format(addDays(new Date(), 3), 'yyyy-MM-dd'), start_time: '07:00:00', end_time: '21:00:00', status: 'blocked', notes: JSON.stringify({ blocked: true, reason: 'Ferie' }) },
-];
+// Mock events removed - only real database events are used
 
 export default function BoosterCalendar() {
   const navigate = useNavigate();
@@ -133,7 +107,7 @@ export default function BoosterCalendar() {
       end = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
     }
     
-    const { data, error } = await supabase
+const { data, error } = await supabase
       .from("booster_availability")
       .select("id,date,start_time,end_time,status,notes")
       .eq("booster_id", uid)
@@ -143,11 +117,8 @@ export default function BoosterCalendar() {
       .order("start_time");
       
     if (!error && data) {
-      const mockWithIds = MOCK_EVENTS.map((e, i) => ({ ...e, id: `mock-${i}` }));
-      const allEvents = [...(data as BoosterEvent[]), ...mockWithIds.filter(me => 
-        me.date >= format(start, "yyyy-MM-dd") && me.date <= format(end, "yyyy-MM-dd")
-      )];
-      setEvents(allEvents);
+      // Only use real database events - no mock data
+      setEvents(data as BoosterEvent[]);
     }
   };
 
