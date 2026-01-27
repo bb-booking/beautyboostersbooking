@@ -21,16 +21,16 @@ Deno.serve(async (req) => {
   // Handle OAuth errors
   if (error) {
     console.error('OAuth error:', error, errorDescription);
-    return new Response(
-      generateHTML(false, `Fejl: ${errorDescription || error}`),
-      { headers: { 'Content-Type': 'text/html' } }
+    return Response.redirect(
+      `${FRONTEND_URL}/booster/settings?calendar_error=${encodeURIComponent(errorDescription || error)}`,
+      302
     );
   }
   
   if (!code || !state) {
-    return new Response(
-      generateHTML(false, 'Manglende autoriseringskode'),
-      { headers: { 'Content-Type': 'text/html' } }
+    return Response.redirect(
+      `${FRONTEND_URL}/booster/settings?calendar_error=missing_code`,
+      302
     );
   }
   
@@ -142,25 +142,26 @@ Deno.serve(async (req) => {
     
     if (updateError) {
       console.error('Error storing tokens:', updateError);
-      return new Response(
-        generateHTML(false, 'Kunne ikke gemme kalenderforbindelse'),
-        { headers: { 'Content-Type': 'text/html' } }
+      return Response.redirect(
+        `${FRONTEND_URL}/booster/settings?calendar_error=save_failed`,
+        302
       );
     }
     
     // Initial calendar sync
     await syncCalendarEvents(supabase, targetUserId, tokens.access_token);
     
-    return new Response(
-      generateHTML(true, `Forbundet til ${email}`),
-      { headers: { 'Content-Type': 'text/html' } }
+    // Redirect back to settings with success
+    return Response.redirect(
+      `${FRONTEND_URL}/booster/settings?calendar_connected=outlook&email=${encodeURIComponent(email)}`,
+      302
     );
     
   } catch (error) {
     console.error('Callback error:', error);
-    return new Response(
-      generateHTML(false, 'Der opstod en fejl'),
-      { headers: { 'Content-Type': 'text/html' } }
+    return Response.redirect(
+      `${FRONTEND_URL}/booster/settings?calendar_error=unknown`,
+      302
     );
   }
 });
