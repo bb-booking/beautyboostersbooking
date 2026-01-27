@@ -22,6 +22,7 @@ interface Service {
   hasExtraHours?: boolean;
   extraHourPrice?: number;
   image?: string;
+  active?: boolean;
   groupPricing?: {
     1: number;
     2: number;
@@ -77,272 +78,66 @@ const Services = () => {
 
   const fetchServices = async () => {
     try {
-      const privatServices = [
-        // Makeup & Hår
-        {
-          id: '1',
-          name: 'Makeup Styling',
-          description: 'Professionel makeup styling til enhver lejlighed',
-          price: 1999,
-          duration: 1,
-          category: 'Makeup & Hår',
-          clientType: 'privat' as const,
-          image: '/images/services/makeup-styling.png',
-          groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
-        },
-        {
-          id: '2',
-          name: 'Hårstyling / håropsætning',
-          description: 'Professionel hårstyling eller opsætning',
-          price: 1999,
-          duration: 1,
-          category: 'Makeup & Hår',
-          clientType: 'privat' as const,
-          image: '/images/services/haarstyling.png',
-          groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 }
-        },
-        {
-          id: '3',
-          name: 'Makeup & Hårstyling',
-          description: 'Makeup & Hårstyling - hvilket look drømmer du om til dit næste event?',
-          price: 2999,
-          duration: 1.5,
-          category: 'Makeup & Hår',
-          clientType: 'privat' as const,
-          image: '/images/services/makeup-styling.png',
-          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
-        },
-        // Spraytan
-        {
-          id: '4',
-          name: 'Spraytan',
-          description: 'Skræddersyet spraytan med high-end væske som er lugtfri og giver naturlige nuancer (Kun København og Roskilde + omegn)',
-          price: 499,
-          duration: 0.5,
-          category: 'Spraytan',
-          clientType: 'privat' as const,
-          image: '/images/services/spraytan.png',
-          groupPricing: { 1: 499, 2: 799, 3: 1099, 4: 1399 }
-        },
-        // Konfirmation
-        {
-          id: '5',
-          name: 'Konfirmationsstyling - Makeup OG Hårstyling',
-          description: 'Lad os stå for stylingen på din store dag. Professionel makeup artist direkte til døren',
-          price: 2999,
-          duration: 1.5,
-          category: 'Konfirmation',
-          clientType: 'privat' as const,
-          image: '/images/services/konfirmation.png',
-          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
-        },
-        // Bryllup (alle services fra billedet)
-        {
-          id: '6',
-          name: 'Brudestyling - Makeup Styling',
-          description: 'Professionel makeup styling til bruden',
-          price: 2999,
-          duration: 2,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          image: '/images/services/brudestyling.png'
-        },
-        {
-          id: '7',
-          name: 'Brudestyling - Hårstyling',
-          description: 'Professionel hårstyling til bruden',
-          price: 2999,
-          duration: 2,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          image: '/images/services/brudestyling.png'
-        },
-        {
-          id: '8',
-          name: 'Brudestyling - Hår & Makeup (uden prøvestyling)',
-          description: 'Komplet hår og makeup styling til bruden uden prøvestyling',
-          price: 4999,
-          duration: 3,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          image: '/images/services/brudestyling.png'
-        },
-        {
-          id: '9',
-          name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)',
-          description: 'Komplet hår og makeup styling til bruden med prøvestyling',
-          price: 6499,
-          duration: 4.5,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          image: '/images/services/brudestyling.png'
-        },
-        {
-          id: '10',
-          name: 'Brudestyling Premium - Makeup og Hårstyling (Makeup Artist i op til 8 timer)',
-          description: 'Premium brudestyling med makeup artist til rådighed i op til 8 timer',
-          price: 8999,
-          duration: 8,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          image: '/images/services/brudestyling.png'
-        },
-        {
-          id: '11',
-          name: 'Brudepigestyling - Makeup & Hår (1 person)',
-          description: 'Makeup og hårstyling til brudepige',
-          price: 2999,
-          duration: 1.5,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
-        },
-        {
-          id: '12',
-          name: 'Brudepigestyling - Makeup & Hår (2 personer)',
-          description: 'Makeup og hårstyling til 2 brudepiger',
-          price: 4999,
-          duration: 2.5,
-          category: 'Bryllup',
-          clientType: 'privat' as const,
-          groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 }
-        },
-        {
-          id: '13',
-          name: 'Brudestyling Hår & Makeup + Hår og Makeup til 1 person (mor, brudepige, gæst)',
-          description: 'Brudestyling plus styling til én ekstra person (mor, brudepige eller gæst)',
-          price: 7499,
-          duration: 4,
-          category: 'Bryllup',
-          clientType: 'privat' as const
-        },
-        // Makeup Kurser
-        {
-          id: '14',
-          name: '1:1 Makeup Session',
-          description: 'Lær at lægge den perfekte makeup af en professionel makeupartist',
-          price: 2499,
-          duration: 1.5,
-          category: 'Makeup Kurser',
-          clientType: 'privat' as const,
-          image: '/images/services/makeup-session.png'
-        },
-        {
-          id: '15',
-          name: 'The Beauty Bar (makeup kursus)',
-          description: 'Makeup kursus på 3 timer for op til 12 personer. Lær både hverdags- og gå-i-byen look',
-          price: 4499,
-          duration: 3,
-          category: 'Makeup Kurser',
-          clientType: 'privat' as const,
-          image: '/images/services/beauty-bar.png'
-        },
-        // Event
-        {
-          id: '16',
-          name: 'Makeup Artist til Touch Up (3 timer)',
-          description: 'Makeup artist til rådighed i 3 timer - mulighed for ekstra timer (1200 kr/time) og boosters (4499 kr/booster)',
-          price: 4499,
-          duration: 3,
-          category: 'Event',
-          clientType: 'privat' as const,
-          image: '/images/services/event-touchup.png'
-        },
-        // Børn
-        {
-          id: '17',
-          name: 'Ansigtsmaling til børn',
-          description: 'Sjov ansigtsmaling til børn til events og fester - samme logik som event touch up',
-          price: 4499,
-          duration: 3,
-          category: 'Børn',
-          clientType: 'privat' as const,
-          image: '/images/services/ansigtsmaling-boern.png'
-        }
-      ];
+      // Try to fetch from admin_settings first
+      const { data, error } = await supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "services_config")
+        .maybeSingle();
 
-      const virksomhedServices = [
-        {
-          id: '20',
-          name: 'Makeup & Hårstyling til Shoot/Reklamefilm',
-          description: 'Professionel makeup & hårstyling til shoot, reklamefilm mv. Op til 3 timer, ekstra timer +1000 kr/time. Mulighed for flere boosters',
-          price: 4499,
-          duration: 3,
-          category: 'Shoot/reklame',
-          clientType: 'virksomhed' as const,
-          groupPricing: { 1: 4499, 2: 8999, 3: 13499, 4: 17999 },
-          hasExtraHours: true,
-          extraHourPrice: 1000
-        },
-        {
-          id: '21',
-          name: 'Key Makeup Artist til projekt',
-          description: 'Erfaren makeup artist til store projekter - udfyld formular og send forespørgsel',
-          price: 0,
-          duration: 0,
-          category: 'Specialister til projekt',
-          clientType: 'virksomhed' as const,
-          isInquiry: true
-        },
-        {
-          id: '22',
-          name: 'Makeup Assistent til projekt',
-          description: 'Dygtig makeup assistent til dit projekt - udfyld formular og send forespørgsel',
-          price: 0,
-          duration: 0,
-          category: 'Specialister til projekt',
-          clientType: 'virksomhed' as const,
-          isInquiry: true
-        },
-        {
-          id: '23',
-          name: 'SFX Expert',
-          description: 'Specialist i special effects makeup - udfyld formular og send forespørgsel',
-          price: 0,
-          duration: 0,
-          category: 'Specialister til projekt',
-          clientType: 'virksomhed' as const,
-          isInquiry: true
-        },
-        {
-          id: '24',
-          name: 'Parykdesign',
-          description: 'Professionel parykdesigner til dit projekt - udfyld formular og send forespørgsel',
-          price: 0,
-          duration: 0,
-          category: 'Specialister til projekt',
-          clientType: 'virksomhed' as const,
-          isInquiry: true
-        },
-        {
-          id: '25',
-          name: 'MUA til Film/TV',
-          description: 'Makeup artist specialiseret i film og TV produktion - udfyld formular og send forespørgsel',
-          price: 0,
-          duration: 0,
-          category: 'Specialister til projekt',
-          clientType: 'virksomhed' as const,
-          isInquiry: true
-        },
-        {
-          id: '26',
-          name: 'Event Makeup Services',
-          description: 'Omfattende event makeup services - udfyld formular med antal gæster, boosters, tema, materialer og spejle',
-          price: 0,
-          duration: 0,
-          category: 'Makeup / styling til Event',
-          clientType: 'virksomhed' as const,
-          isInquiry: true
-        }
-      ];
-
-      const allServices = [...privatServices, ...virksomhedServices];
-      setServices(allServices);
+      if (data?.value && Array.isArray(data.value)) {
+        // Filter to only show active services
+        const activeServices = (data.value as unknown as Service[]).filter(s => 
+          s.active !== false // Include if active is true or undefined
+        );
+        setServices(activeServices);
+      } else {
+        // Fallback to default hardcoded services
+        const defaultServices = getDefaultServices();
+        setServices(defaultServices);
+      }
     } catch (error) {
       console.error('Error fetching services:', error);
+      // Fallback to defaults on error
+      const defaultServices = getDefaultServices();
+      setServices(defaultServices);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getDefaultServices = (): Service[] => {
+    const privatServices: Service[] = [
+      { id: '1', name: 'Makeup Styling', description: 'Professionel makeup styling til enhver lejlighed', price: 1999, duration: 1, category: 'Makeup & Hår', clientType: 'privat', image: '/images/services/makeup-styling.png', groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 } },
+      { id: '2', name: 'Hårstyling / håropsætning', description: 'Professionel hårstyling eller opsætning', price: 1999, duration: 1, category: 'Makeup & Hår', clientType: 'privat', image: '/images/services/haarstyling.png', groupPricing: { 1: 1999, 2: 2999, 3: 3999, 4: 4899 } },
+      { id: '3', name: 'Makeup & Hårstyling', description: 'Makeup & Hårstyling - hvilket look drømmer du om til dit næste event?', price: 2999, duration: 1.5, category: 'Makeup & Hår', clientType: 'privat', image: '/images/services/makeup-styling.png', groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 } },
+      { id: '4', name: 'Spraytan', description: 'Skræddersyet spraytan med high-end væske som er lugtfri og giver naturlige nuancer (Kun København og Roskilde + omegn)', price: 499, duration: 0.5, category: 'Spraytan', clientType: 'privat', image: '/images/services/spraytan.png', groupPricing: { 1: 499, 2: 799, 3: 1099, 4: 1399 } },
+      { id: '5', name: 'Konfirmationsstyling - Makeup OG Hårstyling', description: 'Lad os stå for stylingen på din store dag. Professionel makeup artist direkte til døren', price: 2999, duration: 1.5, category: 'Konfirmation', clientType: 'privat', image: '/images/services/konfirmation.png', groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 } },
+      { id: '6', name: 'Brudestyling - Makeup Styling', description: 'Professionel makeup styling til bruden', price: 2999, duration: 2, category: 'Bryllup', clientType: 'privat', image: '/images/services/brudestyling.png' },
+      { id: '7', name: 'Brudestyling - Hårstyling', description: 'Professionel hårstyling til bruden', price: 2999, duration: 2, category: 'Bryllup', clientType: 'privat', image: '/images/services/brudestyling.png' },
+      { id: '8', name: 'Brudestyling - Hår & Makeup (uden prøvestyling)', description: 'Komplet hår og makeup styling til bruden uden prøvestyling', price: 4999, duration: 3, category: 'Bryllup', clientType: 'privat', image: '/images/services/brudestyling.png' },
+      { id: '9', name: 'Brudestyling - Hår & Makeup (inkl. prøvestyling)', description: 'Komplet hår og makeup styling til bruden med prøvestyling', price: 6499, duration: 4.5, category: 'Bryllup', clientType: 'privat', image: '/images/services/brudestyling.png' },
+      { id: '10', name: 'Brudestyling Premium - Makeup og Hårstyling (Makeup Artist i op til 8 timer)', description: 'Premium brudestyling med makeup artist til rådighed i op til 8 timer', price: 8999, duration: 8, category: 'Bryllup', clientType: 'privat', image: '/images/services/brudestyling.png' },
+      { id: '11', name: 'Brudepigestyling - Makeup & Hår (1 person)', description: 'Makeup og hårstyling til brudepige', price: 2999, duration: 1.5, category: 'Bryllup', clientType: 'privat', groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 } },
+      { id: '12', name: 'Brudepigestyling - Makeup & Hår (2 personer)', description: 'Makeup og hårstyling til 2 brudepiger', price: 4999, duration: 2.5, category: 'Bryllup', clientType: 'privat', groupPricing: { 1: 2999, 2: 4999, 3: 6499, 4: 7999 } },
+      { id: '13', name: 'Brudestyling Hår & Makeup + Hår og Makeup til 1 person (mor, brudepige, gæst)', description: 'Brudestyling plus styling til én ekstra person (mor, brudepige eller gæst)', price: 7499, duration: 4, category: 'Bryllup', clientType: 'privat' },
+      { id: '14', name: '1:1 Makeup Session', description: 'Lær at lægge den perfekte makeup af en professionel makeupartist', price: 2499, duration: 1.5, category: 'Makeup Kurser', clientType: 'privat', image: '/images/services/makeup-session.png' },
+      { id: '15', name: 'The Beauty Bar (makeup kursus)', description: 'Makeup kursus på 3 timer for op til 12 personer. Lær både hverdags- og gå-i-byen look', price: 4499, duration: 3, category: 'Makeup Kurser', clientType: 'privat', image: '/images/services/beauty-bar.png' },
+      { id: '16', name: 'Makeup Artist til Touch Up (3 timer)', description: 'Makeup artist til rådighed i 3 timer - mulighed for ekstra timer (1200 kr/time) og boosters (4499 kr/booster)', price: 4499, duration: 3, category: 'Event', clientType: 'privat', image: '/images/services/event-touchup.png' },
+      { id: '17', name: 'Ansigtsmaling til børn', description: 'Sjov ansigtsmaling til børn til events og fester - samme logik som event touch up', price: 4499, duration: 3, category: 'Børn', clientType: 'privat', image: '/images/services/ansigtsmaling-boern.png' }
+    ];
+
+    const virksomhedServices: Service[] = [
+      { id: '20', name: 'Makeup & Hårstyling til Shoot/Reklamefilm', description: 'Professionel makeup & hårstyling til shoot, reklamefilm mv. Op til 3 timer, ekstra timer +1000 kr/time. Mulighed for flere boosters', price: 4499, duration: 3, category: 'Shoot/reklame', clientType: 'virksomhed', groupPricing: { 1: 4499, 2: 8999, 3: 13499, 4: 17999 }, hasExtraHours: true, extraHourPrice: 1000 },
+      { id: '21', name: 'Key Makeup Artist til projekt', description: 'Erfaren makeup artist til store projekter - udfyld formular og send forespørgsel', price: 0, duration: 0, category: 'Specialister til projekt', clientType: 'virksomhed', isInquiry: true },
+      { id: '22', name: 'Makeup Assistent til projekt', description: 'Dygtig makeup assistent til dit projekt - udfyld formular og send forespørgsel', price: 0, duration: 0, category: 'Specialister til projekt', clientType: 'virksomhed', isInquiry: true },
+      { id: '23', name: 'SFX Expert', description: 'Specialist i special effects makeup - udfyld formular og send forespørgsel', price: 0, duration: 0, category: 'Specialister til projekt', clientType: 'virksomhed', isInquiry: true },
+      { id: '24', name: 'Parykdesign', description: 'Professionel parykdesigner til dit projekt - udfyld formular og send forespørgsel', price: 0, duration: 0, category: 'Specialister til projekt', clientType: 'virksomhed', isInquiry: true },
+      { id: '25', name: 'MUA til Film/TV', description: 'Makeup artist specialiseret i film og TV produktion - udfyld formular og send forespørgsel', price: 0, duration: 0, category: 'Specialister til projekt', clientType: 'virksomhed', isInquiry: true },
+      { id: '26', name: 'Event Makeup Services', description: 'Omfattende event makeup services - udfyld formular med antal gæster, boosters, tema, materialer og spejle', price: 0, duration: 0, category: 'Makeup / styling til Event', clientType: 'virksomhed', isInquiry: true }
+    ];
+
+    return [...privatServices, ...virksomhedServices];
   };
 
   const getAvailableCategories = () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -317,65 +318,19 @@ const AdminSettings = () => {
         {/* Services & Pricing */}
         <Card>
           <CardHeader>
-            <CardTitle>Services og priser</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Services og priser</span>
+              <Button variant="outline" asChild>
+                <Link to="/admin/services-editor">
+                  Rediger alle services →
+                </Link>
+              </Button>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <div>
-                  <Label>Makeup Styling</Label>
-                  <p className="text-sm text-muted-foreground">Standard makeup styling</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Input type="number" defaultValue="1999" className="w-20" />
-                  <span className="text-sm">DKK</span>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div>
-                  <Label>Hårstyling</Label>
-                  <p className="text-sm text-muted-foreground">Professionel hårstyling</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Input type="number" defaultValue="1999" className="w-20" />
-                  <span className="text-sm">DKK</span>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div>
-                  <Label>Makeup & Hårstyling</Label>
-                  <p className="text-sm text-muted-foreground">Kombination af makeup og hår</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Input type="number" defaultValue="2999" className="w-20" />
-                  <span className="text-sm">DKK</span>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div>
-                  <Label>Spraytan</Label>
-                  <p className="text-sm text-muted-foreground">Professionel spraytan</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Input type="number" defaultValue="499" className="w-20" />
-                  <span className="text-sm">DKK</span>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div>
-                  <Label>Brudestyling</Label>
-                  <p className="text-sm text-muted-foreground">Komplette bryllupsstylinger</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Input type="number" defaultValue="4999" className="w-20" />
-                  <span className="text-sm">DKK</span>
-                </div>
-              </div>
-            </div>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Administrer alle services, priser, varigheder og billeder fra den dedikerede services editor.
+            </p>
           </CardContent>
         </Card>
 
