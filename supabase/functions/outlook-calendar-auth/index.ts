@@ -15,10 +15,10 @@ const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0
 const MICROSOFT_TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 const GRAPH_API_URL = 'https://graph.microsoft.com/v1.0';
 
-// Scopes needed for calendar access
+// Scopes needed for two-way calendar sync
 const SCOPES = [
   'User.Read',
-  'Calendars.Read',
+  'Calendars.ReadWrite',  // Changed from Calendars.Read to enable creating events
   'offline_access'
 ].join(' ');
 
