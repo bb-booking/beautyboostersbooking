@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +87,7 @@ const AdminServicesEditor = () => {
   const [editingService, setEditingService] = useState<ServiceData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'privat' | 'virksomhed'>('all');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -170,9 +172,14 @@ const AdminServicesEditor = () => {
   };
 
   const handleDeleteService = (serviceId: string) => {
-    if (confirm("Er du sikker på at du vil slette denne service?")) {
-      setServices(prev => prev.filter(s => s.id !== serviceId));
+    setDeleteConfirmId(serviceId);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmId) {
+      setServices(prev => prev.filter(s => s.id !== deleteConfirmId));
       toast.success("Service slettet");
+      setDeleteConfirmId(null);
     }
   };
 
@@ -576,6 +583,24 @@ const AdminServicesEditor = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Slet service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Er du sikker på at du vil slette denne service? Denne handling kan ikke fortrydes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuller</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Slet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
