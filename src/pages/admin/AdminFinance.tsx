@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -580,14 +580,48 @@ const AdminFinance = () => {
     printWindow.print();
   };
 
+  // Top-level finance tabs
+  const [financeTab, setFinanceTab] = useState<'overview' | 'monthly' | 'invoices'>('overview');
+
+  // Lazy import components for tabs
+  const MonthlyOverviewContent = lazy(() => import('./AdminMonthlyOverview'));
+  const InvoicesContent = lazy(() => import('./AdminInvoices'));
+
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold">Økonomi</h2>
-          <p className="text-muted-foreground">Beauty Boosters ApS • CVR: 12345678</p>
+      {/* Finance Tabs */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold">Økonomi</h2>
+            <p className="text-muted-foreground">Beauty Boosters ApS • CVR: 12345678</p>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        
+        <Tabs value={financeTab} onValueChange={(v) => setFinanceTab(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
+            <TabsTrigger value="overview">Oversigt</TabsTrigger>
+            <TabsTrigger value="monthly">Månedsoverblik</TabsTrigger>
+            <TabsTrigger value="invoices">Fakturaer</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {financeTab === 'monthly' && (
+        <Suspense fallback={<div className="animate-pulse h-96 bg-muted rounded" />}>
+          <MonthlyOverviewContent />
+        </Suspense>
+      )}
+
+      {financeTab === 'invoices' && (
+        <Suspense fallback={<div className="animate-pulse h-96 bg-muted rounded" />}>
+          <InvoicesContent />
+        </Suspense>
+      )}
+
+      {financeTab === 'overview' && (
+        <>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
           <Select value={selectedPeriod} onValueChange={(val) => {
             setSelectedPeriod(val);
             if (val !== 'custom') {
@@ -683,7 +717,6 @@ const AdminFinance = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
 
       {/* CRITICAL ALERTS */}
       {daysUntilMonthEnd <= 5 && (
@@ -1436,6 +1469,8 @@ const AdminFinance = () => {
           </Table>
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 };

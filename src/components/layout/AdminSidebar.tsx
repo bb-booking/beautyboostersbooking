@@ -10,9 +10,7 @@ import {
   DollarSign,
   CalendarDays,
   Tag,
-  FileText,
-  UserCircle,
-  ClipboardList
+  UserCircle
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,15 +30,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Månedsoverblik", url: "/admin/overview", icon: ClipboardList },
+  { title: "Kalender", url: "/admin/calendar", icon: Calendar },
   { title: "Jobs", url: "/admin/jobs", icon: CalendarDays },
   { title: "Kunder", url: "/admin/customers", icon: UserCircle },
   { title: "Boosters", url: "/admin/boosters", icon: UserCheck },
-  { title: "Booster Ansøgninger", url: "/admin/booster-applications", icon: Users },
-  { title: "Kalender", url: "/admin/calendar", icon: Calendar },
   { title: "Beskeder", url: "/admin/messages", icon: MessageSquare },
-  { title: "Job Chats", url: "/admin/job-chats", icon: Users },
-  { title: "Fakturaer", url: "/admin/invoices", icon: FileText },
   { title: "Økonomi", url: "/admin/finance", icon: DollarSign },
   { title: "Rabatkoder", url: "/admin/discount-codes", icon: Tag },
 ];
@@ -64,22 +58,24 @@ export function AdminSidebar() {
       ? "bg-primary text-primary-foreground font-medium" 
       : "hover:bg-muted/50";
 
-  const [counts, setCounts] = useState({ messages: 0, inquiries: 0, jobs: 0, jobChats: 0 });
+  const [counts, setCounts] = useState({ messages: 0, inquiries: 0, jobs: 0, jobChats: 0, applications: 0 });
 
   useEffect(() => {
     const refresh = async () => {
       try {
-        const [msgRes, inqRes, jobRes, chatRes] = await Promise.all([
+        const [msgRes, inqRes, jobRes, chatRes, appRes] = await Promise.all([
           supabase.from("conversations").select("id").gt("unread_admin_count", 0),
           supabase.from("inquiries").select("id").eq("status", "new"),
           supabase.from("jobs").select("id").eq("status", "open"),
           supabase.from("job_communications").select("id").is("read_at", null),
+          supabase.from("booster_applications").select("id").eq("status", "pending"),
         ]);
         setCounts({
           messages: msgRes.data?.length || 0,
           inquiries: inqRes.data?.length || 0,
           jobs: jobRes.data?.length || 0,
           jobChats: chatRes.data?.length || 0,
+          applications: appRes.data?.length || 0,
         });
       } catch (e) {
         // noop
@@ -123,11 +119,21 @@ export function AdminSidebar() {
       )
       .subscribe();
 
+    const ch5 = supabase
+      .channel("applications-count")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "booster_applications" },
+        () => refresh()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ch1);
       supabase.removeChannel(ch2);
       supabase.removeChannel(ch3);
       supabase.removeChannel(ch4);
+      supabase.removeChannel(ch5);
     };
   }, []);
 
@@ -144,10 +150,11 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminItems.map((item) => {
-                const badge =
-                  item.title === "Beskeder" ? counts.messages :
-                  item.title === "Job Chats" ? counts.jobChats :
-                  item.title === "Jobs" ? (counts.jobs + counts.inquiries) : 0;
+                let badge = 0;
+                if (item.title === "Beskeder") badge = counts.messages;
+                else if (item.title === "Jobs") badge = counts.jobs + counts.inquiries + counts.jobChats;
+                else if (item.title === "Boosters") badge = counts.applications;
+                
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
@@ -160,7 +167,11 @@ export function AdminSidebar() {
                         {!collapsed && <span className="ml-2">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
-                    {badge > 0 && <SidebarMenuBadge>{badge}</SidebarMenuBadge>}
+                    {badge > 0 && (
+                      <SidebarMenuBadge className="bg-destructive text-destructive-foreground rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-medium">
+                        {badge}
+                      </SidebarMenuBadge>
+                    )}
                   </SidebarMenuItem>
                 );
               })}

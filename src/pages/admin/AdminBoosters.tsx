@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +64,7 @@ interface CompetenceTag {
 
 const AdminBoosters = () => {
   const navigate = useNavigate();
+  const [boosterTab, setBoosterTab] = useState<'list' | 'applications'>('list');
   const [boosters, setBoosters] = useState<BoosterProfile[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [competenceTags, setCompetenceTags] = useState<CompetenceTag[]>([]);
@@ -417,8 +419,28 @@ const AdminBoosters = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-2xl font-bold">Boosters</h2>
+        </div>
+        
+        <Tabs value={boosterTab} onValueChange={(v) => setBoosterTab(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-grid">
+            <TabsTrigger value="list">Alle Boosters</TabsTrigger>
+            <TabsTrigger value="applications">Ansøgninger</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {boosterTab === 'applications' && (
+        <Suspense fallback={<div className="animate-pulse h-96 bg-muted rounded" />}>
+          {React.createElement(lazy(() => import('./AdminBoosterApplications')))}
+        </Suspense>
+      )}
+
+      {boosterTab === 'list' && (
+        <>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-2xl font-bold">Booster Management</h2>
         <div className="flex flex-wrap items-center gap-2">
           <Button 
             variant="outline" 
@@ -920,6 +942,8 @@ const AdminBoosters = () => {
             </p>
           </CardContent>
         </Card>
+      )}
+        </>
       )}
     </div>
   );
