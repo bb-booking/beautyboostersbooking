@@ -457,12 +457,10 @@ export default function AdminCustomers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Kunde</TableHead>
-                    <TableHead>Kontakt</TableHead>
-                    <TableHead className="text-center">Bookings</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Seneste booking</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead className="min-w-[180px]">Kunde</TableHead>
+                    <TableHead className="text-center w-16">Bookings</TableHead>
+                    <TableHead className="text-right w-20">Total</TableHead>
+                    <TableHead className="w-24">Seneste</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -473,58 +471,35 @@ export default function AdminCustomers() {
                       onClick={() => fetchCustomerDetails(customer)}
                     >
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-primary/10 text-primary">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
                               {getInitials(customer.name, customer.email)}
                             </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <p className="font-medium text-foreground">
-                              {customer.name || "Ukendt navn"}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground text-sm truncate">
+                              {customer.name || "Ukendt"}
                             </p>
-                            <p className="text-sm text-muted-foreground">{customer.email}</p>
+                            <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
+                            {customer.phone && (
+                              <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                            )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm text-foreground">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            <span>{customer.email}</span>
-                          </div>
-                          {customer.phone && (
-                            <div className="flex items-center gap-1 text-sm text-foreground">
-                              <Phone className="h-3 w-3 text-muted-foreground" />
-                              <span>{customer.phone}</span>
-                            </div>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="secondary" className="text-foreground">
+                        <Badge variant="secondary" className="text-foreground text-xs">
                           {customer.totalBookings}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-medium text-foreground">
-                        {formatCurrency(customer.totalSpent)}
+                      <TableCell className="text-right font-medium text-foreground text-sm">
+                        {customer.totalSpent > 0 ? `${Math.round(customer.totalSpent / 1000)}k` : "0 kr"}
                       </TableCell>
-                      <TableCell className="text-foreground">
+                      <TableCell className="text-foreground text-xs">
                         {customer.lastBooking
-                          ? format(new Date(customer.lastBooking), "d. MMM yyyy", { locale: da })
+                          ? format(new Date(customer.lastBooking), "d. MMM", { locale: da })
                           : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            fetchCustomerDetails(customer);
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
