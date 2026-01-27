@@ -96,8 +96,8 @@ function getNameFromEmail(email: string): string {
     'maria@beautyboosters.dk': 'Maria',
     'stephanie@beautyboosters.dk': 'Stephanie',
     'laerke@beautyboosters.dk': 'Lærke',
-    'louisebencard@hotmail.com': 'Louise Bencard',
-    'louise@beautyboosters.dk': 'Louise Bencard',
+    'louisebencard@hotmail.com': 'Louise',
+    'louise@beautyboosters.dk': 'Louise',
   }
   
   if (emailNameMap[email.toLowerCase()]) {
