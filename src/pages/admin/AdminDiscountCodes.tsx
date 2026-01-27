@@ -106,7 +106,7 @@ export default function AdminDiscountCodes() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6 max-w-6xl py-8">
       <Helmet>
         <title>Rabatkoder – Admin | BeautyBoosters</title>
         <meta name="description" content="Administrer rabatkoder og kampagner for BeautyBoosters" />

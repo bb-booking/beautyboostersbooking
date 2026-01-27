@@ -416,7 +416,7 @@ const AdminBoosters = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Booster Management</h2>
         <div className="flex flex-wrap items-center gap-2">

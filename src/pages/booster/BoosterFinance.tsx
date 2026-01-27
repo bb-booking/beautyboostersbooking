@@ -486,7 +486,7 @@ export default function BoosterFinance() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl">
       <div className="flex flex-col gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Økonomi</h1>

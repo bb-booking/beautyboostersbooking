@@ -480,7 +480,7 @@ export default function BoosterJobs() {
   const totalPendingItems = requests.length + jobs.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <Helmet>
         <title>Jobs - BeautyBoosters</title>
       </Helmet>

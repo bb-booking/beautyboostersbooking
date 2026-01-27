@@ -99,7 +99,7 @@ export default function BoosterPortfolio() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Portfolio</h1>
         <p className="text-sm text-muted-foreground">Vis dine arbejder frem for kunderne</p>

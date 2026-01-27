@@ -945,7 +945,7 @@ Service: Makeup & Hårstyling, Spraytan | Lokation: København | Dato: 2024-06-1
 Eksempel på notifikation som booster vil modtage.`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold">Jobs</h2>
       </div>

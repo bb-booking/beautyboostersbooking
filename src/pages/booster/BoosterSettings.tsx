@@ -383,7 +383,7 @@ export default function BoosterSettings() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-4xl">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Indstillinger</h1>
         <p className="text-sm text-muted-foreground">Administrer din konto</p>

@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 
 export default function SalonPayouts() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <Helmet>
         <title>Opsæt udbetalinger – Beauty Boosters</title>
         <meta name="description" content="Opsæt Stripe Connect udbetalinger for din salon på Beauty Boosters." />
