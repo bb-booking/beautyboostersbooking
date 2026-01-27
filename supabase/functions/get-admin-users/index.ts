@@ -62,19 +62,26 @@ Deno.serve(async (req) => {
     const adminUserIds = adminRoles?.map(r => r.user_id) || []
 
     // Fetch user emails from auth.users using admin API
-    const adminUsers: { id: string; email: string; name: string }[] = []
+    const adminUsersMap = new Map<string, { id: string; email: string; name: string }>();
     
     for (const userId of adminUserIds) {
       const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
       if (!userError && userData.user) {
         const email = userData.user.email || ''
-        adminUsers.push({
-          id: userId,
-          email,
-          name: getNameFromEmail(email)
-        })
+        const name = getNameFromEmail(email)
+        
+        // Deduplicate by name - only keep first occurrence
+        if (!adminUsersMap.has(name)) {
+          adminUsersMap.set(name, {
+            id: userId,
+            email,
+            name
+          })
+        }
       }
     }
+    
+    const adminUsers = Array.from(adminUsersMap.values())
 
     return new Response(
       JSON.stringify({ admins: adminUsers }),
