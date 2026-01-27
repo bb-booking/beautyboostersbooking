@@ -117,3 +117,12 @@ verify_jwt = false
 
 [functions.setup-first-user]
 verify_jwt = false
+
+[functions.outlook-calendar-auth]
+verify_jwt = false
+
+[functions.outlook-calendar-callback]
+verify_jwt = false
+
+[functions.sync-outlook-calendar]
+verify_jwt = false
