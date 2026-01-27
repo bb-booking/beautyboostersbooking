@@ -202,33 +202,32 @@ export default function AdminBoosterApplications() {
 
   const fetchAdmins = async () => {
     try {
-      // Get all users with admin role
-      const { data: adminRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'admin');
-
-      if (rolesError) throw rolesError;
-
-      // Get booster profiles with matching user_ids for names
-      const adminUserIds = adminRoles?.map(r => r.user_id) || [];
-      const { data: boosterProfiles } = await supabase
-        .from('booster_profiles')
-        .select('id, name, email')
-        .in('id', adminUserIds);
-
-      const adminList: AdminUser[] = adminUserIds.map(userId => {
-        const profile = boosterProfiles?.find(p => p.id === userId);
-        return {
-          id: userId,
-          email: profile?.email || 'Admin',
-          name: profile?.name || undefined
-        };
-      });
-
-      setAdmins(adminList);
+      // Use edge function to get admin users with their emails
+      const { data, error } = await supabase.functions.invoke('get-admin-users');
+      
+      if (error) throw error;
+      
+      if (data?.admins) {
+        setAdmins(data.admins);
+      }
     } catch (error) {
       console.error('Error fetching admins:', error);
+      // Fallback: try to get from user_roles only
+      try {
+        const { data: adminRoles } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        const adminList: AdminUser[] = (adminRoles || []).map(r => ({
+          id: r.user_id,
+          email: 'Admin',
+          name: undefined
+        }));
+        setAdmins(adminList);
+      } catch (e) {
+        console.error('Fallback admin fetch failed:', e);
+      }
     }
   };
 
