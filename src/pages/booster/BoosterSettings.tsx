@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Trash2, FileText, Download, ExternalLink, BookOpen, Calendar, CheckCircle2, Loader2, Unlink, Save } from "lucide-react";
+import { Camera, Trash2, FileText, Download, ExternalLink, BookOpen, Calendar, CheckCircle2, Loader2, Unlink, Save, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useRef } from "react";
 
 interface BoosterSettings {
   // Personal Info
@@ -72,7 +72,46 @@ export default function BoosterSettings() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [boosterProfileId, setBoosterProfileId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle OAuth callback URL params
+  useEffect(() => {
+    const calendarConnected = searchParams.get('calendar_connected');
+    const calendarEmail = searchParams.get('email');
+    const calendarError = searchParams.get('calendar_error');
+
+    if (calendarConnected === 'outlook') {
+      setOutlookCalendarConnected(true);
+      if (calendarEmail) {
+        setOutlookCalendarEmail(decodeURIComponent(calendarEmail));
+      }
+      setLastSyncTime(new Date().toLocaleString('da-DK'));
+      toast({
+        title: "Outlook Kalender forbundet!",
+        description: calendarEmail 
+          ? `Forbundet til ${decodeURIComponent(calendarEmail)}` 
+          : "Din kalender synkroniseres nu automatisk.",
+      });
+      // Clear URL params
+      setSearchParams({});
+    }
+
+    if (calendarError) {
+      const errorMessages: Record<string, string> = {
+        missing_code: 'Autorisation mislykkedes - prøv igen',
+        save_failed: 'Kunne ikke gemme kalenderforbindelse',
+        unknown: 'Der opstod en ukendt fejl',
+      };
+      toast({
+        title: "Kalenderforbindelse fejlede",
+        description: errorMessages[calendarError] || calendarError,
+        variant: "destructive",
+      });
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
   // Fetch existing profile data and calendar status from database
   useEffect(() => {
     const fetchProfile = async () => {
@@ -413,6 +452,34 @@ export default function BoosterSettings() {
         description: "Kunne ikke afbryde forbindelsen. Prøv igen.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleSyncCalendar = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-outlook-calendar', {
+        body: {}
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setLastSyncTime(new Date().toLocaleString('da-DK'));
+      toast({
+        title: "Kalender synkroniseret",
+        description: `Synkronisering fuldført. ${data?.results?.[0]?.outlookToLovable?.blocksCreated || 0} events importeret.`,
+      });
+    } catch (err: any) {
+      console.error('Sync error:', err);
+      toast({
+        title: "Synkronisering fejlede",
+        description: err.message || "Kunne ikke synkronisere kalender. Prøv igen.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -821,10 +888,28 @@ export default function BoosterSettings() {
                   </Button>
                 )}
               </div>
-              {outlookCalendarConnected && outlookCalendarEmail && (
-                <p className="text-xs text-muted-foreground pl-13">
-                  Forbundet: {outlookCalendarEmail}
-                </p>
+              {outlookCalendarConnected && (
+                <div className="flex items-center justify-between pl-13">
+                  {outlookCalendarEmail && (
+                    <p className="text-xs text-muted-foreground">
+                      Forbundet: {outlookCalendarEmail}
+                    </p>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSyncCalendar}
+                    disabled={isSyncing}
+                    className="ml-auto"
+                  >
+                    {isSyncing ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                    )}
+                    {isSyncing ? 'Synkroniserer...' : 'Synk nu'}
+                  </Button>
+                </div>
               )}
             </div>
 
