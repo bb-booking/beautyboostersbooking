@@ -14,7 +14,8 @@ export default function Handover() {
 
       <div className="print-content max-w-4xl mx-auto px-8 py-12">
         <h1 className="text-3xl font-bold mb-1 text-gray-900">BeautyBoosters – Overdragelsesdokument</h1>
-        <p className="text-sm text-gray-500 mb-8">Genereret: 2026-02-16</p>
+        <p className="text-sm text-gray-500 mb-2">Genereret: 2026-02-16</p>
+        <p className="text-sm text-gray-500 mb-8">Sidst opdateret: 2026-02-16</p>
 
         <hr className="my-6 border-gray-300" />
 
@@ -238,19 +239,26 @@ export default function Handover() {
         <h2 className="text-xl font-semibold mt-8 mb-4 text-gray-900">4. Overdragelses-checkliste</h2>
         <ul className="text-sm space-y-2 mb-6">
           {[
-            "Lovable: Overfør projekt via Project Settings → Transfer",
-            "Supabase: Inviter ny ejer med Owner-rolle",
-            "GitHub: Overfør repo via Settings → Transfer ownership",
-            "Stripe: Tilføj ny ejer / overfør konto",
-            "Resend: Tilføj ny ejer / overfør konto",
-            "Azure: Tilføj ny ejer på App Registration",
-            "Shopify: Tilføj ny ejer som Staff / overfør butik",
-            "Domæne/DNS: Overfør domæneadgang",
-            "Secrets: Bekræft adgang til alle API-nøgler",
+            { text: "Lovable: Overfør projekt via Project Settings → Transfer", done: true, note: "hello@beautyboosters.dk har fået eget login og ejerskab" },
+            { text: "Supabase: Inviter ny ejer med Owner-rolle", done: true, note: "hello@beautyboosters.dk er gjort til Owner" },
+            { text: "GitHub: Overfør repo via Settings → Transfer ownership", done: false },
+            { text: "Stripe: Tilføj ny ejer / overfør konto", done: false },
+            { text: "Resend: Tilføj ny ejer / overfør konto", done: true, note: "hello@beautyboosters.dk har eget login" },
+            { text: "Azure: Tilføj ny ejer på App Registration", done: false },
+            { text: "Shopify: Tilføj ny ejer som Staff / overfør butik", done: false },
+            { text: "Domæne/DNS: Overfør domæneadgang", done: false },
+            { text: "Secrets: Bekræft adgang til alle API-nøgler", done: false },
           ].map((item) => (
-            <li key={item} className="flex items-start gap-2">
-              <span className="inline-block w-4 h-4 border border-gray-400 rounded-sm mt-0.5 flex-shrink-0" />
-              <span>{item}</span>
+            <li key={item.text} className="flex items-start gap-2">
+              {item.done ? (
+                <span className="inline-block w-4 h-4 bg-green-500 text-white rounded-sm mt-0.5 flex-shrink-0 text-center text-xs leading-4">✓</span>
+              ) : (
+                <span className="inline-block w-4 h-4 border border-gray-400 rounded-sm mt-0.5 flex-shrink-0" />
+              )}
+              <span>
+                {item.text}
+                {item.note && <span className="text-green-600 ml-1 text-xs">— {item.note}</span>}
+              </span>
             </li>
           ))}
         </ul>
@@ -275,8 +283,8 @@ export default function Handover() {
             </tr>
             <tr className="border-b border-gray-200">
               <td className="py-2 pr-4">Ny ejer</td>
-              <td className="py-2 pr-4 italic text-gray-400">[INDSÆT]</td>
-              <td className="py-2 italic text-gray-400">[INDSÆT]</td>
+              <td className="py-2 pr-4">BeautyBoosters Admin</td>
+              <td className="py-2">hello@beautyboosters.dk</td>
             </tr>
           </tbody>
         </table>
