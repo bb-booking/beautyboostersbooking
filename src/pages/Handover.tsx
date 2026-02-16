@@ -248,6 +248,7 @@ export default function Handover() {
             { text: "Shopify: Tilføj ny ejer som Staff / overfør butik", done: true, note: "Har allerede adgang" },
             { text: "Domæne/DNS: Overfør domæneadgang", done: true, note: "Adgang overdraget sammen med app-ejerskab" },
             { text: "Secrets: Bekræft adgang til alle API-nøgler", done: true, note: "Alle secrets ligger i Supabase – ny ejer har Owner-adgang" },
+            { text: "E-conomic: Overfør adgang til fakturering", done: true, note: "Har adgang" },
           ].map((item) => (
             <li key={item.text} className="flex items-start gap-2">
               {item.done ? (
