@@ -316,6 +316,7 @@ export default function Handover() {
           <table className="w-full text-sm border-collapse">
             <tbody>
               {[
+                ["E-mail", "alina.moturnak@stfalcon.com"],
                 ["LinkedIn", "Alina Moturnak"],
                 ["Kalender (book møde)", "calendly.com/alina-moturnak-stfalcon"],
                 ["WhatsApp / Telefon", "+380 96 784 6030"],
