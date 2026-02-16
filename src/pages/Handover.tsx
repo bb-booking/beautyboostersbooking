@@ -328,6 +328,25 @@ export default function Handover() {
               ))}
             </tbody>
           </table>
+
+          <details className="mt-6">
+            <summary className="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">📧 Original e-mail fra Alina (klik for at læse)</summary>
+            <div className="mt-3 bg-white border border-gray-200 rounded p-4 text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+              <p>Hello Louise,</p>
+              <p className="mt-2">Thank you for reaching out - we appreciate the opportunity to review your request. My name is Alina, and I am a Client & Partner Manager. I will be your primary point of contact and will support you throughout the entire communication and discovery process.</p>
+              <p className="mt-2">Based on your description, your request aligns closely with the types of projects we regularly support - especially when it comes to reviewing products, validating code quality, identifying risks, and planning further improvements.</p>
+              <p className="mt-2">To provide you with a more accurate estimate and a clear, structured view of the next steps for improving your product, we would suggest the following approach:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1 ml-2">
+                <li>You share with us a full list of technologies, integrations, and third-party libraries currently used in the project</li>
+                <li>We involve a senior-level developer for a focused technical audit (up to 8 hours) to review the existing codebase, assess overall quality and stability, and provide initial feedback and improvement recommendations.</li>
+                <li>The cost of this audit is $300.</li>
+                <li>Based on the audit results, we outline the next steps, prepare estimates for your tasks, and proceed with ongoing development and support if everything aligns.</li>
+              </ul>
+              <p className="mt-2">If this approach sounds reasonable, I'd be happy to jump on a short call to discuss it in more detail and answer any questions you might have. You can book a convenient time directly via my calendar here: <a href="https://calendly.com/alina-moturnak-stfalcon" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">calendly.com/alina-moturnak-stfalcon</a></p>
+              <p className="mt-2">Looking forward to your thoughts.</p>
+              <p className="mt-4 text-gray-500 text-xs">Alina Moturnak | Client Manager at Stfalcon LLC</p>
+            </div>
+          </details>
         </div>
       </div>
 
