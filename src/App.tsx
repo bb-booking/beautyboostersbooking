@@ -64,6 +64,7 @@ import BoosterLogin from "./pages/booster/BoosterLogin";
 import GiftCards from "./pages/GiftCards";
 import InstallApp from "./pages/InstallApp";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
+import Handover from "./pages/Handover";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import CustomerAddresses from "./pages/customer/CustomerAddresses";
 import CustomerFavorites from "./pages/customer/CustomerFavorites";
@@ -117,6 +118,7 @@ const AppContent = () => {
           <Route path="/auth" element={<Auth />} />
           <Route path="/giftcards" element={<GiftCards />} />
           <Route path="/install" element={<InstallApp />} />
+          <Route path="/handover" element={<Handover />} />
           
           {/* Customer routes */}
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
