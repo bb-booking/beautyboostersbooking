@@ -246,8 +246,8 @@ export default function Handover() {
             { text: "Resend: Tilføj ny ejer / overfør konto", done: true, note: "hello@beautyboosters.dk har eget login" },
             { text: "Azure: Tilføj ny ejer på App Registration", done: true, note: "Adgang via IT-admin Søren (Outlook)" },
             { text: "Shopify: Tilføj ny ejer som Staff / overfør butik", done: true, note: "Har allerede adgang" },
-            { text: "Domæne/DNS: Overfør domæneadgang", done: false },
-            { text: "Secrets: Bekræft adgang til alle API-nøgler", done: false },
+            { text: "Domæne/DNS: Overfør domæneadgang", done: true, note: "Adgang overdraget sammen med app-ejerskab" },
+            { text: "Secrets: Bekræft adgang til alle API-nøgler", done: true, note: "Alle secrets ligger i Supabase – ny ejer har Owner-adgang" },
           ].map((item) => (
             <li key={item.text} className="flex items-start gap-2">
               {item.done ? (
