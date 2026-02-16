@@ -291,6 +291,43 @@ export default function Handover() {
         </table>
 
         <p className="text-xs text-gray-500 italic">Udfyld kontaktinfo før overdragelse.</p>
+
+        <hr className="my-6 border-gray-300" />
+
+        {/* 6. Tilbud: Videreudvikling */}
+        <h2 className="text-xl font-semibold mt-8 mb-4 text-gray-900">6. Tilbud: Videreudvikling af appen</h2>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6 text-sm">
+          <p className="font-semibold mb-2">Stfalcon LLC – Teknisk audit & videreudvikling</p>
+          <p className="mb-3 text-gray-600">Kontaktperson: <strong>Alina Moturnak</strong>, Client & Partner Manager</p>
+          
+          <h3 className="font-semibold mt-4 mb-2">Foreslået fremgangsmåde:</h3>
+          <ol className="list-decimal list-inside space-y-2 text-gray-700 mb-4">
+            <li>Del en fuld liste over teknologier, integrationer og tredjepartsbiblioteker i projektet</li>
+            <li>En senior-udvikler udfører en fokuseret teknisk audit (op til 8 timer) – gennemgang af kodebase, kvalitet, stabilitet og anbefalinger</li>
+            <li>Baseret på audit-resultater udarbejdes næste skridt, estimater og evt. løbende udvikling og support</li>
+          </ol>
+
+          <div className="bg-white border border-gray-200 rounded p-4 mb-4">
+            <p className="font-semibold text-gray-900">Pris for teknisk audit: <span className="text-green-700">$300</span></p>
+            <p className="text-xs text-gray-500 mt-1">Op til 8 timers gennemgang af senior-udvikler</p>
+          </div>
+
+          <h3 className="font-semibold mt-4 mb-2">Kontaktinfo:</h3>
+          <table className="w-full text-sm border-collapse">
+            <tbody>
+              {[
+                ["LinkedIn", "Alina Moturnak"],
+                ["Kalender (book møde)", "calendly.com/alina-moturnak-stfalcon"],
+                ["WhatsApp / Telefon", "+380 96 784 6030"],
+              ].map(([key, val]) => (
+                <tr key={key} className="border-b border-gray-200">
+                  <td className="py-1.5 pr-4 font-medium w-48">{key}</td>
+                  <td className="py-1.5">{val}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <style>{`
