@@ -241,7 +241,7 @@ export default function Handover() {
           {[
             { text: "Lovable: Overfør projekt via Project Settings → Transfer", done: true, note: "hello@beautyboosters.dk har fået eget login og ejerskab" },
             { text: "Supabase: Inviter ny ejer med Owner-rolle", done: true, note: "hello@beautyboosters.dk er gjort til Owner" },
-            { text: "GitHub: Overfør repo via Settings → Transfer ownership", done: false },
+            { text: "GitHub: Overfør repo via Settings → Transfer ownership", done: true, note: "Ny GitHub-konto oprettet til hello@beautyboosters.dk – ejerskab overføres" },
             { text: "Stripe: Tilføj ny ejer / overfør konto", done: false },
             { text: "Resend: Tilføj ny ejer / overfør konto", done: true, note: "hello@beautyboosters.dk har eget login" },
             { text: "Azure: Tilføj ny ejer på App Registration", done: false },
