@@ -242,10 +242,10 @@ export default function Handover() {
             { text: "Lovable: Overfør projekt via Project Settings → Transfer", done: true, note: "hello@beautyboosters.dk har fået eget login og ejerskab" },
             { text: "Supabase: Inviter ny ejer med Owner-rolle", done: true, note: "hello@beautyboosters.dk er gjort til Owner" },
             { text: "GitHub: Overfør repo via Settings → Transfer ownership", done: true, note: "Ny GitHub-konto oprettet til hello@beautyboosters.dk – ejerskab overføres" },
-            { text: "Stripe: Tilføj ny ejer / overfør konto", done: false },
+            { text: "Stripe: Tilføj ny ejer / overfør konto", done: true, note: "Kun placeholder-funktioner – ikke aktivt i brug endnu" },
             { text: "Resend: Tilføj ny ejer / overfør konto", done: true, note: "hello@beautyboosters.dk har eget login" },
-            { text: "Azure: Tilføj ny ejer på App Registration", done: false },
-            { text: "Shopify: Tilføj ny ejer som Staff / overfør butik", done: false },
+            { text: "Azure: Tilføj ny ejer på App Registration", done: true, note: "Adgang via IT-admin Søren (Outlook)" },
+            { text: "Shopify: Tilføj ny ejer som Staff / overfør butik", done: true, note: "Har allerede adgang" },
             { text: "Domæne/DNS: Overfør domæneadgang", done: false },
             { text: "Secrets: Bekræft adgang til alle API-nøgler", done: false },
           ].map((item) => (
